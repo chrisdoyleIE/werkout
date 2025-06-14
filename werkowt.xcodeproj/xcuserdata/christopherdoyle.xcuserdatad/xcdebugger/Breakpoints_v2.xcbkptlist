@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   uuid = "6E191298-BC48-4DA1-9CA0-AAA06CE4123E"
+   type = "1"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "375CAFE6-69F1-43B6-8626-7E8128C728F2"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/Views/LiveWorkoutView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "139"
+            endingLineNumber = "139"
+            landmarkName = "loadPreviousSessionData()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "375CAFE6-69F1-43B6-8626-7E8128C728F2 - 1a685251476556e8"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for closure #1 @Sendable () async -&gt; () in werkowt.LiveWorkoutView.loadPreviousSessionData() -&gt; ()"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/Views/LiveWorkoutView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "139"
+                  endingLineNumber = "139"
+                  offsetFromSymbolStart = "100">
+               </Location>
+               <Location
+                  uuid = "375CAFE6-69F1-43B6-8626-7E8128C728F2 - 1fa6338642e1497e"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for closure #1 @Sendable () async -&gt; () in werkowt.LiveWorkoutView.loadPreviousSessionData() -&gt; ()"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/Views/LiveWorkoutView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "139"
+                  endingLineNumber = "139"
+                  offsetFromSymbolStart = "36">
+               </Location>
+               <Location
+                  uuid = "375CAFE6-69F1-43B6-8626-7E8128C728F2 - e0d05f48ab488b66"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for closure #1 @Sendable () async -&gt; () in werkowt.LiveWorkoutView.loadPreviousSessionData() -&gt; ()"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/Views/LiveWorkoutView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "139"
+                  endingLineNumber = "139"
+                  offsetFromSymbolStart = "124">
+               </Location>
+               <Location
+                  uuid = "375CAFE6-69F1-43B6-8626-7E8128C728F2 - 888446c1810beda3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(6) suspend resume partial function for closure #1 @Sendable () async -&gt; () in werkowt.LiveWorkoutView.loadPreviousSessionData() -&gt; ()"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/Views/LiveWorkoutView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "139"
+                  endingLineNumber = "139"
+                  offsetFromSymbolStart = "68">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>

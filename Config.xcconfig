@@ -1,0 +1,11 @@
+//
+//  Config.xcconfig
+//  werkowt
+//
+//  Created by Christopher Doyle on 13/06/2025.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhbHp0a3NwZnZmdWd1ZXN1d21sIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTgzNjk2MSwiZXhwIjoyMDY1NDEyOTYxfQ._aQdYbGlRLVsIctaHd-UoNdeyaxg0uJl3IvB9cTrtYA
+SUPABASE_URL = https://galztkspfvfuguesuwml.supabase.co
