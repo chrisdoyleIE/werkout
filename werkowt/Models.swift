@@ -244,55 +244,51 @@ class RestTimer: ObservableObject {
     func start(duration: Int) {
         stop()
         
-        DispatchQueue.main.async {
-            self.timeRemaining = duration
-            self.isRunning = true
-            
-            self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                DispatchQueue.main.async {
-                    if self.timeRemaining > 0 {
-                        self.timeRemaining -= 1
-                    } else {
-                        self.stop()
-                    }
+        timeRemaining = duration
+        isRunning = true
+        
+        timer = Timer(timeInterval: 1.0, repeats: true) { _ in
+            DispatchQueue.main.async {
+                if self.timeRemaining > 0 {
+                    self.timeRemaining -= 1
+                } else {
+                    self.stop()
                 }
             }
         }
+        
+        RunLoop.main.add(timer!, forMode: .common)
     }
     
     func stop() {
-        DispatchQueue.main.async {
-            self.timer?.invalidate()
-            self.timer = nil
-            self.isRunning = false
-            self.timeRemaining = 0
-        }
+        timer?.invalidate()
+        timer = nil
+        isRunning = false
+        timeRemaining = 0
     }
     
     func pause() {
-        DispatchQueue.main.async {
-            self.timer?.invalidate()
-            self.timer = nil
-            self.isRunning = false
-        }
+        timer?.invalidate()
+        timer = nil
+        isRunning = false
     }
     
     func resume() {
         guard timeRemaining > 0 else { return }
         
-        DispatchQueue.main.async {
-            self.isRunning = true
-            
-            self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                DispatchQueue.main.async {
-                    if self.timeRemaining > 0 {
-                        self.timeRemaining -= 1
-                    } else {
-                        self.stop()
-                    }
+        isRunning = true
+        
+        timer = Timer(timeInterval: 1.0, repeats: true) { _ in
+            DispatchQueue.main.async {
+                if self.timeRemaining > 0 {
+                    self.timeRemaining -= 1
+                } else {
+                    self.stop()
                 }
             }
         }
+        
+        RunLoop.main.add(timer!, forMode: .common)
     }
     
     var formattedTime: String {
