@@ -105,9 +105,22 @@ struct LiveWorkoutView: View {
                                     .foregroundColor(.primary)
                                 
                                 ForEach(currentExercise.sets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
-                                    Text("Set \(set.setNumber): \(formatSetDisplay(set))")
-                                        .font(.title3)
-                                        .fontWeight(.medium)
+                                    HStack {
+                                        Text("Set \(set.setNumber): \(formatSetDisplay(set))")
+                                            .font(.title3)
+                                            .fontWeight(.medium)
+                                        
+                                        Spacer()
+                                        
+                                        Button(action: {
+                                            deleteSet(set)
+                                        }) {
+                                            Image(systemName: "trash")
+                                                .font(.title3)
+                                                .foregroundColor(.red)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -232,6 +245,9 @@ struct LiveWorkoutView: View {
               let reps = Int(repsInput),
               weight > 0, reps > 0 else { return }
         
+        // Dismiss keyboard
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        
         activeWorkout.addSet(
             exerciseId: currentExercise.exercise.id,
             reps: reps,
@@ -252,6 +268,9 @@ struct LiveWorkoutView: View {
         guard let currentExercise = activeWorkout.currentExercise,
               let reps = Int(repsInput),
               reps > 0 else { return }
+        
+        // Dismiss keyboard
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         
         activeWorkout.addBodyweightSet(
             exerciseId: currentExercise.exercise.id,
@@ -312,6 +331,10 @@ struct LiveWorkoutView: View {
         let minutes = seconds / 60
         let seconds = seconds % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    private func deleteSet(_ set: WorkoutSet) {
+        activeWorkout.deleteSet(set)
     }
     
     private func formatSetDisplay(_ set: WorkoutSet) -> String {
@@ -516,16 +539,45 @@ struct ExerciseTab: View {
     
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
     
-    var muscleGroupEmoji: String {
-        exerciseDataManager.getMuscleGroup(for: exercise.id)?.emoji ?? "💪"
+    var muscleGroupIcon: String {
+        guard let muscleGroup = exerciseDataManager.getMuscleGroup(for: exercise.id) else {
+            return "dumbbell.fill"
+        }
+        
+        switch muscleGroup.id {
+        case "chest": return "figure.strengthtraining.traditional"
+        case "back": return "figure.climbing"
+        case "legs": return "figure.walk"
+        case "core": return "scope"
+        case "arms": return "dumbbell.fill"
+        case "shoulders": return "arrow.up.and.down.and.arrow.left.and.right"
+        default: return "dumbbell.fill"
+        }
+    }
+    
+    var muscleGroupColor: Color {
+        guard let muscleGroup = exerciseDataManager.getMuscleGroup(for: exercise.id) else {
+            return .gray
+        }
+        
+        switch muscleGroup.id {
+        case "chest": return .red
+        case "back": return .blue
+        case "legs": return .green
+        case "core": return .orange
+        case "arms": return .purple
+        case "shoulders": return .pink
+        default: return .gray
+        }
     }
     
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                // Muscle group emoji
-                Text(muscleGroupEmoji)
-                    .font(.system(size: 16))
+                // Muscle group icon
+                Image(systemName: muscleGroupIcon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(isSelected ? .white : muscleGroupColor)
                 
                 // Exercise name
                 Text(exercise.name)

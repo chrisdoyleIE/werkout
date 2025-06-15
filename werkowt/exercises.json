@@ -35,6 +35,11 @@
           "id": "chest_dips",
           "name": "Chest Dips",
           "instructions": "Lean forward on dip bars, lower body, press up focusing on chest"
+        },
+        {
+          "id": "cable_flies",
+          "name": "Cable Flies",
+          "instructions": "Set cables at chest height, step forward, bring handles together in arc motion"
         }
       ]
     },
@@ -217,6 +222,12 @@
           "id": "leg_raises",
           "name": "Leg Raises",
           "instructions": "Lie down, raise straight legs up and lower slowly"
+        },
+        {
+          "id": "hanging_leg_raises",
+          "name": "Hanging Leg Raises",
+          "instructions": "Hang from pull-up bar, raise legs up to 90 degrees, lower with control",
+          "type": "bodyweight"
         },
         {
           "id": "mountain_climbers",

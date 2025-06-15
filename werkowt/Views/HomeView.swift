@@ -6,6 +6,7 @@ struct HomeView: View {
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
     @State private var showingWorkoutCreator = false
     @State private var showingLiveWorkout = false
+    @State private var showingClassLogger = false
     @State private var selectedDate = Date()
     @State private var selectedSession: WorkoutSession?
     
@@ -57,29 +58,54 @@ struct HomeView: View {
             
             Spacer()
             
-            // Start Workout Button
-            Button(action: {
-                showingWorkoutCreator = true
-            }) {
-                HStack {
-                    Image(systemName: "play.fill")
-                        .font(.title3)
-                    Text("NEW WORKOUT")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
-                .background(
-                    LinearGradient(
-                        colors: [Color.blue, Color.blue.opacity(0.8)],
-                        startPoint: .leading,
-                        endPoint: .trailing
+            // Action Buttons
+            VStack(spacing: 12) {
+                // Main Workout Button
+                Button(action: {
+                    showingWorkoutCreator = true
+                }) {
+                    HStack {
+                        Image(systemName: "play.fill")
+                            .font(.title3)
+                        Text("NEW WORKOUT")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.blue, Color.blue.opacity(0.8)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
                     )
-                )
-                .cornerRadius(16)
-                .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .cornerRadius(16)
+                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                
+                // Quick Log Class Button
+                Button(action: {
+                    showingClassLogger = true
+                }) {
+                    HStack {
+                        Image(systemName: "figure.strengthtraining.functional")
+                            .font(.title3)
+                        Text("LOG GYM CLASS")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(.blue)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                    )
+                }
             }
             .padding(.horizontal)
             .padding(.bottom, 32)
@@ -91,6 +117,9 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingWorkoutCreator) {
             WorkoutCreatorView()
+        }
+        .sheet(isPresented: $showingClassLogger) {
+            QuickClassLoggerView()
         }
         .sheet(item: $selectedSession) { session in
             WorkoutDetailView(session: session)
@@ -230,13 +259,20 @@ struct CalendarDayView: View {
                 
                 if let session = workoutSession, let preview = workoutPreview {
                     VStack(spacing: 1) {
-                        // Exercise count
-                        Text("\(preview.exerciseCount)")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 16, height: 10)
-                            .background(Color.white.opacity(0.3))
-                            .cornerRadius(5)
+                        // Exercise count or class indicator
+                        if preview.exerciseCount > 0 {
+                            Text("\(preview.exerciseCount)")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 16, height: 10)
+                                .background(Color.white.opacity(0.3))
+                                .cornerRadius(5)
+                        } else {
+                            // Show class icon for gym classes (0 exercises)
+                            Image(systemName: "figure.strengthtraining.functional")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                        }
                         
                         // Duration
                         if let duration = preview.duration {
@@ -256,7 +292,7 @@ struct CalendarDayView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(
                         workoutSession != nil ? 
-                        Color.green :
+                        (workoutPreview?.isGymClass == true ? Color.purple : Color.green) :
                         Color.clear
                     )
                     .overlay(
@@ -265,7 +301,9 @@ struct CalendarDayView: View {
                     )
             )
             .scaleEffect(workoutSession != nil ? 1.05 : 1.0)
-            .shadow(color: workoutSession != nil ? .green.opacity(0.3) : .clear, radius: 4, x: 0, y: 2)
+            .shadow(color: workoutSession != nil ? 
+                    (workoutPreview?.isGymClass == true ? Color.purple.opacity(0.3) : Color.green.opacity(0.3)) : 
+                    .clear, radius: 4, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(workoutSession == nil)
@@ -280,6 +318,7 @@ struct CalendarDayView: View {
         do {
             let sets = try await workoutDataManager.getSets(for: session.id)
             let uniqueExercises = Set(sets.map { $0.exerciseId })
+            let isGymClass = uniqueExercises.isEmpty
             
             let abbreviatedName = session.name.components(separatedBy: " ").compactMap { $0.first }.map(String.init).joined()
             
@@ -287,7 +326,8 @@ struct CalendarDayView: View {
                 workoutPreview = WorkoutPreviewData(
                     abbreviatedName: String(abbreviatedName.prefix(3)).uppercased(),
                     exerciseCount: uniqueExercises.count,
-                    duration: session.durationMinutes
+                    duration: session.durationMinutes,
+                    isGymClass: isGymClass
                 )
             }
         } catch {
@@ -300,6 +340,7 @@ struct WorkoutPreviewData {
     let abbreviatedName: String
     let exerciseCount: Int
     let duration: Int?
+    let isGymClass: Bool
 }
 
 struct WorkoutDetailView: View {
@@ -343,11 +384,34 @@ struct WorkoutDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         if sets.isEmpty {
-                            Text("No sets recorded")
-                                .font(.title3)
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 40)
+                            // Show class details for gym classes
+                            VStack(spacing: 20) {
+                                Image(systemName: "figure.strengthtraining.functional")
+                                    .font(.system(size: 48, weight: .light))
+                                    .foregroundColor(.purple)
+                                
+                                VStack(spacing: 8) {
+                                    Text(session.name)
+                                        .font(.title2)
+                                        .fontWeight(.bold)
+                                    
+                                    if let duration = session.durationMinutes {
+                                        Text("\(duration) minutes")
+                                            .font(.title3)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Text("Gym Class")
+                                        .font(.headline)
+                                        .foregroundColor(.purple)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color.purple.opacity(0.1))
+                                        .cornerRadius(20)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
                         } else {
                             ForEach(groupedSets.keys.sorted(), id: \.self) { exerciseId in
                                 if let exerciseSets = groupedSets[exerciseId] {

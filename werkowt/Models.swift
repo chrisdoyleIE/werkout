@@ -287,6 +287,44 @@ class ActiveWorkout: ObservableObject {
         addSetToExercise(newSet)
     }
     
+    func deleteSet(_ setToDelete: WorkoutSet) {
+        // Find the exercise and remove the set
+        if let exerciseIndex = exercises.firstIndex(where: { $0.exercise.id == setToDelete.exerciseId }) {
+            let updatedSets = exercises[exerciseIndex].sets.filter { $0.id != setToDelete.id }
+            
+            // Renumber the remaining sets
+            let renumberedSets = updatedSets.enumerated().map { index, set in
+                WorkoutSet(
+                    id: set.id,
+                    workoutSessionId: set.workoutSessionId,
+                    exerciseId: set.exerciseId,
+                    setNumber: index + 1, // Renumber starting from 1
+                    reps: set.reps,
+                    weightKg: set.weightKg,
+                    durationSeconds: set.durationSeconds,
+                    restSeconds: set.restSeconds,
+                    completedAt: set.completedAt
+                )
+            }
+            
+            exercises[exerciseIndex] = ExerciseWithSets(
+                exercise: exercises[exerciseIndex].exercise,
+                sets: renumberedSets,
+                isCompleted: exercises[exerciseIndex].isCompleted
+            )
+        }
+        
+        // Delete from Supabase in background
+        Task {
+            do {
+                try await WorkoutDataManager.shared.deleteSet(setToDelete)
+            } catch {
+                print("Failed to delete set from Supabase: \(error)")
+                // TODO: Add to pending sync queue for retry
+            }
+        }
+    }
+    
     private func addSetToExercise(_ newSet: WorkoutSet) {
         // Update UI immediately
         if let index = exercises.firstIndex(where: { $0.exercise.id == newSet.exerciseId }) {

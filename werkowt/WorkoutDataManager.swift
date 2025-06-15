@@ -60,6 +60,30 @@ class WorkoutDataManager: ObservableObject {
         await loadWorkoutSessions()
     }
     
+    func logGymClass(type: String, durationMinutes: Int) async throws {
+        let now = Date()
+        let endTime = now.addingTimeInterval(TimeInterval(durationMinutes * 60))
+        
+        let session = WorkoutSession(
+            id: UUID(),
+            userId: try await getCurrentUserId(),
+            name: "\(type) Class",
+            startedAt: now,
+            endedAt: endTime,
+            durationMinutes: durationMinutes,
+            createdAt: now
+        )
+        
+        try await supabase
+            .from("workout_sessions")
+            .insert(session)
+            .execute()
+        
+        await MainActor.run {
+            workoutSessions.insert(session, at: 0) // Add to beginning for chronological order
+        }
+    }
+    
     func loadWorkoutSessions() async {
         await MainActor.run { isLoading = true }
         
@@ -89,6 +113,14 @@ class WorkoutDataManager: ObservableObject {
         try await supabase
             .from("workout_sets")
             .insert(set)
+            .execute()
+    }
+    
+    func deleteSet(_ set: WorkoutSet) async throws {
+        try await supabase
+            .from("workout_sets")
+            .delete()
+            .eq("id", value: set.id)
             .execute()
     }
     
