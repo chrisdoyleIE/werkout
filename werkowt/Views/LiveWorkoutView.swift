@@ -8,6 +8,8 @@ struct LiveWorkoutView: View {
     
     @State private var weightInput: String = ""
     @State private var repsInput: String = ""
+    @State private var durationInput: String = ""
+    @State private var exerciseTimer: ExerciseTimer = ExerciseTimer()
     @State private var lastWorkoutSets: [WorkoutSet] = []
     @State private var showingFinishConfirmation = false
     
@@ -78,7 +80,7 @@ struct LiveWorkoutView: View {
                                     .foregroundColor(.secondary)
                                 
                                 ForEach(lastWorkoutSets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
-                                    Text("Set \(set.setNumber): \(String(format: "%.1f", set.weightKg))kg × \(set.reps)")
+                                    Text("Set \(set.setNumber): \(formatSetDisplay(set))")
                                         .font(.title3)
                                         .fontWeight(.medium)
                                 }
@@ -98,7 +100,7 @@ struct LiveWorkoutView: View {
                                     .foregroundColor(.primary)
                                 
                                 ForEach(currentExercise.sets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
-                                    Text("Set \(set.setNumber): \(String(format: "%.1f", set.weightKg))kg × \(set.reps)")
+                                    Text("Set \(set.setNumber): \(formatSetDisplay(set))")
                                         .font(.title3)
                                         .fontWeight(.medium)
                                 }
@@ -109,7 +111,7 @@ struct LiveWorkoutView: View {
                             .cornerRadius(8)
                         }
                         
-                        // Manual input
+                        // Exercise Input
                         VStack(spacing: 16) {
                             // Rest Timer Display
                             if activeWorkout.restTimer.isRunning {
@@ -163,39 +165,17 @@ struct LiveWorkoutView: View {
                                 .cornerRadius(12)
                             }
                             
-                            HStack(spacing: 20) {
-                                VStack {
-                                    Text("Weight (kg)")
-                                        .font(.headline)
-                                    TextField("0.0", text: $weightInput)
-                                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                                        .keyboardType(.decimalPad)
-                                        .font(.title2)
-                                        .multilineTextAlignment(.center)
-                                }
-                                
-                                VStack {
-                                    Text("Reps")
-                                        .font(.headline)
-                                    TextField("reps", text: $repsInput)
-                                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                                        .keyboardType(.numberPad)
-                                        .font(.title2)
-                                        .multilineTextAlignment(.center)
+                            // Exercise Type Specific Input
+                            if let currentExercise = activeWorkout.currentExercise {
+                                switch currentExercise.exercise.type {
+                                case .weight:
+                                    weightExerciseInput()
+                                case .bodyweight:
+                                    bodyweightExerciseInput()
+                                case .timed:
+                                    timedExerciseInput()
                                 }
                             }
-                            
-                            Button("ADD SET") {
-                                addSet()
-                            }
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(canAddSet ? Color.blue : Color.gray)
-                            .cornerRadius(8)
-                            .disabled(!canAddSet)
                             
                             // Rest Timer Controls (when not already running)
                             if !activeWorkout.restTimer.isRunning && activeWorkout.restTimer.timeRemaining == 0 {
@@ -267,6 +247,21 @@ struct LiveWorkoutView: View {
         return weight > 0 && reps > 0
     }
     
+    private var canAddBodyweightSet: Bool {
+        guard let reps = Int(repsInput) else { return false }
+        return reps > 0
+    }
+    
+    private var canAddTimedSet: Bool {
+        guard let duration = Int(durationInput) else { return false }
+        return duration > 0
+    }
+    
+    private var canStartTimer: Bool {
+        guard let duration = Int(durationInput) else { return false }
+        return duration > 0
+    }
+    
     private func addSet() {
         guard let currentExercise = activeWorkout.currentExercise,
               let weight = Double(weightInput),
@@ -285,6 +280,71 @@ struct LiveWorkoutView: View {
     private func clearInputs() {
         weightInput = ""
         repsInput = ""
+        durationInput = ""
+    }
+    
+    private func addBodyweightSet() {
+        guard let currentExercise = activeWorkout.currentExercise,
+              let reps = Int(repsInput),
+              reps > 0 else { return }
+        
+        activeWorkout.addBodyweightSet(
+            exerciseId: currentExercise.exercise.id,
+            reps: reps
+        )
+        
+        clearInputs()
+    }
+    
+    private func addTimedSet() {
+        let duration = exerciseTimer.totalDuration - exerciseTimer.timeRemaining
+        addTimedSetWithDuration(duration)
+        exerciseTimer.stop()
+    }
+    
+    private func addTimedSetManual() {
+        guard let duration = Int(durationInput),
+              duration > 0 else { return }
+        
+        addTimedSetWithDuration(duration)
+        clearInputs()
+    }
+    
+    private func addTimedSetWithDuration(_ duration: Int) {
+        guard let currentExercise = activeWorkout.currentExercise else { return }
+        
+        activeWorkout.addTimedSet(
+            exerciseId: currentExercise.exercise.id,
+            durationSeconds: duration
+        )
+    }
+    
+    private func startExerciseTimer() {
+        guard let duration = Int(durationInput),
+              duration > 0 else { return }
+        
+        exerciseTimer.start(duration: duration)
+    }
+    
+    private func formatSetDisplay(_ set: WorkoutSet) -> String {
+        if let weight = set.weightKg, let reps = set.reps {
+            // Weight-based exercise
+            return "\(String(format: "%.1f", weight))kg × \(reps)"
+        } else if let reps = set.reps {
+            // Bodyweight exercise
+            return "\(reps) reps"
+        } else if let duration = set.durationSeconds {
+            // Timed exercise
+            let minutes = duration / 60
+            let seconds = duration % 60
+            if minutes > 0 {
+                return "\(minutes)m \(seconds)s"
+            } else {
+                return "\(seconds)s"
+            }
+        } else {
+            return "Unknown"
+        }
     }
     
     private func loadLastWorkoutData() {
@@ -316,6 +376,222 @@ struct LiveWorkoutView: View {
         let minutes = elapsed / 60
         let seconds = elapsed % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    // MARK: - Exercise Input Methods
+    
+    @ViewBuilder
+    private func weightExerciseInput() -> some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Weight (kg)")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    TextField("0", text: $weightInput)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.decimalPad)
+                        .font(.title2)
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Reps")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    TextField("0", text: $repsInput)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.numberPad)
+                        .font(.title2)
+                }
+            }
+            
+            Button(action: addSet) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title3)
+                    Text("Add Set")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(canAddSet ? Color.green : Color.gray)
+                .cornerRadius(12)
+            }
+            .disabled(!canAddSet)
+        }
+    }
+    
+    @ViewBuilder
+    private func bodyweightExerciseInput() -> some View {
+        VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Reps")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
+                TextField("0", text: $repsInput)
+                    .textFieldStyle(.roundedBorder)
+                    .keyboardType(.numberPad)
+                    .font(.title2)
+            }
+            
+            Button(action: addBodyweightSet) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title3)
+                    Text("Add Set")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(canAddBodyweightSet ? Color.green : Color.gray)
+                .cornerRadius(12)
+            }
+            .disabled(!canAddBodyweightSet)
+        }
+    }
+    
+    @ViewBuilder
+    private func timedExerciseInput() -> some View {
+        VStack(spacing: 16) {
+            // Exercise Timer Display
+            if exerciseTimer.isRunning {
+                VStack(spacing: 12) {
+                    Text("EXERCISE TIMER")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.orange)
+                    
+                    Text(exerciseTimer.formattedTime)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                        .foregroundColor(.orange)
+                    
+                    HStack(spacing: 16) {
+                        Button("Pause") {
+                            exerciseTimer.pause()
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button("Stop & Record") {
+                            addTimedSet()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.green)
+                    }
+                }
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
+            } else if exerciseTimer.timeRemaining > 0 {
+                VStack(spacing: 12) {
+                    Text("EXERCISE PAUSED")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.orange)
+                    
+                    Text(exerciseTimer.formattedTime)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                        .foregroundColor(.orange)
+                    
+                    HStack(spacing: 16) {
+                        Button("Resume") {
+                            exerciseTimer.resume()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
+                        
+                        Button("Stop & Record") {
+                            addTimedSet()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.green)
+                    }
+                }
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
+            } else {
+                // Manual duration input or timer controls
+                VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Target Duration (seconds)")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.secondary)
+                        
+                        TextField("30", text: $durationInput)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.numberPad)
+                            .font(.title2)
+                    }
+                    
+                    HStack(spacing: 12) {
+                        Button("30s") {
+                            durationInput = "30"
+                            exerciseTimer.start(duration: 30)
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button("60s") {
+                            durationInput = "60"
+                            exerciseTimer.start(duration: 60)
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button("90s") {
+                            durationInput = "90"
+                            exerciseTimer.start(duration: 90)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    
+                    Button(action: startExerciseTimer) {
+                        HStack {
+                            Image(systemName: "timer")
+                                .font(.title3)
+                            Text("Start Timer")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(canStartTimer ? Color.orange : Color.gray)
+                        .cornerRadius(12)
+                    }
+                    .disabled(!canStartTimer)
+                    
+                    Button(action: addTimedSetManual) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                            Text("Record Duration")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(canAddTimedSet ? Color.green : Color.gray)
+                        .cornerRadius(12)
+                    }
+                    .disabled(!canAddTimedSet)
+                }
+            }
+        }
     }
 }
 

@@ -28,7 +28,8 @@
         {
           "id": "push_ups",
           "name": "Push-ups",
-          "instructions": "Hands shoulder-width apart, lower chest to ground, push up"
+          "instructions": "Hands shoulder-width apart, lower chest to ground, push up",
+          "type": "bodyweight"
         },
         {
           "id": "chest_dips",
@@ -45,7 +46,8 @@
         {
           "id": "pull_ups",
           "name": "Pull-ups",
-          "instructions": "Hang from bar, pull body up until chin over bar"
+          "instructions": "Hang from bar, pull body up until chin over bar",
+          "type": "bodyweight"
         },
         {
           "id": "barbell_rows",
@@ -198,7 +200,8 @@
         {
           "id": "planks",
           "name": "Planks",
-          "instructions": "Hold push-up position, keep body straight"
+          "instructions": "Hold push-up position, keep body straight",
+          "type": "timed"
         },
         {
           "id": "crunches",

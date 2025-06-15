@@ -17,21 +17,46 @@ struct WorkoutCreatorView: View {
                     // Header
                     VStack(spacing: 8) {
                         if !selectedMuscleGroups.isEmpty {
-                            Text(generatedWorkoutName)
-                                .font(.largeTitle)
-                                .fontWeight(.black)
-                                .foregroundColor(.blue)
-                                .multilineTextAlignment(.center)
+                            VStack(spacing: 4) {
+                                Text("Your Workout")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                                    .textCase(.uppercase)
+                                    .tracking(1)
+                                
+                                Text(generatedWorkoutName)
+                                    .font(.largeTitle)
+                                    .fontWeight(.black)
+                                    .foregroundColor(.blue)
+                                    .multilineTextAlignment(.center)
+                            }
                         } else {
-                            Text("Choose Muscle Groups")
-                                .font(.largeTitle)
-                                .fontWeight(.black)
+                            VStack(spacing: 4) {
+                                Text("Create Workout")
+                                    .font(.largeTitle)
+                                    .fontWeight(.black)
+                                
+                                Text("Select muscle groups to target")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         
                         if selectedExercises.count > 0 {
-                            Text("\(selectedExercises.count) exercise\(selectedExercises.count == 1 ? "" : "s") selected")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                            HStack(spacing: 6) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.caption)
+                                
+                                Text("\(selectedExercises.count) exercise\(selectedExercises.count == 1 ? "" : "s") ready")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.green)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.green.opacity(0.1))
+                            .cornerRadius(12)
                         }
                     }
                     .padding(.top)
@@ -60,7 +85,7 @@ struct WorkoutCreatorView: View {
                     if !selectedMuscleGroups.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
-                                Text("Select Exercises")
+                                Text("Choose Your Exercises")
                                     .font(.title2)
                                     .fontWeight(.bold)
                                 
@@ -110,7 +135,7 @@ struct WorkoutCreatorView: View {
                                     Image(systemName: "play.fill")
                                         .font(.title3)
                                 }
-                                Text(isCreatingWorkout ? "Starting..." : "Start Workout")
+                                Text(isCreatingWorkout ? "Starting..." : "Start \(generatedWorkoutName)")
                                     .font(.title3)
                                     .fontWeight(.bold)
                             }
@@ -212,12 +237,43 @@ struct MuscleGroupCard: View {
     let exerciseCount: Int
     let action: () -> Void
     
+    var muscleGroupIcon: String {
+        switch muscleGroup.id {
+        case "chest": return "figure.strengthtraining.traditional"
+        case "back": return "figure.climbing"
+        case "legs": return "figure.walk"
+        case "core": return "scope"
+        case "arms": return "dumbbell.fill"
+        case "shoulders": return "arrow.up.and.down.and.arrow.left.and.right"
+        default: return "dumbbell.fill"
+        }
+    }
+    
+    var muscleGroupColor: Color {
+        switch muscleGroup.id {
+        case "chest": return .blue
+        case "back": return .blue
+        case "legs": return .blue
+        case "core": return .blue
+        case "arms": return .blue
+        case "shoulders": return .blue
+        default: return .gray
+        }
+    }
+    
     var body: some View {
         Button(action: action) {
             VStack(spacing: 12) {
-                // Emoji
-                Text(muscleGroup.emoji)
-                    .font(.system(size: 40))
+                // Icon in colored circle
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? Color.white.opacity(0.2) : muscleGroupColor.opacity(0.1))
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: muscleGroupIcon)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(isSelected ? .white : muscleGroupColor)
+                }
                 
                 // Name
                 Text(muscleGroup.name)
@@ -235,17 +291,17 @@ struct MuscleGroupCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(isSelected ? 
-                          LinearGradient(colors: [Color.blue, Color.blue.opacity(0.8)], 
+                          LinearGradient(colors: [muscleGroupColor, muscleGroupColor.opacity(0.8)], 
                                        startPoint: .topLeading, endPoint: .bottomTrailing) :
                           LinearGradient(colors: [Color(.systemGray6)], 
                                        startPoint: .topLeading, endPoint: .bottomTrailing))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? muscleGroupColor.opacity(0.3) : Color.clear, lineWidth: 2)
             )
             .scaleEffect(isSelected ? 1.02 : 1.0)
-            .shadow(color: isSelected ? .blue.opacity(0.2) : .clear, radius: 8, x: 0, y: 4)
+            .shadow(color: isSelected ? muscleGroupColor.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
     }

@@ -153,10 +153,13 @@ class WorkoutDataManager: ObservableObject {
     }
     
     func checkAndUpdatePersonalRecord(for set: WorkoutSet) async throws {
+        // Only process personal records for weight-based exercises
+        guard let weight = set.weightKg, let reps = set.reps else { return }
+        
         let userId = try await getCurrentUserId()
         
         // Calculate the estimated 1RM using Epley formula: weight * (1 + reps/30)
-        let estimated1RM = set.weightKg * (1 + Double(set.reps) / 30.0)
+        let estimated1RM = weight * (1 + Double(reps) / 30.0)
         
         do {
             let existingPR = try await getPersonalRecord(for: set.exerciseId)
@@ -169,16 +172,16 @@ class WorkoutDataManager: ObservableObject {
                 if estimated1RM > existing1RM {
                     try await updatePersonalRecord(
                         exerciseId: set.exerciseId,
-                        weight: set.weightKg,
-                        reps: set.reps
+                        weight: weight,
+                        reps: reps
                     )
                 }
             } else {
                 // No existing PR, create new one
                 try await createPersonalRecord(
                     exerciseId: set.exerciseId,
-                    weight: set.weightKg,
-                    reps: set.reps
+                    weight: weight,
+                    reps: reps
                 )
             }
         } catch {

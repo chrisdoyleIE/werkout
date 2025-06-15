@@ -19,10 +19,32 @@ enum WorkoutError: Error, LocalizedError {
 }
 
 // MARK: - Exercise Data Models
+enum ExerciseType: String, Codable, CaseIterable {
+    case weight = "weight"        // Exercises with weight + reps (bench press, squats)
+    case bodyweight = "bodyweight" // Exercises with just reps (push-ups, pull-ups)
+    case timed = "timed"          // Exercises with duration (planks, wall sits)
+}
+
 struct Exercise: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let instructions: String
+    let type: ExerciseType
+    
+    // For backwards compatibility with existing JSON
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        instructions = try container.decode(String.self, forKey: .instructions)
+        
+        // Default to weight if type not specified
+        type = try container.decodeIfPresent(ExerciseType.self, forKey: .type) ?? .weight
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, instructions, type
+    }
 }
 
 struct MuscleGroup: Codable, Identifiable, Hashable {
@@ -61,10 +83,24 @@ struct WorkoutSet: Codable, Identifiable {
     let workoutSessionId: UUID
     let exerciseId: String
     let setNumber: Int
-    let reps: Int
-    let weightKg: Double
+    let reps: Int?              // Optional for timed exercises
+    let weightKg: Double?       // Optional for bodyweight/timed exercises  
+    let durationSeconds: Int?   // For timed exercises
     let restSeconds: Int?
     let completedAt: Date
+    
+    init(id: UUID, workoutSessionId: UUID, exerciseId: String, setNumber: Int, 
+         reps: Int?, weightKg: Double?, durationSeconds: Int?, restSeconds: Int?, completedAt: Date) {
+        self.id = id
+        self.workoutSessionId = workoutSessionId
+        self.exerciseId = exerciseId
+        self.setNumber = setNumber
+        self.reps = reps
+        self.weightKg = weightKg
+        self.durationSeconds = durationSeconds
+        self.restSeconds = restSeconds
+        self.completedAt = completedAt
+    }
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -73,8 +109,31 @@ struct WorkoutSet: Codable, Identifiable {
         case setNumber = "set_number"
         case reps
         case weightKg = "weight_kg"
+        case durationSeconds = "duration_seconds"
         case restSeconds = "rest_seconds"
         case completedAt = "completed_at"
+    }
+    
+    // Convenience initializers for different exercise types
+    static func weightSet(id: UUID = UUID(), workoutSessionId: UUID, exerciseId: String, 
+                         setNumber: Int, reps: Int, weightKg: Double) -> WorkoutSet {
+        WorkoutSet(id: id, workoutSessionId: workoutSessionId, exerciseId: exerciseId,
+                  setNumber: setNumber, reps: reps, weightKg: weightKg, 
+                  durationSeconds: nil, restSeconds: nil, completedAt: Date())
+    }
+    
+    static func bodyweightSet(id: UUID = UUID(), workoutSessionId: UUID, exerciseId: String,
+                             setNumber: Int, reps: Int) -> WorkoutSet {
+        WorkoutSet(id: id, workoutSessionId: workoutSessionId, exerciseId: exerciseId,
+                  setNumber: setNumber, reps: reps, weightKg: nil,
+                  durationSeconds: nil, restSeconds: nil, completedAt: Date())
+    }
+    
+    static func timedSet(id: UUID = UUID(), workoutSessionId: UUID, exerciseId: String,
+                        setNumber: Int, durationSeconds: Int) -> WorkoutSet {
+        WorkoutSet(id: id, workoutSessionId: workoutSessionId, exerciseId: exerciseId,
+                  setNumber: setNumber, reps: nil, weightKg: nil,
+                  durationSeconds: durationSeconds, restSeconds: nil, completedAt: Date())
     }
 }
 
@@ -113,7 +172,19 @@ struct PreviousSessionData {
     let sessionDate: Date
     
     var formattedSets: String {
-        return sets.map { "\(String(format: "%.1f", $0.weightKg))kg×\($0.reps)" }.joined(separator: ", ")
+        return sets.map { set in
+            if let weight = set.weightKg, let reps = set.reps {
+                return "\(String(format: "%.1f", weight))kg×\(reps)"
+            } else if let reps = set.reps {
+                return "\(reps) reps"
+            } else if let duration = set.durationSeconds {
+                let minutes = duration / 60
+                let seconds = duration % 60
+                return minutes > 0 ? "\(minutes)m \(seconds)s" : "\(seconds)s"
+            } else {
+                return "Unknown"
+            }
+        }.joined(separator: ", ")
     }
 }
 
@@ -176,19 +247,53 @@ class ActiveWorkout: ObservableObject {
         
         let setNumber = (exercises.first { $0.exercise.id == exerciseId }?.sets.count ?? 0) + 1
         
-        let newSet = WorkoutSet(
-            id: UUID(),
+        let newSet = WorkoutSet.weightSet(
             workoutSessionId: sessionId,
             exerciseId: exerciseId,
             setNumber: setNumber,
             reps: reps,
-            weightKg: weight,
-            restSeconds: nil,
-            completedAt: Date()
+            weightKg: weight
         )
         
+        addSetToExercise(newSet)
+        restTimer.start(duration: 120) // 2 minute default rest
+    }
+    
+    func addBodyweightSet(exerciseId: String, reps: Int) {
+        guard let sessionId = session?.id else { return }
+        
+        let setNumber = (exercises.first { $0.exercise.id == exerciseId }?.sets.count ?? 0) + 1
+        
+        let newSet = WorkoutSet.bodyweightSet(
+            workoutSessionId: sessionId,
+            exerciseId: exerciseId,
+            setNumber: setNumber,
+            reps: reps
+        )
+        
+        addSetToExercise(newSet)
+        restTimer.start(duration: 90) // 1.5 minute default rest for bodyweight
+    }
+    
+    func addTimedSet(exerciseId: String, durationSeconds: Int) {
+        guard let sessionId = session?.id else { return }
+        
+        let setNumber = (exercises.first { $0.exercise.id == exerciseId }?.sets.count ?? 0) + 1
+        
+        let newSet = WorkoutSet.timedSet(
+            workoutSessionId: sessionId,
+            exerciseId: exerciseId,
+            setNumber: setNumber,
+            durationSeconds: durationSeconds
+        )
+        
+        addSetToExercise(newSet)
+        restTimer.start(duration: 60) // 1 minute default rest for timed exercises
+    }
+    
+    private func addSetToExercise(_ newSet: WorkoutSet) {
         // Update UI immediately
-        if let index = exercises.firstIndex(where: { $0.exercise.id == exerciseId }) {
+        if let index = exercises.firstIndex(where: { $0.exercise.id == newSet.exerciseId }) {
             exercises[index] = ExerciseWithSets(
                 exercise: exercises[index].exercise,
                 sets: exercises[index].sets + [newSet],
@@ -200,15 +305,15 @@ class ActiveWorkout: ObservableObject {
         Task {
             do {
                 try await WorkoutDataManager.shared.addSet(newSet)
-                // Check and update personal records
-                try await WorkoutDataManager.shared.checkAndUpdatePersonalRecord(for: newSet)
+                // Check and update personal records for weight-based exercises
+                if newSet.weightKg != nil {
+                    try await WorkoutDataManager.shared.checkAndUpdatePersonalRecord(for: newSet)
+                }
             } catch {
                 print("Failed to save set to Supabase: \(error)")
                 // TODO: Add to pending sync queue
             }
         }
-        
-        restTimer.start(duration: 120) // 2 minute default rest
     }
     
     func finishWorkout() {
@@ -265,6 +370,73 @@ class RestTimer: ObservableObject {
         timer = nil
         isRunning = false
         timeRemaining = 0
+    }
+    
+    func pause() {
+        timer?.invalidate()
+        timer = nil
+        isRunning = false
+    }
+    
+    func resume() {
+        guard timeRemaining > 0 else { return }
+        
+        isRunning = true
+        
+        timer = Timer(timeInterval: 1.0, repeats: true) { _ in
+            DispatchQueue.main.async {
+                if self.timeRemaining > 0 {
+                    self.timeRemaining -= 1
+                } else {
+                    self.stop()
+                }
+            }
+        }
+        
+        RunLoop.main.add(timer!, forMode: .common)
+    }
+    
+    var formattedTime: String {
+        let minutes = timeRemaining / 60
+        let seconds = timeRemaining % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+// MARK: - Exercise Timer
+class ExerciseTimer: ObservableObject {
+    @Published var timeRemaining: Int = 0
+    @Published var isRunning: Bool = false
+    
+    private var timer: Timer?
+    private(set) var totalDuration: Int = 0
+    
+    func start(duration: Int) {
+        stop()
+        
+        totalDuration = duration
+        timeRemaining = duration
+        isRunning = true
+        
+        timer = Timer(timeInterval: 1.0, repeats: true) { _ in
+            DispatchQueue.main.async {
+                if self.timeRemaining > 0 {
+                    self.timeRemaining -= 1
+                } else {
+                    self.stop()
+                }
+            }
+        }
+        
+        RunLoop.main.add(timer!, forMode: .common)
+    }
+    
+    func stop() {
+        timer?.invalidate()
+        timer = nil
+        isRunning = false
+        timeRemaining = 0
+        totalDuration = 0
     }
     
     func pause() {
