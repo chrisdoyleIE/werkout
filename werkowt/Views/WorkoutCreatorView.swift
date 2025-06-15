@@ -5,7 +5,6 @@ struct WorkoutCreatorView: View {
     @EnvironmentObject var activeWorkout: ActiveWorkout
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
     
-    @State private var workoutName = ""
     @State private var selectedExercises: Set<String> = []
     @State private var selectedMuscleGroups: Set<String> = []
     @State private var isCreatingWorkout = false
@@ -13,70 +12,39 @@ struct WorkoutCreatorView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Workout Name
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("1. Name Your Workout")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        if !workoutName.isEmpty {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                        }
-                    }
-                    
-                    TextField("e.g., Chest & Triceps", text: $workoutName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    if workoutName.isEmpty {
-                        Text("Give your workout a descriptive name")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding()
-                
-                Divider()
-                
-                // Muscle Group Selection
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("2. Choose Muscle Groups")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header
+                    VStack(spacing: 8) {
                         if !selectedMuscleGroups.isEmpty {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                            Text(generatedWorkoutName)
+                                .font(.largeTitle)
+                                .fontWeight(.black)
+                                .foregroundColor(.blue)
+                                .multilineTextAlignment(.center)
+                        } else {
+                            Text("Choose Muscle Groups")
+                                .font(.largeTitle)
+                                .fontWeight(.black)
+                        }
+                        
+                        if selectedExercises.count > 0 {
+                            Text("\(selectedExercises.count) exercise\(selectedExercises.count == 1 ? "" : "s") selected")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.top)
                     
-                    if selectedMuscleGroups.isEmpty {
-                        Text("Tap muscle groups to filter exercises (select multiple)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                    } else {
-                        Text("Selected: \(selectedMuscleGroups.count) muscle group\(selectedMuscleGroups.count == 1 ? "" : "s")")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                            .padding(.horizontal)
-                    }
-                    
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(exerciseDataManager.muscleGroups, id: \.id) { muscleGroup in
-                                MuscleGroupChip(
-                                    muscleGroup: muscleGroup,
-                                    isSelected: selectedMuscleGroups.contains(muscleGroup.id)
-                                ) {
+                    // Muscle Group Grid
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                        ForEach(exerciseDataManager.muscleGroups, id: \.id) { muscleGroup in
+                            MuscleGroupCard(
+                                muscleGroup: muscleGroup,
+                                isSelected: selectedMuscleGroups.contains(muscleGroup.id),
+                                exerciseCount: muscleGroup.exercises.count
+                            ) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     if selectedMuscleGroups.contains(muscleGroup.id) {
                                         selectedMuscleGroups.remove(muscleGroup.id)
                                     } else {
@@ -85,136 +53,101 @@ struct WorkoutCreatorView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal)
-                    }
-                }
-                .padding(.vertical)
-                
-                Divider()
-                
-                // Exercise Selection
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("3. Select Exercises")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        if !selectedExercises.isEmpty {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                        }
                     }
                     .padding(.horizontal)
                     
-                    HStack {
-                        if selectedExercises.isEmpty {
-                            Text("Choose exercises for your workout")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("\(selectedExercises.count) exercise\(selectedExercises.count == 1 ? "" : "s") selected")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
-                        
-                        Spacer()
-                        
-                        if !selectedExercises.isEmpty {
-                            Button("Clear All") {
-                                selectedExercises.removeAll()
-                            }
-                            .font(.caption)
-                            .foregroundColor(.red)
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            if filteredExercises.isEmpty && !selectedMuscleGroups.isEmpty {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "questionmark.circle")
-                                        .font(.largeTitle)
-                                        .foregroundColor(.secondary)
-                                    Text("No exercises found")
-                                        .font(.headline)
-                                        .foregroundColor(.secondary)
-                                    Text("Try selecting different muscle groups")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                    // Exercise Selection (only show if muscle groups selected)
+                    if !selectedMuscleGroups.isEmpty {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Text("Select Exercises")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                
+                                Spacer()
+                                
+                                if !selectedExercises.isEmpty {
+                                    Button("Clear All") {
+                                        withAnimation(.easeInOut) {
+                                            selectedExercises.removeAll()
+                                        }
+                                    }
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 40)
-                            } else {
+                            }
+                            .padding(.horizontal)
+                            
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 1), spacing: 8) {
                                 ForEach(filteredExercises, id: \.id) { exercise in
-                                    ExerciseSelectionRow(
+                                    ExerciseCard(
                                         exercise: exercise,
                                         isSelected: selectedExercises.contains(exercise.id)
                                     ) {
-                                        if selectedExercises.contains(exercise.id) {
-                                            selectedExercises.remove(exercise.id)
-                                        } else {
-                                            selectedExercises.insert(exercise.id)
+                                        withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                                            if selectedExercises.contains(exercise.id) {
+                                                selectedExercises.remove(exercise.id)
+                                            } else {
+                                                selectedExercises.insert(exercise.id)
+                                            }
                                         }
                                     }
                                 }
                             }
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
                     }
-                }
                 
-                // Start Button
-                VStack(spacing: 8) {
+                    // Start Button (floating at bottom)
+                    if canStartWorkout {
+                        Button(action: startWorkout) {
+                            HStack {
+                                if isCreatingWorkout {
+                                    SwiftUI.ProgressView()
+                                        .scaleEffect(0.8)
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "play.fill")
+                                        .font(.title3)
+                                }
+                                Text(isCreatingWorkout ? "Starting..." : "Start Workout")
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.blue, Color.blue.opacity(0.8)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(16)
+                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                        }
+                        .disabled(isCreatingWorkout)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                    }
+                    
                     if !errorMessage.isEmpty {
-                        Text("❌ \(errorMessage)")
+                        Text(errorMessage)
                             .font(.caption)
                             .foregroundColor(.red)
                             .multilineTextAlignment(.center)
-                    } else if !canStartWorkout {
-                        if workoutName.isEmpty {
-                            Text("⚠️ Add a workout name to continue")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        } else if selectedExercises.isEmpty {
-                            Text("⚠️ Select at least one exercise to continue")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
+                            .padding(.horizontal)
                     }
-                    
-                    Button(action: startWorkout) {
-                        HStack {
-                            if isCreatingWorkout {
-                                SwiftUI.ProgressView()
-                                    .scaleEffect(0.8)
-                                    .foregroundColor(.white)
-                            } else {
-                                Image(systemName: "play.fill")
-                            }
-                            Text(isCreatingWorkout ? "CREATING..." : "START WORKOUT")
-                                .fontWeight(.bold)
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(canStartWorkout && !isCreatingWorkout ? Color.green : Color.gray)
-                        .cornerRadius(12)
-                    }
-                    .disabled(!canStartWorkout || isCreatingWorkout)
                 }
-                .padding()
             }
-            .navigationTitle("New Workout")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .font(.headline)
                 }
             }
         }
@@ -230,8 +163,24 @@ struct WorkoutCreatorView: View {
         }
     }
     
+    private var generatedWorkoutName: String {
+        let selectedGroupNames = selectedMuscleGroups.compactMap { groupId in
+            exerciseDataManager.muscleGroups.first { $0.id == groupId }?.name
+        }.sorted()
+        
+        if selectedGroupNames.isEmpty {
+            return "Custom Workout"
+        } else if selectedGroupNames.count == 1 {
+            return "\(selectedGroupNames[0]) Day"
+        } else if selectedGroupNames.count == 2 {
+            return "\(selectedGroupNames.joined(separator: " & "))"
+        } else {
+            return "\(selectedGroupNames.prefix(2).joined(separator: " & ")) + \(selectedGroupNames.count - 2) more"
+        }
+    }
+    
     private var canStartWorkout: Bool {
-        !workoutName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !selectedExercises.isEmpty
+        !selectedExercises.isEmpty
     }
     
     private func startWorkout() {
@@ -242,7 +191,7 @@ struct WorkoutCreatorView: View {
         
         Task {
             do {
-                try await activeWorkout.startWorkout(name: workoutName, exercises: exercises)
+                try await activeWorkout.startWorkout(name: generatedWorkoutName, exercises: exercises)
                 
                 await MainActor.run {
                     isCreatingWorkout = false
@@ -257,57 +206,83 @@ struct WorkoutCreatorView: View {
     }
 }
 
-struct MuscleGroupChip: View {
+struct MuscleGroupCard: View {
     let muscleGroup: MuscleGroup
     let isSelected: Bool
+    let exerciseCount: Int
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            VStack(spacing: 12) {
+                // Emoji
                 Text(muscleGroup.emoji)
+                    .font(.system(size: 40))
+                
+                // Name
                 Text(muscleGroup.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(isSelected ? .white : .primary)
+                
+                // Exercise count
+                Text("\(exerciseCount) exercises")
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(isSelected ? Color.blue : Color(.systemGray6))
-            .foregroundColor(isSelected ? .white : .primary)
-            .cornerRadius(20)
+            .frame(maxWidth: .infinity)
+            .frame(height: 120)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSelected ? 
+                          LinearGradient(colors: [Color.blue, Color.blue.opacity(0.8)], 
+                                       startPoint: .topLeading, endPoint: .bottomTrailing) :
+                          LinearGradient(colors: [Color(.systemGray6)], 
+                                       startPoint: .topLeading, endPoint: .bottomTrailing))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 2)
+            )
+            .scaleEffect(isSelected ? 1.02 : 1.0)
+            .shadow(color: isSelected ? .blue.opacity(0.2) : .clear, radius: 8, x: 0, y: 4)
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
-struct ExerciseSelectionRow: View {
+struct ExerciseCard: View {
     let exercise: Exercise
     let isSelected: Bool
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(exercise.name)
-                        .font(.headline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                    
-                    Text(exercise.instructions)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                }
-                
-                Spacer()
-                
+            HStack(spacing: 16) {
+                // Selection indicator
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
-                    .foregroundColor(isSelected ? .blue : .secondary)
+                    .foregroundColor(isSelected ? .white : .secondary)
+                
+                // Exercise name
+                Text(exercise.name)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isSelected ? .white : .primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Arrow or check
+                Image(systemName: "chevron.right")
+                    .font(.subheadline)
+                    .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(10)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.blue : Color(.systemGray6))
+            )
+            .scaleEffect(isSelected ? 1.02 : 1.0)
         }
         .buttonStyle(PlainButtonStyle())
     }

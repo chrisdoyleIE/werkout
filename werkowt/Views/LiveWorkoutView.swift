@@ -6,67 +6,251 @@ struct LiveWorkoutView: View {
     @EnvironmentObject var workoutDataManager: WorkoutDataManager
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
     
-    @State private var currentWeight: Double = 0
-    @State private var currentReps: Int = 0
-    @State private var previousSessionData: PreviousSessionData?
+    @State private var weightInput: String = ""
+    @State private var repsInput: String = ""
+    @State private var lastWorkoutSets: [WorkoutSet] = []
     @State private var showingFinishConfirmation = false
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header with timer and workout name
-                HeaderView()
-                
-                // Exercise selector
-                ExerciseListView()
-                
-                Divider()
-                
-                // Current exercise details
-                if let currentExercise = activeWorkout.currentExercise {
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            CurrentExerciseView(
-                                exercise: currentExercise,
-                                previousData: previousSessionData
-                            )
-                            
-                            SetInputView(
-                                weight: $currentWeight,
-                                reps: $currentReps,
-                                onAddSet: addCurrentSet
-                            )
-                            
-                            RestTimerView()
-                            
-                            NavigationButtonsView()
-                        }
-                        .padding()
-                    }
-                } else {
-                    Spacer()
-                    Text("No exercises selected")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+        VStack(spacing: 0) {
+            // Header with workout info
+            VStack(spacing: 8) {
+                HStack {
                     Button("Finish") {
                         showingFinishConfirmation = true
                     }
+                    .font(.headline)
+                    
+                    Spacer()
+                    
+                    Text(activeWorkout.session?.name ?? "Workout")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Spacer()
+                    
+                    Text(formatElapsedTime())
+                        .font(.headline)
+                        .monospacedDigit()
                 }
+                
+                // Exercise navigation tabs
+                if !activeWorkout.exercises.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(Array(activeWorkout.exercises.enumerated()), id: \.offset) { index, exerciseWithSets in
+                                ExerciseTab(
+                                    exercise: exerciseWithSets.exercise,
+                                    isSelected: index == activeWorkout.currentExerciseIndex,
+                                    isCompleted: !exerciseWithSets.sets.isEmpty,
+                                    setCount: exerciseWithSets.sets.count
+                                ) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        activeWorkout.currentExerciseIndex = index
+                                    }
+                                    loadLastWorkoutData()
+                                    clearInputs()
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            
+            if let currentExercise = activeWorkout.currentExercise {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Exercise name
+                        Text(currentExercise.exercise.name)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .padding(.top)
+                        
+                        // Last workout data - full display
+                        if !lastWorkoutSets.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("LAST WORKOUT")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+                                
+                                ForEach(lastWorkoutSets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
+                                    Text("Set \(set.setNumber): \(String(format: "%.1f", set.weightKg))kg × \(set.reps)")
+                                        .font(.title3)
+                                        .fontWeight(.medium)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                        }
+                        
+                        // Today's sets
+                        if !currentExercise.sets.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("TODAY")
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                
+                                ForEach(currentExercise.sets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
+                                    Text("Set \(set.setNumber): \(String(format: "%.1f", set.weightKg))kg × \(set.reps)")
+                                        .font(.title3)
+                                        .fontWeight(.medium)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(Color(.systemGray5))
+                            .cornerRadius(8)
+                        }
+                        
+                        // Manual input
+                        VStack(spacing: 16) {
+                            // Rest Timer Display
+                            if activeWorkout.restTimer.isRunning {
+                                VStack(spacing: 8) {
+                                    Text("REST TIME")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.blue)
+                                    
+                                    Text(activeWorkout.restTimer.formattedTime)
+                                        .font(.largeTitle)
+                                        .fontWeight(.bold)
+                                        .monospacedDigit()
+                                        .foregroundColor(.blue)
+                                    
+                                    HStack(spacing: 16) {
+                                        Button("Pause") {
+                                            activeWorkout.restTimer.pause()
+                                        }
+                                        .buttonStyle(.bordered)
+                                        
+                                        Button("Stop") {
+                                            activeWorkout.restTimer.stop()
+                                        }
+                                        .buttonStyle(.bordered)
+                                    }
+                                }
+                                .padding()
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(12)
+                            } else if activeWorkout.restTimer.timeRemaining > 0 {
+                                VStack(spacing: 8) {
+                                    Text("REST PAUSED")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.orange)
+                                    
+                                    Text(activeWorkout.restTimer.formattedTime)
+                                        .font(.largeTitle)
+                                        .fontWeight(.bold)
+                                        .monospacedDigit()
+                                        .foregroundColor(.orange)
+                                    
+                                    Button("Resume") {
+                                        activeWorkout.restTimer.resume()
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                }
+                                .padding()
+                                .background(Color.orange.opacity(0.1))
+                                .cornerRadius(12)
+                            }
+                            
+                            HStack(spacing: 20) {
+                                VStack {
+                                    Text("Weight (kg)")
+                                        .font(.headline)
+                                    TextField("0.0", text: $weightInput)
+                                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                                        .keyboardType(.decimalPad)
+                                        .font(.title2)
+                                        .multilineTextAlignment(.center)
+                                }
+                                
+                                VStack {
+                                    Text("Reps")
+                                        .font(.headline)
+                                    TextField("reps", text: $repsInput)
+                                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                                        .keyboardType(.numberPad)
+                                        .font(.title2)
+                                        .multilineTextAlignment(.center)
+                                }
+                            }
+                            
+                            Button("ADD SET") {
+                                addSet()
+                            }
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(canAddSet ? Color.blue : Color.gray)
+                            .cornerRadius(8)
+                            .disabled(!canAddSet)
+                            
+                            // Rest Timer Controls (when not already running)
+                            if !activeWorkout.restTimer.isRunning && activeWorkout.restTimer.timeRemaining == 0 {
+                                VStack(spacing: 8) {
+                                    Text("Start Rest Timer")
+                                        .font(.headline)
+                                        .fontWeight(.medium)
+                                    
+                                    HStack(spacing: 12) {
+                                        Button("1m") {
+                                            activeWorkout.restTimer.start(duration: 60)
+                                        }
+                                        .buttonStyle(.bordered)
+                                        
+                                        Button("2m") {
+                                            activeWorkout.restTimer.start(duration: 120)
+                                        }
+                                        .buttonStyle(.bordered)
+                                        
+                                        Button("3m") {
+                                            activeWorkout.restTimer.start(duration: 180)
+                                        }
+                                        .buttonStyle(.bordered)
+                                        
+                                        Button("5m") {
+                                            activeWorkout.restTimer.start(duration: 300)
+                                        }
+                                        .buttonStyle(.bordered)
+                                    }
+                                }
+                                .padding(.top, 8)
+                            }
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                        
+                        Spacer(minLength: 100)
+                    }
+                    .padding()
+                }
+            } else {
+                Spacer()
+                Text("No exercises selected")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                Spacer()
             }
         }
         .onAppear {
-            loadPreviousSessionData()
-            setupInitialWeight()
+            loadLastWorkoutData()
         }
         .onChange(of: activeWorkout.currentExerciseIndex) { _ in
-            loadPreviousSessionData()
-            setupInitialWeight()
+            loadLastWorkoutData()
+            clearInputs()
         }
         .confirmationDialog("Finish Workout", isPresented: $showingFinishConfirmation) {
             Button("Finish Workout", role: .destructive) {
@@ -78,81 +262,46 @@ struct LiveWorkoutView: View {
         }
     }
     
-    @ViewBuilder
-    private func HeaderView() -> some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text(formatElapsedTime())
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .monospacedDigit()
-                
-                Text(activeWorkout.session?.name ?? "Workout")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-        }
-        .padding()
-        .background(Color(.systemGray6))
+    private var canAddSet: Bool {
+        guard let weight = Double(weightInput), let reps = Int(repsInput) else { return false }
+        return weight > 0 && reps > 0
     }
     
-    @ViewBuilder
-    private func ExerciseListView() -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(Array(activeWorkout.exercises.enumerated()), id: \.offset) { index, exerciseWithSets in
-                    ExerciseChip(
-                        exercise: exerciseWithSets.exercise,
-                        isCompleted: exerciseWithSets.isCompleted,
-                        isCurrent: index == activeWorkout.currentExerciseIndex
-                    ) {
-                        activeWorkout.currentExerciseIndex = index
-                    }
-                }
-            }
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 8)
-    }
-    
-    private func addCurrentSet() {
+    private func addSet() {
         guard let currentExercise = activeWorkout.currentExercise,
-              currentWeight > 0, currentReps > 0 else { return }
+              let weight = Double(weightInput),
+              let reps = Int(repsInput),
+              weight > 0, reps > 0 else { return }
         
         activeWorkout.addSet(
             exerciseId: currentExercise.exercise.id,
-            reps: currentReps,
-            weight: currentWeight
+            reps: reps,
+            weight: weight
         )
         
-        // Auto-increment weight by 2.5 lbs for next set
-        currentWeight += 2.5
+        clearInputs()
     }
     
-    private func loadPreviousSessionData() {
+    private func clearInputs() {
+        weightInput = ""
+        repsInput = ""
+    }
+    
+    private func loadLastWorkoutData() {
         guard let currentExercise = activeWorkout.currentExercise else { return }
         
         Task {
             do {
                 let data = try await workoutDataManager.getPreviousSessionData(for: currentExercise.exercise.id)
                 await MainActor.run {
-                    previousSessionData = data
+                    lastWorkoutSets = data?.sets ?? []
                 }
             } catch {
-                print("Failed to load previous session data: \(error)")
+                await MainActor.run {
+                    lastWorkoutSets = []
+                }
+                print("Failed to load last workout data: \(error)")
             }
-        }
-    }
-    
-    private func setupInitialWeight() {
-        guard let previousData = previousSessionData else { return }
-        
-        // Use the weight from the first set of the previous session
-        if let firstSet = previousData.sets.first {
-            currentWeight = firstSet.weightLbs
-            currentReps = firstSet.reps
         }
     }
     
@@ -170,251 +319,64 @@ struct LiveWorkoutView: View {
     }
 }
 
-struct ExerciseChip: View {
+struct ExerciseTab: View {
     let exercise: Exercise
+    let isSelected: Bool
     let isCompleted: Bool
-    let isCurrent: Bool
+    let setCount: Int
     let action: () -> Void
+    
+    @EnvironmentObject var exerciseDataManager: ExerciseDataManager
+    
+    var muscleGroupEmoji: String {
+        exerciseDataManager.getMuscleGroup(for: exercise.id)?.emoji ?? "💪"
+    }
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            VStack(spacing: 6) {
+                // Muscle group emoji
+                Text(muscleGroupEmoji)
+                    .font(.system(size: 16))
+                
+                // Exercise name
                 Text(exercise.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .font(.system(size: isSelected ? 13 : 11, weight: isSelected ? .bold : .semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                 
-                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.caption)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(isCurrent ? Color.blue : Color(.systemGray6))
-            .foregroundColor(isCurrent ? .white : .primary)
-            .cornerRadius(16)
-        }
-    }
-}
-
-struct CurrentExerciseView: View {
-    let exercise: ExerciseWithSets
-    let previousData: PreviousSessionData?
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Exercise name
-            Text(exercise.exercise.name.uppercased())
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            // Previous session data
-            if let previousData = previousData {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Last Session (\(RelativeDateTimeFormatter().localizedString(for: previousData.sessionDate, relativeTo: Date()))):")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Text(previousData.formattedSets)
-                        .font(.headline)
-                        .fontWeight(.medium)
-                }
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-            }
-            
-            // Today's sets
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Today's Sets:")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                
-                if exercise.sets.isEmpty {
-                    Text("No sets completed yet")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(exercise.sets, id: \.id) { set in
-                        HStack {
-                            Text("Set \(set.setNumber):")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            
-                            Text("\(Int(set.weightLbs))lbs × \(set.reps) reps")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct SetInputView: View {
-    @Binding var weight: Double
-    @Binding var reps: Int
-    let onAddSet: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 20) {
-                // Weight input
-                VStack {
-                    Text("Weight")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    HStack {
-                        Button(action: { weight = max(0, weight - 5) }) {
-                            Image(systemName: "minus.circle.fill")
-                                .font(.title)
-                                .foregroundColor(.blue)
-                        }
-                        
-                        Text("\(Int(weight))")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .frame(minWidth: 60)
-                        
-                        Button(action: { weight += 5 }) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title)
-                                .foregroundColor(.blue)
-                        }
+                // Progress indicator
+                HStack(spacing: 2) {
+                    if isCompleted {
+                        Text("\(setCount) sets")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(isSelected ? .white : .green)
+                    } else {
+                        Text("0 sets")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(.secondary)
                     }
                 }
                 
-                // Reps input
-                VStack {
-                    Text("Reps")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    HStack {
-                        Button(action: { reps = max(0, reps - 1) }) {
-                            Image(systemName: "minus.circle.fill")
-                                .font(.title)
-                                .foregroundColor(.blue)
-                        }
-                        
-                        Text("\(reps)")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .frame(minWidth: 60)
-                        
-                        Button(action: { reps += 1 }) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title)
-                                .foregroundColor(.blue)
-                        }
-                    }
-                }
+                // Bottom indicator bar
+                Rectangle()
+                    .fill(isSelected ? Color.white : (isCompleted ? Color.green : Color.gray.opacity(0.3)))
+                    .frame(height: 3)
+                    .cornerRadius(1.5)
             }
-            
-            // Add Set button
-            Button(action: onAddSet) {
-                Text("ADD SET")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(weight > 0 && reps > 0 ? Color.green : Color.gray)
-                    .cornerRadius(12)
-            }
-            .disabled(weight <= 0 || reps <= 0)
+            .frame(width: 80, height: 90)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.blue : (isCompleted ? Color.green.opacity(0.1) : Color(.systemGray6)))
+            )
+            .foregroundColor(isSelected ? .white : .primary)
+            .scaleEffect(isSelected ? 1.05 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
-struct RestTimerView: View {
-    @EnvironmentObject var activeWorkout: ActiveWorkout
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            Text("Rest Timer")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            Text(activeWorkout.restTimer.formattedTime)
-                .font(.title)
-                .fontWeight(.bold)
-                .monospacedDigit()
-            
-            HStack(spacing: 16) {
-                if activeWorkout.restTimer.isRunning {
-                    Button("Pause") {
-                        activeWorkout.restTimer.pause()
-                    }
-                    .buttonStyle(.bordered)
-                } else if activeWorkout.restTimer.timeRemaining > 0 {
-                    Button("Resume") {
-                        activeWorkout.restTimer.resume()
-                    }
-                    .buttonStyle(.bordered)
-                }
-                
-                Button("Stop") {
-                    activeWorkout.restTimer.stop()
-                }
-                .buttonStyle(.bordered)
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-    }
-}
-
-struct NavigationButtonsView: View {
-    @EnvironmentObject var activeWorkout: ActiveWorkout
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            Button(action: previousExercise) {
-                HStack {
-                    Image(systemName: "chevron.left")
-                    Text("Previous")
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-            }
-            .disabled(activeWorkout.currentExerciseIndex <= 0)
-            
-            Button(action: nextExercise) {
-                HStack {
-                    Text("Next")
-                    Image(systemName: "chevron.right")
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-            }
-            .disabled(activeWorkout.currentExerciseIndex >= activeWorkout.exercises.count - 1)
-        }
-    }
-    
-    private func previousExercise() {
-        if activeWorkout.currentExerciseIndex > 0 {
-            activeWorkout.currentExerciseIndex -= 1
-        }
-    }
-    
-    private func nextExercise() {
-        if activeWorkout.currentExerciseIndex < activeWorkout.exercises.count - 1 {
-            activeWorkout.currentExerciseIndex += 1
-        }
-    }
-}

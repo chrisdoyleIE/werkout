@@ -5,114 +5,55 @@ struct HomeView: View {
     @EnvironmentObject var workoutDataManager: WorkoutDataManager
     @State private var showingWorkoutCreator = false
     @State private var showingLiveWorkout = false
+    @State private var selectedDate = Date()
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Header
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("WERKOUT")
-                                .font(.largeTitle)
-                                .fontWeight(.black)
-                            Text("Ready to get stronger?")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Button(action: {}) {
-                            Image(systemName: "gearshape.fill")
-                                .font(.title2)
-                                .foregroundColor(.primary)
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    // Start Workout Button
-                    Button(action: {
-                        showingWorkoutCreator = true
-                    }) {
-                        HStack {
-                            Image(systemName: "figure.strengthtraining.traditional")
-                                .font(.title2)
-                            Text("START WORKOUT")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(12)
-                    }
-                    .padding(.horizontal)
-                    
-                    // Recent Activity
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Recent Activity")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            Spacer()
-                        }
-                        
-                        if workoutDataManager.workoutSessions.isEmpty {
-                            VStack(spacing: 8) {
-                                Image(systemName: "figure.strengthtraining.traditional")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.secondary)
-                                Text("No workouts yet")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                Text("Start your first workout to see progress here")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                        } else {
-                            ForEach(Array(workoutDataManager.workoutSessions.prefix(3)), id: \.id) { session in
-                                RecentWorkoutCard(session: session)
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    // Quick Stats
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Quick Stats")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            Spacer()
-                        }
-                        
-                        HStack(spacing: 20) {
-                            StatCard(
-                                title: "Total Workouts",
-                                value: "\(workoutDataManager.workoutSessions.count)",
-                                icon: "number.circle.fill"
-                            )
-                            
-                            StatCard(
-                                title: "This Week",
-                                value: "\(workoutsThisWeek)",
-                                icon: "calendar.circle.fill"
-                            )
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    Spacer(minLength: 100)
-                }
+        VStack(spacing: 24) {
+            // Header
+            VStack(spacing: 8) {
+                Text("WERKOUT")
+                    .font(.largeTitle)
+                    .fontWeight(.black)
+                
+                Text("\(workoutDataManager.workoutSessions.count) workouts")
+                    .font(.title3)
+                    .foregroundColor(.secondary)
             }
-            .navigationBarHidden(true)
-            .onAppear {
-                Task {
-                    await workoutDataManager.loadWorkoutSessions()
-                }
+            .padding(.top)
+            
+            // Mini calendar
+            VStack(spacing: 16) {
+                Text("This Week")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                WeekCalendarView(
+                    selectedDate: $selectedDate,
+                    workoutSessions: workoutDataManager.workoutSessions
+                )
+            }
+            
+            Spacer()
+            
+            // Start Workout Button
+            Button(action: {
+                showingWorkoutCreator = true
+            }) {
+                Text("START WORKOUT")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .background(Color.blue)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 32)
+        }
+        .onAppear {
+            Task {
+                await workoutDataManager.loadWorkoutSessions()
             }
         }
         .sheet(isPresented: $showingWorkoutCreator) {
@@ -136,68 +77,55 @@ struct HomeView: View {
                 }
         }
     }
-    
-    private var workoutsThisWeek: Int {
-        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        return workoutDataManager.workoutSessions.filter { session in
-            session.startedAt >= weekAgo
-        }.count
-    }
 }
 
-struct RecentWorkoutCard: View {
-    let session: WorkoutSession
+struct WeekCalendarView: View {
+    @Binding var selectedDate: Date
+    let workoutSessions: [WorkoutSession]
+    
+    private let calendar = Calendar.current
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(session.name)
-                    .font(.headline)
-                    .fontWeight(.medium)
-                Spacer()
-                if let duration = session.durationMinutes {
-                    Text("\(duration)min")
+        HStack(spacing: 20) {
+            ForEach(weekDays, id: \.self) { date in
+                VStack(spacing: 8) {
+                    Text(dayFormatter.string(from: date))
                         .font(.caption)
+                        .fontWeight(.medium)
                         .foregroundColor(.secondary)
+                    
+                    Text("\(calendar.component(.day, from: date))")
+                        .font(.title3)
+                        .fontWeight(.medium)
+                        .foregroundColor(hasWorkout(date) ? .blue : .primary)
+                    
+                    Circle()
+                        .fill(hasWorkout(date) ? Color.blue : Color.clear)
+                        .frame(width: 6, height: 6)
                 }
-            }
-            
-            HStack {
-                Text(RelativeDateTimeFormatter().localizedString(for: session.startedAt, relativeTo: Date()))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Spacer()
+                .frame(width: 40)
             }
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
+        .padding(.horizontal)
+    }
+    
+    private var weekDays: [Date] {
+        let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: selectedDate)?.start ?? selectedDate
+        return (0..<7).compactMap { dayOffset in
+            calendar.date(byAdding: .day, value: dayOffset, to: startOfWeek)
+        }
+    }
+    
+    private let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        return formatter
+    }()
+    
+    private func hasWorkout(_ date: Date) -> Bool {
+        workoutSessions.contains { session in
+            calendar.isDate(session.startedAt, inSameDayAs: date)
+        }
     }
 }
 
-struct StatCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.blue)
-            
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
-    }
-}

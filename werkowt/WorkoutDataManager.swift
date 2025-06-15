@@ -87,14 +87,14 @@ class WorkoutDataManager: ObservableObject {
     
     func addSet(_ set: WorkoutSet) async throws {
         try await supabase
-            .from("sets")
+            .from("workout_sets")
             .insert(set)
             .execute()
     }
     
     func getSets(for workoutSessionId: UUID) async throws -> [WorkoutSet] {
         let response: [WorkoutSet] = try await supabase
-            .from("sets")
+            .from("workout_sets")
             .select()
             .eq("workout_session_id", value: workoutSessionId)
             .order("set_number", ascending: true)
@@ -119,7 +119,7 @@ class WorkoutDataManager: ObservableObject {
         
         for session in completedSessions {
             let sets: [WorkoutSet] = try await supabase
-                .from("sets")
+                .from("workout_sets")
                 .select()
                 .eq("workout_session_id", value: session.id)
                 .eq("exercise_id", value: exerciseId)
@@ -152,6 +152,78 @@ class WorkoutDataManager: ObservableObject {
         return response.first
     }
     
+    func checkAndUpdatePersonalRecord(for set: WorkoutSet) async throws {
+        let userId = try await getCurrentUserId()
+        
+        // Calculate the estimated 1RM using Epley formula: weight * (1 + reps/30)
+        let estimated1RM = set.weightKg * (1 + Double(set.reps) / 30.0)
+        
+        do {
+            let existingPR = try await getPersonalRecord(for: set.exerciseId)
+            
+            if let pr = existingPR {
+                // Calculate existing 1RM
+                let existing1RM = pr.maxWeightKg * (1 + Double(pr.reps) / 30.0)
+                
+                // Only update if new estimated 1RM is higher
+                if estimated1RM > existing1RM {
+                    try await updatePersonalRecord(
+                        exerciseId: set.exerciseId,
+                        weight: set.weightKg,
+                        reps: set.reps
+                    )
+                }
+            } else {
+                // No existing PR, create new one
+                try await createPersonalRecord(
+                    exerciseId: set.exerciseId,
+                    weight: set.weightKg,
+                    reps: set.reps
+                )
+            }
+        } catch {
+            print("Failed to check/update personal record: \(error)")
+        }
+    }
+    
+    private func createPersonalRecord(exerciseId: String, weight: Double, reps: Int) async throws {
+        let userId = try await getCurrentUserId()
+        
+        let newPR = PersonalRecord(
+            id: UUID(),
+            userId: userId,
+            exerciseId: exerciseId,
+            maxWeightKg: weight,
+            reps: reps,
+            achievedAt: Date()
+        )
+        
+        try await supabase
+            .from("personal_records")
+            .insert(newPR)
+            .execute()
+    }
+    
+    private func updatePersonalRecord(exerciseId: String, weight: Double, reps: Int) async throws {
+        struct UpdateData: Codable {
+            let max_weight_kg: Double
+            let reps: Int
+            let achieved_at: String
+        }
+        
+        let updateData = UpdateData(
+            max_weight_kg: weight,
+            reps: reps,
+            achieved_at: Date().ISO8601Format()
+        )
+        
+        try await supabase
+            .from("personal_records")
+            .update(updateData)
+            .eq("exercise_id", value: exerciseId)
+            .execute()
+    }
+    
     func getAllPersonalRecords() async throws -> [PersonalRecord] {
         let response: [PersonalRecord] = try await supabase
             .from("personal_records")
@@ -169,7 +241,7 @@ class WorkoutDataManager: ObservableObject {
         let oneWeekAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
         
         let sets: [WorkoutSet] = try await supabase
-            .from("sets")
+            .from("workout_sets")
             .select("*, workout_sessions!inner(started_at)")
             .gte("workout_sessions.started_at", value: oneWeekAgo)
             .execute()
@@ -190,7 +262,7 @@ class WorkoutDataManager: ObservableObject {
         let startDate = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
         
         let sets: [WorkoutSet] = try await supabase
-            .from("sets")
+            .from("workout_sets")
             .select("*, workout_sessions!inner(started_at)")
             .eq("exercise_id", value: exerciseId)
             .gte("workout_sessions.started_at", value: startDate)

@@ -62,7 +62,7 @@ struct WorkoutSet: Codable, Identifiable {
     let exerciseId: String
     let setNumber: Int
     let reps: Int
-    let weightLbs: Double
+    let weightKg: Double
     let restSeconds: Int?
     let completedAt: Date
     
@@ -72,7 +72,7 @@ struct WorkoutSet: Codable, Identifiable {
         case exerciseId = "exercise_id"
         case setNumber = "set_number"
         case reps
-        case weightLbs = "weight_lbs"
+        case weightKg = "weight_kg"
         case restSeconds = "rest_seconds"
         case completedAt = "completed_at"
     }
@@ -82,7 +82,7 @@ struct PersonalRecord: Codable, Identifiable {
     let id: UUID
     let userId: UUID
     let exerciseId: String
-    let maxWeightLbs: Double
+    let maxWeightKg: Double
     let reps: Int
     let achievedAt: Date
     
@@ -90,7 +90,7 @@ struct PersonalRecord: Codable, Identifiable {
         case id
         case userId = "user_id"
         case exerciseId = "exercise_id"
-        case maxWeightLbs = "max_weight_lbs"
+        case maxWeightKg = "max_weight_kg"
         case reps
         case achievedAt = "achieved_at"
     }
@@ -113,7 +113,7 @@ struct PreviousSessionData {
     let sessionDate: Date
     
     var formattedSets: String {
-        return sets.map { "\(Int($0.weightLbs))×\($0.reps)" }.joined(separator: ", ")
+        return sets.map { "\(String(format: "%.1f", $0.weightKg))kg×\($0.reps)" }.joined(separator: ", ")
     }
 }
 
@@ -182,7 +182,7 @@ class ActiveWorkout: ObservableObject {
             exerciseId: exerciseId,
             setNumber: setNumber,
             reps: reps,
-            weightLbs: weight,
+            weightKg: weight,
             restSeconds: nil,
             completedAt: Date()
         )
@@ -200,6 +200,8 @@ class ActiveWorkout: ObservableObject {
         Task {
             do {
                 try await WorkoutDataManager.shared.addSet(newSet)
+                // Check and update personal records
+                try await WorkoutDataManager.shared.checkAndUpdatePersonalRecord(for: newSet)
             } catch {
                 print("Failed to save set to Supabase: \(error)")
                 // TODO: Add to pending sync queue
@@ -210,13 +212,19 @@ class ActiveWorkout: ObservableObject {
     }
     
     func finishWorkout() {
-        guard var session = self.session else { return }
+        guard let session = self.session else { return }
         
         let endTime = Date()
         let duration = Int(endTime.timeIntervalSince(startTime ?? endTime) / 60)
         
-        // Update session with end time and duration
-        // This would typically save to Supabase here
+        // Update session with end time and duration in Supabase
+        Task {
+            do {
+                try await WorkoutDataManager.shared.finishWorkoutSession(session)
+            } catch {
+                print("Failed to finish workout session: \(error)")
+            }
+        }
         
         self.session = nil
         self.exercises = []
@@ -235,40 +243,54 @@ class RestTimer: ObservableObject {
     
     func start(duration: Int) {
         stop()
-        timeRemaining = duration
-        isRunning = true
         
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if self.timeRemaining > 0 {
-                self.timeRemaining -= 1
-            } else {
-                self.stop()
+        DispatchQueue.main.async {
+            self.timeRemaining = duration
+            self.isRunning = true
+            
+            self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                DispatchQueue.main.async {
+                    if self.timeRemaining > 0 {
+                        self.timeRemaining -= 1
+                    } else {
+                        self.stop()
+                    }
+                }
             }
         }
     }
     
     func stop() {
-        timer?.invalidate()
-        timer = nil
-        isRunning = false
-        timeRemaining = 0
+        DispatchQueue.main.async {
+            self.timer?.invalidate()
+            self.timer = nil
+            self.isRunning = false
+            self.timeRemaining = 0
+        }
     }
     
     func pause() {
-        timer?.invalidate()
-        timer = nil
-        isRunning = false
+        DispatchQueue.main.async {
+            self.timer?.invalidate()
+            self.timer = nil
+            self.isRunning = false
+        }
     }
     
     func resume() {
         guard timeRemaining > 0 else { return }
-        isRunning = true
         
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if self.timeRemaining > 0 {
-                self.timeRemaining -= 1
-            } else {
-                self.stop()
+        DispatchQueue.main.async {
+            self.isRunning = true
+            
+            self.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                DispatchQueue.main.async {
+                    if self.timeRemaining > 0 {
+                        self.timeRemaining -= 1
+                    } else {
+                        self.stop()
+                    }
+                }
             }
         }
     }

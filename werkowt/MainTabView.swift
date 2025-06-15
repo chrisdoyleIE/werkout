@@ -12,35 +12,11 @@ struct MainTabView: View {
                     Text("Home")
                 }
             
-            ExerciseLibraryView()
-                .tabItem {
-                    Image(systemName: "books.vertical.fill")
-                    Text("Exercises")
-                }
-            
-            WorkoutProgressView()
-                .tabItem {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                    Text("Progress")
-                }
-            
             HistoryView()
                 .tabItem {
-                    Image(systemName: "clock.fill")
+                    Image(systemName: "calendar")
                     Text("History")
                 }
-            
-            ProfileView()
-                .tabItem {
-                    Image(systemName: "person.fill")
-                    Text("Profile")
-                }
-        }
-        .fullScreenCover(isPresented: .constant(false)) {
-            LiveWorkoutView()
-                .environmentObject(activeWorkout)
-                .environmentObject(WorkoutDataManager.shared)
-                .environmentObject(ExerciseDataManager.shared)
         }
     }
 }
