@@ -195,7 +195,6 @@ class ActiveWorkout: ObservableObject {
     @Published var currentExerciseIndex: Int = 0
     @Published var isActive: Bool = false
     @Published var startTime: Date?
-    @Published var restTimer: RestTimer = RestTimer()
     
     var currentExercise: ExerciseWithSets? {
         guard currentExerciseIndex < exercises.count else { return nil }
@@ -256,7 +255,6 @@ class ActiveWorkout: ObservableObject {
         )
         
         addSetToExercise(newSet)
-        restTimer.start(duration: 120) // 2 minute default rest
     }
     
     func addBodyweightSet(exerciseId: String, reps: Int) {
@@ -272,7 +270,6 @@ class ActiveWorkout: ObservableObject {
         )
         
         addSetToExercise(newSet)
-        restTimer.start(duration: 90) // 1.5 minute default rest for bodyweight
     }
     
     func addTimedSet(exerciseId: String, durationSeconds: Int) {
@@ -288,7 +285,6 @@ class ActiveWorkout: ObservableObject {
         )
         
         addSetToExercise(newSet)
-        restTimer.start(duration: 60) // 1 minute default rest for timed exercises
     }
     
     private func addSetToExercise(_ newSet: WorkoutSet) {
@@ -335,7 +331,6 @@ class ActiveWorkout: ObservableObject {
         self.exercises = []
         self.isActive = false
         self.startTime = nil
-        self.restTimer.stop()
     }
 }
 

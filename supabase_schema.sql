@@ -24,8 +24,9 @@ CREATE TABLE public.workout_sets (
     workout_session_id UUID REFERENCES public.workout_sessions(id) ON DELETE CASCADE NOT NULL,
     exercise_id TEXT NOT NULL,
     set_number INTEGER NOT NULL,
-    reps INTEGER NOT NULL,
-    weight_kg DECIMAL(5,2) NOT NULL,
+    reps INTEGER,
+    weight_kg DECIMAL(5,2),
+    duration_seconds INTEGER,
     rest_seconds INTEGER,
     completed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

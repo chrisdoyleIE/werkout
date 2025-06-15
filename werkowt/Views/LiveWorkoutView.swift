@@ -9,9 +9,14 @@ struct LiveWorkoutView: View {
     @State private var weightInput: String = ""
     @State private var repsInput: String = ""
     @State private var durationInput: String = ""
-    @State private var exerciseTimer: ExerciseTimer = ExerciseTimer()
     @State private var lastWorkoutSets: [WorkoutSet] = []
     @State private var showingFinishConfirmation = false
+    
+    // Simple timer states
+    @State private var restTimeRemaining: Int = 0
+    @State private var restTimer: Timer?
+    @State private var exerciseTimeElapsed: Int = 0
+    @State private var exerciseTimer: Timer?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -114,54 +119,26 @@ struct LiveWorkoutView: View {
                         // Exercise Input
                         VStack(spacing: 16) {
                             // Rest Timer Display
-                            if activeWorkout.restTimer.isRunning {
+                            if restTimeRemaining > 0 {
                                 VStack(spacing: 8) {
                                     Text("REST TIME")
                                         .font(.caption)
                                         .fontWeight(.bold)
                                         .foregroundColor(.blue)
                                     
-                                    Text(activeWorkout.restTimer.formattedTime)
+                                    Text(formatTime(restTimeRemaining))
                                         .font(.largeTitle)
                                         .fontWeight(.bold)
                                         .monospacedDigit()
                                         .foregroundColor(.blue)
                                     
-                                    HStack(spacing: 16) {
-                                        Button("Pause") {
-                                            activeWorkout.restTimer.pause()
-                                        }
-                                        .buttonStyle(.bordered)
-                                        
-                                        Button("Stop") {
-                                            activeWorkout.restTimer.stop()
-                                        }
-                                        .buttonStyle(.bordered)
+                                    Button("Skip Rest") {
+                                        stopRestTimer()
                                     }
+                                    .buttonStyle(.bordered)
                                 }
                                 .padding()
                                 .background(Color.blue.opacity(0.1))
-                                .cornerRadius(12)
-                            } else if activeWorkout.restTimer.timeRemaining > 0 {
-                                VStack(spacing: 8) {
-                                    Text("REST PAUSED")
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.orange)
-                                    
-                                    Text(activeWorkout.restTimer.formattedTime)
-                                        .font(.largeTitle)
-                                        .fontWeight(.bold)
-                                        .monospacedDigit()
-                                        .foregroundColor(.orange)
-                                    
-                                    Button("Resume") {
-                                        activeWorkout.restTimer.resume()
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                }
-                                .padding()
-                                .background(Color.orange.opacity(0.1))
                                 .cornerRadius(12)
                             }
                             
@@ -177,8 +154,8 @@ struct LiveWorkoutView: View {
                                 }
                             }
                             
-                            // Rest Timer Controls (when not already running)
-                            if !activeWorkout.restTimer.isRunning && activeWorkout.restTimer.timeRemaining == 0 {
+                            // Manual Rest Timer Controls (when not running)
+                            if restTimeRemaining == 0 {
                                 VStack(spacing: 8) {
                                     Text("Start Rest Timer")
                                         .font(.headline)
@@ -186,22 +163,17 @@ struct LiveWorkoutView: View {
                                     
                                     HStack(spacing: 12) {
                                         Button("1m") {
-                                            activeWorkout.restTimer.start(duration: 60)
+                                            startRestTimer(duration: 60)
                                         }
                                         .buttonStyle(.bordered)
                                         
                                         Button("2m") {
-                                            activeWorkout.restTimer.start(duration: 120)
+                                            startRestTimer(duration: 120)
                                         }
                                         .buttonStyle(.bordered)
                                         
                                         Button("3m") {
-                                            activeWorkout.restTimer.start(duration: 180)
-                                        }
-                                        .buttonStyle(.bordered)
-                                        
-                                        Button("5m") {
-                                            activeWorkout.restTimer.start(duration: 300)
+                                            startRestTimer(duration: 180)
                                         }
                                         .buttonStyle(.bordered)
                                     }
@@ -231,6 +203,7 @@ struct LiveWorkoutView: View {
         .onChange(of: activeWorkout.currentExerciseIndex) { _ in
             loadLastWorkoutData()
             clearInputs()
+            stopExerciseTimer() // Stop exercise timer when switching exercises
         }
         .confirmationDialog("Finish Workout", isPresented: $showingFinishConfirmation) {
             Button("Finish Workout", role: .destructive) {
@@ -252,15 +225,6 @@ struct LiveWorkoutView: View {
         return reps > 0
     }
     
-    private var canAddTimedSet: Bool {
-        guard let duration = Int(durationInput) else { return false }
-        return duration > 0
-    }
-    
-    private var canStartTimer: Bool {
-        guard let duration = Int(durationInput) else { return false }
-        return duration > 0
-    }
     
     private func addSet() {
         guard let currentExercise = activeWorkout.currentExercise,
@@ -275,6 +239,7 @@ struct LiveWorkoutView: View {
         )
         
         clearInputs()
+        startRestTimer(duration: 120) // Auto-start rest timer
     }
     
     private func clearInputs() {
@@ -294,36 +259,59 @@ struct LiveWorkoutView: View {
         )
         
         clearInputs()
+        startRestTimer(duration: 90) // Auto-start rest timer
     }
     
-    private func addTimedSet() {
-        let duration = exerciseTimer.totalDuration - exerciseTimer.timeRemaining
-        addTimedSetWithDuration(duration)
-        exerciseTimer.stop()
+    // MARK: - Simple Timer Methods
+    
+    private func startRestTimer(duration: Int) {
+        stopRestTimer() // Stop any existing timer
+        restTimeRemaining = duration
+        restTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if restTimeRemaining > 0 {
+                restTimeRemaining -= 1
+            } else {
+                stopRestTimer()
+            }
+        }
     }
     
-    private func addTimedSetManual() {
-        guard let duration = Int(durationInput),
-              duration > 0 else { return }
-        
-        addTimedSetWithDuration(duration)
-        clearInputs()
+    private func stopRestTimer() {
+        restTimer?.invalidate()
+        restTimer = nil
+        restTimeRemaining = 0
     }
     
-    private func addTimedSetWithDuration(_ duration: Int) {
+    private func startExerciseTimer() {
+        stopExerciseTimer() // Stop any existing timer
+        exerciseTimeElapsed = 0
+        exerciseTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            exerciseTimeElapsed += 1
+        }
+    }
+    
+    private func stopExerciseTimer() {
+        exerciseTimer?.invalidate()
+        exerciseTimer = nil
+        exerciseTimeElapsed = 0
+    }
+    
+    private func recordTimedExercise() {
         guard let currentExercise = activeWorkout.currentExercise else { return }
         
         activeWorkout.addTimedSet(
             exerciseId: currentExercise.exercise.id,
-            durationSeconds: duration
+            durationSeconds: exerciseTimeElapsed
         )
+        
+        stopExerciseTimer()
+        startRestTimer(duration: 60) // Auto-start rest timer
     }
     
-    private func startExerciseTimer() {
-        guard let duration = Int(durationInput),
-              duration > 0 else { return }
-        
-        exerciseTimer.start(duration: duration)
+    private func formatTime(_ seconds: Int) -> String {
+        let minutes = seconds / 60
+        let seconds = seconds % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
     
     private func formatSetDisplay(_ set: WorkoutSet) -> String {
@@ -464,57 +452,22 @@ struct LiveWorkoutView: View {
     private func timedExerciseInput() -> some View {
         VStack(spacing: 16) {
             // Exercise Timer Display
-            if exerciseTimer.isRunning {
+            if exerciseTimer != nil {
                 VStack(spacing: 12) {
                     Text("EXERCISE TIMER")
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundColor(.orange)
                     
-                    Text(exerciseTimer.formattedTime)
+                    Text(formatTime(exerciseTimeElapsed))
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .monospacedDigit()
                         .foregroundColor(.orange)
                     
                     HStack(spacing: 16) {
-                        Button("Pause") {
-                            exerciseTimer.pause()
-                        }
-                        .buttonStyle(.bordered)
-                        
                         Button("Stop & Record") {
-                            addTimedSet()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.green)
-                    }
-                }
-                .padding()
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(12)
-            } else if exerciseTimer.timeRemaining > 0 {
-                VStack(spacing: 12) {
-                    Text("EXERCISE PAUSED")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                    
-                    Text(exerciseTimer.formattedTime)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .monospacedDigit()
-                        .foregroundColor(.orange)
-                    
-                    HStack(spacing: 16) {
-                        Button("Resume") {
-                            exerciseTimer.resume()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.orange)
-                        
-                        Button("Stop & Record") {
-                            addTimedSet()
+                            recordTimedExercise()
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.green)
@@ -524,71 +477,30 @@ struct LiveWorkoutView: View {
                 .background(Color.orange.opacity(0.1))
                 .cornerRadius(12)
             } else {
-                // Manual duration input or timer controls
+                // Timer controls
                 VStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Target Duration (seconds)")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.secondary)
-                        
-                        TextField("30", text: $durationInput)
-                            .textFieldStyle(.roundedBorder)
-                            .keyboardType(.numberPad)
-                            .font(.title2)
-                    }
-                    
                     HStack(spacing: 12) {
                         Button("30s") {
-                            durationInput = "30"
-                            exerciseTimer.start(duration: 30)
+                            startExerciseTimer()
                         }
                         .buttonStyle(.bordered)
                         
                         Button("60s") {
-                            durationInput = "60"
-                            exerciseTimer.start(duration: 60)
+                            startExerciseTimer()
                         }
                         .buttonStyle(.bordered)
                         
                         Button("90s") {
-                            durationInput = "90"
-                            exerciseTimer.start(duration: 90)
+                            startExerciseTimer()
                         }
                         .buttonStyle(.bordered)
                     }
                     
-                    Button(action: startExerciseTimer) {
-                        HStack {
-                            Image(systemName: "timer")
-                                .font(.title3)
-                            Text("Start Timer")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(canStartTimer ? Color.orange : Color.gray)
-                        .cornerRadius(12)
+                    Button("Start Timer") {
+                        startExerciseTimer()
                     }
-                    .disabled(!canStartTimer)
-                    
-                    Button(action: addTimedSetManual) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title3)
-                            Text("Record Duration")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(canAddTimedSet ? Color.green : Color.gray)
-                        .cornerRadius(12)
-                    }
-                    .disabled(!canAddTimedSet)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
                 }
             }
         }
