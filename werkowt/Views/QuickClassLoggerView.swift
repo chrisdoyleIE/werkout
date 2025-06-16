@@ -9,6 +9,12 @@ struct QuickClassLoggerView: View {
     @State private var isLogging = false
     @State private var errorMessage = ""
     
+    let onComplete: (() -> Void)?
+    
+    init(onComplete: (() -> Void)? = nil) {
+        self.onComplete = onComplete
+    }
+    
     private let classTypes = ["HIIT", "Yoga", "Pilates", "Spin", "Boxing", "CrossFit", "Bootcamp", "Zumba"]
     private let durations = [15, 30, 45, 60, 75, 90]
     
@@ -168,6 +174,7 @@ struct QuickClassLoggerView: View {
                 await MainActor.run {
                     isLogging = false
                     dismiss()
+                    onComplete?()
                 }
             } catch {
                 await MainActor.run {

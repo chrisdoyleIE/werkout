@@ -6,7 +6,7 @@ struct HomeView: View {
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
     @State private var showingWorkoutCreator = false
     @State private var showingLiveWorkout = false
-    @State private var showingClassLogger = false
+    @State private var showingAddWeight = false
     @State private var selectedDate = Date()
     @State private var selectedSession: WorkoutSession?
     
@@ -67,7 +67,7 @@ struct HomeView: View {
                     HStack {
                         Image(systemName: "play.fill")
                             .font(.title3)
-                        Text("NEW WORKOUT")
+                        Text("LOG WORKOUT")
                             .font(.title2)
                             .fontWeight(.bold)
                     }
@@ -85,14 +85,14 @@ struct HomeView: View {
                     .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
                 
-                // Quick Log Class Button
+                // Add Weight Button
                 Button(action: {
-                    showingClassLogger = true
+                    showingAddWeight = true
                 }) {
                     HStack {
-                        Image(systemName: "figure.strengthtraining.functional")
+                        Image(systemName: "plus.circle")
                             .font(.title3)
-                        Text("LOG GYM CLASS")
+                        Text("ADD WEIGHT")
                             .font(.headline)
                             .fontWeight(.semibold)
                     }
@@ -118,8 +118,10 @@ struct HomeView: View {
         .sheet(isPresented: $showingWorkoutCreator) {
             WorkoutCreatorView()
         }
-        .sheet(isPresented: $showingClassLogger) {
-            QuickClassLoggerView()
+        .sheet(isPresented: $showingAddWeight) {
+            AddWeightView { weight, notes in
+                await addWeight(weight: weight, notes: notes)
+            }
         }
         .sheet(item: $selectedSession) { session in
             WorkoutDetailView(session: session)
@@ -140,6 +142,17 @@ struct HomeView: View {
                 .onDisappear {
                     showingLiveWorkout = false
                 }
+        }
+    }
+    
+    private func addWeight(weight: Double, notes: String?) async {
+        do {
+            try await workoutDataManager.addBodyWeightEntry(weightKg: weight, notes: notes)
+            await MainActor.run {
+                showingAddWeight = false
+            }
+        } catch {
+            print("Failed to add weight entry: \(error)")
         }
     }
 }

@@ -4,10 +4,12 @@ struct WorkoutCreatorView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var activeWorkout: ActiveWorkout
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
+    @EnvironmentObject var workoutDataManager: WorkoutDataManager
     
     @State private var selectedExercises: Set<String> = []
     @State private var selectedMuscleGroups: Set<String> = []
     @State private var isCreatingWorkout = false
+    @State private var showingClassLogger = false
     @State private var errorMessage = ""
     
     var body: some View {
@@ -80,6 +82,53 @@ struct WorkoutCreatorView: View {
                         }
                     }
                     .padding(.horizontal)
+                    
+                    // Log Gym Class Button (show only if no muscle groups selected)
+                    if selectedMuscleGroups.isEmpty {
+                        VStack(spacing: 16) {
+                            HStack {
+                                VStack(spacing: 4) {
+                                    Rectangle()
+                                        .fill(Color(.systemGray4))
+                                        .frame(height: 1)
+                                    
+                                    Text("OR")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                        .padding(.horizontal, 12)
+                                        .background(Color(.systemBackground))
+                                    
+                                    Rectangle()
+                                        .fill(Color(.systemGray4))
+                                        .frame(height: 1)
+                                }
+                            }
+                            .padding(.horizontal)
+                            
+                            Button(action: {
+                                showingClassLogger = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "figure.strengthtraining.functional")
+                                        .font(.title3)
+                                    Text("LOG GYM CLASS")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                }
+                                .foregroundColor(.purple)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.purple.opacity(0.1))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
                     
                     // Exercise Selection (only show if muscle groups selected)
                     if !selectedMuscleGroups.isEmpty {
@@ -174,6 +223,13 @@ struct WorkoutCreatorView: View {
                     }
                     .font(.headline)
                 }
+            }
+            .sheet(isPresented: $showingClassLogger) {
+                QuickClassLoggerView(onComplete: {
+                    // Dismiss the WorkoutCreatorView after gym class is logged
+                    dismiss()
+                })
+                .environmentObject(workoutDataManager)
             }
         }
     }

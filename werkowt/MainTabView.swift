@@ -11,6 +11,12 @@ struct MainTabView: View {
                     Image(systemName: "calendar")
                     Text("Workouts")
                 }
+            
+            WorkoutProgressView()
+                .tabItem {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                    Text("Progress")
+                }
         }
     }
 }

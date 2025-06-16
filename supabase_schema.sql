@@ -120,6 +120,31 @@ CREATE POLICY "Users can update own personal records" ON public.personal_records
 CREATE POLICY "Users can delete own personal records" ON public.personal_records
     FOR DELETE USING (auth.uid() = user_id);
 
+-- Create body_weight_entries table
+CREATE TABLE public.body_weight_entries (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    weight_kg DECIMAL(5,2) NOT NULL,
+    recorded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    notes TEXT
+);
+
+-- Enable Row Level Security for body_weight_entries
+ALTER TABLE public.body_weight_entries ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for body_weight_entries
+CREATE POLICY "Users can view own body weight entries" ON public.body_weight_entries
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own body weight entries" ON public.body_weight_entries
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own body weight entries" ON public.body_weight_entries
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own body weight entries" ON public.body_weight_entries
+    FOR DELETE USING (auth.uid() = user_id);
+
 -- Create indexes for better performance
 CREATE INDEX idx_profiles_username ON public.profiles(username);
 CREATE INDEX idx_workout_sessions_user_id ON public.workout_sessions(user_id);
@@ -128,3 +153,5 @@ CREATE INDEX idx_workout_sets_session_id ON public.workout_sets(workout_session_
 CREATE INDEX idx_workout_sets_exercise_id ON public.workout_sets(exercise_id);
 CREATE INDEX idx_personal_records_user_id ON public.personal_records(user_id);
 CREATE INDEX idx_personal_records_exercise_id ON public.personal_records(exercise_id);
+CREATE INDEX idx_body_weight_entries_user_id ON public.body_weight_entries(user_id);
+CREATE INDEX idx_body_weight_entries_recorded_at ON public.body_weight_entries(recorded_at);

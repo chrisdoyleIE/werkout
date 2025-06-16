@@ -3,6 +3,7 @@ import Supabase
 
 class WorkoutDataManager: ObservableObject {
     @Published var workoutSessions: [WorkoutSession] = []
+    @Published var bodyWeightEntries: [BodyWeightEntry] = []
     @Published var isLoading = false
     @Published var error: Error?
     
@@ -306,6 +307,72 @@ class WorkoutDataManager: ObservableObject {
             .value
         
         return sets
+    }
+    
+    // MARK: - Body Weight Tracking
+    
+    func addBodyWeightEntry(weightKg: Double, notes: String? = nil) async throws {
+        let userId = try await getCurrentUserId()
+        
+        let entry = BodyWeightEntry(
+            userId: userId,
+            weightKg: weightKg,
+            notes: notes
+        )
+        
+        try await supabase
+            .from("body_weight_entries")
+            .insert(entry)
+            .execute()
+        
+        await MainActor.run {
+            bodyWeightEntries.insert(entry, at: 0) // Add to beginning for chronological order
+        }
+    }
+    
+    func loadBodyWeightEntries() async {
+        do {
+            let response: [BodyWeightEntry] = try await supabase
+                .from("body_weight_entries")
+                .select()
+                .order("recorded_at", ascending: false)
+                .execute()
+                .value
+            
+            await MainActor.run {
+                bodyWeightEntries = response
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error
+            }
+        }
+    }
+    
+    func deleteBodyWeightEntry(_ entry: BodyWeightEntry) async throws {
+        try await supabase
+            .from("body_weight_entries")
+            .delete()
+            .eq("id", value: entry.id)
+            .execute()
+        
+        await MainActor.run {
+            bodyWeightEntries.removeAll { $0.id == entry.id }
+        }
+    }
+    
+    func getRecentBodyWeightEntries(days: Int = 90) async throws -> [BodyWeightEntry] {
+        let startDate = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
+        
+        let response: [BodyWeightEntry] = try await supabase
+            .from("body_weight_entries")
+            .select()
+            .gte("recorded_at", value: startDate)
+            .order("recorded_at", ascending: true)
+            .execute()
+            .value
+        
+        return response
     }
     
     // MARK: - Helper Methods

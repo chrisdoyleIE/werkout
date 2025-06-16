@@ -155,6 +155,30 @@ struct PersonalRecord: Codable, Identifiable {
     }
 }
 
+struct BodyWeightEntry: Codable, Identifiable {
+    let id: UUID
+    let userId: UUID
+    let weightKg: Double
+    let recordedAt: Date
+    let notes: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case weightKg = "weight_kg"
+        case recordedAt = "recorded_at"
+        case notes
+    }
+    
+    init(id: UUID = UUID(), userId: UUID, weightKg: Double, recordedAt: Date = Date(), notes: String? = nil) {
+        self.id = id
+        self.userId = userId
+        self.weightKg = weightKg
+        self.recordedAt = recordedAt
+        self.notes = notes
+    }
+}
+
 // MARK: - UI Models
 struct ExerciseWithSets {
     let exercise: Exercise
