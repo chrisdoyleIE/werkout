@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct werkowtApp: App {
+struct WerkowtApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView()

@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 struct WorkoutProgressView: View {
     @EnvironmentObject var workoutDataManager: WorkoutDataManager
@@ -101,7 +102,7 @@ struct WorkoutProgressView: View {
                 await MainActor.run {
                     isLoadingPRs = false
                 }
-                print("Failed to load personal records: \(error)")
+                Logger.error("Failed to load personal records: \(error)", category: Logger.data)
             }
         }
     }
@@ -119,7 +120,7 @@ struct WorkoutProgressView: View {
                 await MainActor.run {
                     isLoadingProgress = false
                 }
-                print("Failed to load progress data: \(error)")
+                Logger.error("Failed to load progress data: \(error)", category: Logger.data)
             }
         }
     }
@@ -138,7 +139,7 @@ struct WorkoutProgressView: View {
                 await MainActor.run {
                     isLoadingWeight = false
                 }
-                print("Failed to load weight data: \(error)")
+                Logger.error("Failed to load weight data: \(error)", category: Logger.data)
             }
         }
     }
@@ -791,7 +792,7 @@ struct WeightTrendCard: View {
                     chartData = recentEntries
                 }
             } catch {
-                print("Failed to load weight chart data: \(error)")
+                Logger.error("Failed to load weight chart data: \(error)", category: Logger.data)
             }
         }
     }
@@ -806,7 +807,7 @@ struct WeightTrendCard: View {
                     chartData = recentEntries
                 }
             } catch {
-                print("Failed to delete weight entry: \(error)")
+                Logger.error("Failed to delete weight entry: \(error)", category: Logger.data)
             }
         }
     }

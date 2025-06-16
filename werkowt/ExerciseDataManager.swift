@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 class ExerciseDataManager: ObservableObject {
     @Published var muscleGroups: [MuscleGroup] = []
@@ -60,16 +61,3 @@ class ExerciseDataManager: ObservableObject {
     }
 }
 
-enum ExerciseDataError: Error, LocalizedError {
-    case fileNotFound
-    case decodingError
-    
-    var errorDescription: String? {
-        switch self {
-        case .fileNotFound:
-            return "Exercise data file not found"
-        case .decodingError:
-            return "Failed to decode exercise data"
-        }
-    }
-}

@@ -1,6 +1,7 @@
 import Foundation
 import Supabase
 import Auth
+import os
 
 @MainActor
 class AuthManager: ObservableObject {
@@ -92,7 +93,7 @@ class AuthManager: ObservableObject {
                 .execute()
             
         } catch {
-            print("Failed to create/update profile: \(error)")
+            Logger.error("Failed to create/update profile: \(error)", category: Logger.auth)
         }
     }
     

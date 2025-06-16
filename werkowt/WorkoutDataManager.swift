@@ -1,5 +1,6 @@
 import Foundation
 import Supabase
+import os
 
 class WorkoutDataManager: ObservableObject {
     @Published var workoutSessions: [WorkoutSession] = []
@@ -218,7 +219,7 @@ class WorkoutDataManager: ObservableObject {
                 )
             }
         } catch {
-            print("Failed to check/update personal record: \(error)")
+            Logger.error("Failed to check/update personal record: \(error)", category: Logger.data)
         }
     }
     
@@ -379,25 +380,8 @@ class WorkoutDataManager: ObservableObject {
     
     private func getCurrentUserId() async throws -> UUID {
         guard let userId = await AuthManager.shared.userId else {
-            throw WorkoutDataError.notAuthenticated
+            throw WorkoutError.notAuthenticated
         }
         return userId
-    }
-}
-
-enum WorkoutDataError: Error, LocalizedError {
-    case notAuthenticated
-    case sessionNotFound
-    case invalidData
-    
-    var errorDescription: String? {
-        switch self {
-        case .notAuthenticated:
-            return "User not authenticated"
-        case .sessionNotFound:
-            return "Workout session not found"
-        case .invalidData:
-            return "Invalid workout data"
-        }
     }
 }
