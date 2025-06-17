@@ -121,26 +121,26 @@ class MealPlanManager: ObservableObject {
     
     @MainActor
     func generateAIMealPlan(
-        userPreferences: String,
         startDate: Date,
         numberOfDays: Int,
-        macroGoals: MacroGoals?
+        macroGoals: MacroGoals?,
+        configuration: MealPlanningConfiguration
     ) async throws -> MealPlan {
         isGeneratingMealPlan = true
         generationError = nil
         
         do {
             let generatedMealPlan = try await claudeClient.generateMealPlan(
-                userPreferences: userPreferences,
                 numberOfDays: numberOfDays,
                 startDate: startDate,
-                macroGoals: macroGoals
+                macroGoals: macroGoals,
+                configuration: configuration
             )
             
             let mealPlan = MealPlan(
                 startDate: startDate,
                 numberOfDays: numberOfDays,
-                userPreferences: userPreferences,
+                userPreferences: configuration.additionalNotes.isEmpty ? "AI Generated Meal Plan" : configuration.additionalNotes,
                 generatedMealPlan: generatedMealPlan,
                 createdAt: Date()
             )

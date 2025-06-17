@@ -279,4 +279,3 @@ struct MealPlanDetailView: View {
         .frame(maxWidth: .infinity)
     }
 }
-

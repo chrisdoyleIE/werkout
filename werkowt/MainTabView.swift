@@ -6,10 +6,10 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: .constant(0)) {
-            MealTrackingView()
+            NutritionTabView()
                 .tabItem {
                     Image(systemName: "carrot")
-                    Text("Meals")
+                    Text("Nutrition")
                 }
                 .tag(0)
             

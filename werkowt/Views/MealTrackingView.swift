@@ -192,6 +192,7 @@ struct MealTrackingView: View {
         .sheet(isPresented: $showingMealPlanning) {
             MealPlanningView()
                 .environmentObject(mealPlanManager)
+                .environmentObject(macroGoalsManager)
         }
         .sheet(isPresented: $showingMealPlanList) {
             MealPlanListView()

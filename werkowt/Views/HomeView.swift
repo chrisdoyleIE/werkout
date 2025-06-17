@@ -4,11 +4,21 @@ struct HomeView: View {
     @EnvironmentObject var activeWorkout: ActiveWorkout
     @EnvironmentObject var workoutDataManager: WorkoutDataManager
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
+    @StateObject private var macroGoalsManager = MacroGoalsManager()
+    @StateObject private var mealPlanManager = MealPlanManager()
+    
     @State private var showingWorkoutCreator = false
     @State private var showingLiveWorkout = false
     @State private var showingAddWeight = false
+    @State private var showingFoodLogger = false
     @State private var selectedDate = Date()
     @State private var selectedSession: WorkoutSession?
+    
+    // Nutrition state
+    @State private var caloriesConsumed: Double = 2200
+    @State private var proteinConsumed: Double = 165
+    @State private var carbsConsumed: Double = 120
+    @State private var fatConsumed: Double = 30
     
     private let calendar = Calendar.current
     private let dateFormatter: DateFormatter = {
@@ -19,32 +29,25 @@ struct HomeView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Header with inline counter
             VStack(spacing: 16) {
-                Text("WERKOUT")
-                    .font(.largeTitle)
-                    .fontWeight(.black)
-                
-                HStack(spacing: 24) {
-                    VStack {
-                        Text("\(workoutDataManager.workoutSessions.count)")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.blue)
-                        Text("Workouts")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    VStack {
-                        Text(dateFormatter.string(from: selectedDate))
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        Text("Current Month")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                HStack {
+                    Text("WERKOUT ")
+                        .font(.largeTitle)
+                        .fontWeight(.black)
+                    + Text("\(workoutDataManager.workoutSessions.count)")
+                        .font(.largeTitle)
+                        .fontWeight(.black)
+                        .foregroundColor(.blue)
                 }
+                
+                // Date Navigation
+                DateNavigationView(
+                    selectedDate: $selectedDate,
+                    onPreviousDay: previousDay,
+                    onNextDay: nextDay
+                )
+                
             }
             .padding()
             
@@ -56,57 +59,30 @@ struct HomeView: View {
                 selectedSession = session
             }
             
+            
+            // Macro Progress Pie Charts
+            HorizontalMacroCharts(
+                calories: caloriesConsumed,
+                protein: proteinConsumed,
+                carbs: carbsConsumed,
+                fat: fatConsumed,
+                goals: macroGoalsManager.goals
+            )
+            
             Spacer()
             
-            // Action Buttons
-            VStack(spacing: 12) {
-                // Main Workout Button
-                Button(action: {
+            // Unified Action Widget
+            UnifiedActionWidget(
+                onWorkoutTap: {
                     showingWorkoutCreator = true
-                }) {
-                    HStack {
-                        Image(systemName: "play.fill")
-                            .font(.title3)
-                        Text("LOG WORKOUT")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.blue, Color.blue.opacity(0.8)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(16)
-                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                }
-                
-                // Add Weight Button
-                Button(action: {
+                },
+                onFoodTap: {
+                    showingFoodLogger = true
+                },
+                onWeightTap: {
                     showingAddWeight = true
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle")
-                            .font(.title3)
-                        Text("ADD WEIGHT")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                    }
-                    .foregroundColor(.blue)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                    )
                 }
-            }
+            )
             .padding(.horizontal)
             .padding(.bottom, 32)
         }
@@ -126,6 +102,24 @@ struct HomeView: View {
         .sheet(item: $selectedSession) { session in
             WorkoutDetailView(session: session)
         }
+        .sheet(isPresented: $showingFoodLogger) {
+            // Food logging view - placeholder for now
+            NavigationView {
+                VStack {
+                    Text("Food Logging")
+                        .font(.title)
+                    Text("This will integrate with the nutrition system")
+                        .foregroundColor(.secondary)
+                    
+                    Button("Close") {
+                        showingFoodLogger = false
+                    }
+                    .padding()
+                }
+                .navigationTitle("Log Food")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+        }
         .onChange(of: activeWorkout.isActive) { isActive in
             if isActive {
                 showingWorkoutCreator = false
@@ -143,6 +137,15 @@ struct HomeView: View {
                     showingLiveWorkout = false
                 }
         }
+    }
+    
+    
+    private func previousDay() {
+        selectedDate = calendar.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+    }
+    
+    private func nextDay() {
+        selectedDate = calendar.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
     }
     
     private func addWeight(weight: Double, notes: String?) async {
@@ -167,24 +170,6 @@ struct CalendarView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Month navigation
-            HStack {
-                Button(action: previousMonth) {
-                    Image(systemName: "chevron.left")
-                        .font(.title2)
-                        .padding()
-                }
-                
-                Spacer()
-                
-                Button(action: nextMonth) {
-                    Image(systemName: "chevron.right")
-                        .font(.title2)
-                        .padding()
-                }
-            }
-            .padding(.horizontal)
-            
             // Day headers (Monday to Sunday)
             HStack {
                 ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
@@ -242,13 +227,6 @@ struct CalendarView: View {
         }
     }
     
-    private func previousMonth() {
-        selectedDate = calendar.date(byAdding: .month, value: -1, to: selectedDate) ?? selectedDate
-    }
-    
-    private func nextMonth() {
-        selectedDate = calendar.date(byAdding: .month, value: 1, to: selectedDate) ?? selectedDate
-    }
 }
 
 struct CalendarDayView: View {

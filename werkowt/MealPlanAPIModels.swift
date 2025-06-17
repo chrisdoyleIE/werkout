@@ -17,6 +17,8 @@ struct GeneratedMealPlan: Codable {
     let totalDays: Int
     let dailyMeals: [DailyMeal]
     let shoppingList: [String]?
+    let categorizedShoppingList: [String: [String]]?
+    let mealPrepInstructions: [String]?
     let totalNutrition: NutritionSummary?
 }
 
@@ -76,6 +78,87 @@ enum MealType: String, Codable, CaseIterable {
         case .snack: return "leaf.fill"
         }
     }
+}
+
+// MARK: - Meal Planning Configuration Types
+enum DietType: String, CaseIterable {
+    case omnivore = "Omnivore"
+    case vegetarian = "Vegetarian"
+    case vegan = "Vegan"
+    case keto = "Keto"
+    case mediterranean = "Mediterranean"
+    case paleo = "Paleo"
+}
+
+enum BudgetLevel: String, CaseIterable {
+    case low = "Low"
+    case medium = "Medium"
+    case high = "High"
+}
+
+enum ShopType: String, CaseIterable {
+    case cornerStore = "Corner Store"
+    case supermarket = "Supermarket"
+}
+
+enum SkillLevel: String, CaseIterable {
+    case beginner = "Beginner"
+    case intermediate = "Intermediate"
+    case advanced = "Advanced"
+}
+
+enum PrepTime: String, CaseIterable {
+    case quick = "5 min"
+    case short = "15 min"
+    case medium = "30 min"
+    case long = "45+ min"
+    
+    var minutes: Int {
+        switch self {
+        case .quick: return 5
+        case .short: return 15
+        case .medium: return 30
+        case .long: return 45
+        }
+    }
+}
+
+enum CookingFrequency: String, CaseIterable {
+    case daily = "Daily"
+    case everyOtherDay = "Every Other Day"
+    case twicePerWeek = "Twice Per Week"
+    case oncePerWeek = "Once Per Week"
+    
+    var description: String {
+        switch self {
+        case .daily: return "I prefer to cook every day"
+        case .everyOtherDay: return "I like to cook every other day"
+        case .twicePerWeek: return "I prefer to cook twice per week"
+        case .oncePerWeek: return "I only want to cook once per week"
+        }
+    }
+    
+    var batchCookingNeeded: Bool {
+        switch self {
+        case .daily: return false
+        case .everyOtherDay: return true
+        case .twicePerWeek: return true
+        case .oncePerWeek: return true
+        }
+    }
+}
+
+struct MealPlanningConfiguration {
+    let selectedMealTypes: Set<MealType>
+    let householdSize: Int
+    let maxPrepTime: PrepTime
+    let cookingFrequency: CookingFrequency
+    let dietType: DietType
+    let skillLevel: SkillLevel
+    let budgetLevel: BudgetLevel
+    let shopType: ShopType
+    let selectedAllergens: Set<String>
+    let additionalNotes: String
 }
 
 // MARK: - Error Types

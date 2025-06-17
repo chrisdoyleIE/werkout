@@ -79,6 +79,84 @@
                   endingLineNumber = "139"
                   offsetFromSymbolStart = "68">
                </Location>
+               <Location
+                  uuid = "375CAFE6-69F1-43B6-8626-7E8128C728F2 - 258248a04dc2137"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 () -&gt; SwiftUI.TupleView&lt;(SwiftUI.Text, SwiftUI.Text, &lt;&lt;opaque return type of SwiftUI.View.buttonStyle&lt;&#x3c4;_0_0 where &#x3c4;_1_0: SwiftUI.PrimitiveButtonStyle&gt;(&#x3c4;_1_0) -&gt; some&gt;&gt;.0)&gt; in closure #3 () -&gt; SwiftUI.TupleView&lt;(Swift.Optional&lt;&lt;&lt;opaque return type of SwiftUI.View.cornerRadius(_: CoreGraphics.CGFloat, antialiased: Swift.Bool) -&gt; some&gt;&gt;.0&gt;, Swift.Optional&lt;SwiftUI._ConditionalContent&lt;SwiftUI._ConditionalContent&lt;&lt;&lt;opaque return type of werkowt.LiveWorkoutView.weightExerciseInput() -&gt; some&gt;&gt;.0, &lt;&lt;opaque return type of werkowt.LiveWorkoutView.bodyweightExerciseInput() -&gt; some&gt;&gt;.0&gt;, &lt;&lt;opaque return type of werkowt.LiveWorkoutView.timedExerciseInput() -&gt; some&gt;&gt;.0&gt;&gt;, Swift.Optional&lt;&lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0&gt;)&gt; in closure #1 () -&gt; SwiftUI.TupleView&lt;(&lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0, Swift.Optional&lt;&lt;&lt;opaque return type of SwiftUI.View.cornerRadius(_: CoreGraphics.CGFloat, antialiased: Swift.Bool) -&gt; some&gt;&gt;.0&gt;, Swift.Optional&lt;&lt;&lt;opaque return type of SwiftUI.View.cornerRadius(_: CoreGraphics.CGFloat, antialiased: Swift.Bool) -&gt; some&gt;&gt;.0&gt;, &lt;&lt;opaque return type of SwiftUI.View.cornerRadius(_: CoreGraphics.CGFloat, antialiased: Swift.Bool) -&gt; some&gt;&gt;.0, SwiftUI.Spacer)&gt; in closure #2 () -&gt; &lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0 in closure #1 () -&gt; SwiftUI.TupleView&lt;(&lt;&lt;opaque return type of SwiftUI.View.background&lt;&#x3c4;_0_0 where &#x3c4;_1_0: SwiftUI.ShapeStyle&gt;(_: &#x3c4;_1_0, ignoresSafeAreaEdges: SwiftUI.Edge.Set) -&gt; some&gt;&gt;.0, SwiftUI._ConditionalContent&lt;SwiftUI.ScrollView&lt;&lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0&gt;, SwiftUI.TupleView&lt;(SwiftUI.Spacer, SwiftUI.Text, SwiftUI.Spacer)&gt;&gt;)&gt; in werkowt.LiveWorkoutView.body.getter : some"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/Views/LiveWorkoutView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "139"
+                  endingLineNumber = "139"
+                  offsetFromSymbolStart = "704">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "70"
+            endingLineNumber = "70"
+            landmarkName = "generateMealPlan(numberOfDays:startDate:macroGoals:configuration:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - faaa278d14019ca2"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "werkowt.ClaudeAPIClient.buildMealPlanPrompt(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration) -&gt; Swift.String"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "74"
+                  endingLineNumber = "74"
+                  offsetFromSymbolStart = "300">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - ed85f3826209811"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "70"
+                  endingLineNumber = "70"
+                  offsetFromSymbolStart = "2476">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - ed85f3826209811"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "70"
+                  endingLineNumber = "70"
+                  offsetFromSymbolStart = "548">
+               </Location>
             </Locations>
          </BreakpointContent>
       </BreakpointProxy>
