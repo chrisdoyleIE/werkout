@@ -259,53 +259,25 @@ struct CalendarDayView: View {
     
     @EnvironmentObject var workoutDataManager: WorkoutDataManager
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
-    @State private var workoutPreview: WorkoutPreviewData?
+    @State private var macroData: MacroData = MacroData.empty
     
     private let calendar = Calendar.current
     
     var body: some View {
         Button(action: { onTap(workoutSession) }) {
-            VStack(spacing: 1) {
+            VStack(spacing: 2) {
                 Text("\(calendar.component(.day, from: date))")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(workoutSession != nil ? .white : (isCurrentMonth ? .primary : .secondary))
                 
-                if let session = workoutSession, let preview = workoutPreview {
-                    VStack(spacing: 1) {
-                        // Exercise count or class indicator
-                        if preview.exerciseCount > 0 {
-                            Text("\(preview.exerciseCount)")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 16, height: 10)
-                                .background(Color.white.opacity(0.3))
-                                .cornerRadius(5)
-                        } else {
-                            // Show class icon for gym classes (0 exercises)
-                            Image(systemName: "figure.strengthtraining.functional")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                        
-                        // Duration
-                        if let duration = preview.duration {
-                            Text("\(duration)m")
-                                .font(.system(size: 7, weight: .medium))
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                    }
-                } else if workoutSession != nil {
-                    Circle()
-                        .fill(Color.white.opacity(0.8))
-                        .frame(width: 4, height: 4)
-                }
+                Spacer()
             }
             .frame(width: 45, height: 45)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(
                         workoutSession != nil ? 
-                        (workoutPreview?.isGymClass == true ? Color.purple : Color.green) :
+                        Color.green :
                         Color.clear
                     )
                     .overlay(
@@ -313,48 +285,56 @@ struct CalendarDayView: View {
                             .stroke(calendar.isDateInToday(date) ? Color.blue : Color.clear, lineWidth: 2)
                     )
             )
+            .overlay(
+                // Macro achievement border segments
+                ZStack {
+                    if macroData.caloriesAchieved {
+                        MacroBorderSegment(position: .topLeft)
+                    }
+                    if macroData.proteinAchieved {
+                        MacroBorderSegment(position: .topRight)
+                    }
+                    if macroData.carbsAchieved {
+                        MacroBorderSegment(position: .bottomLeft)
+                    }
+                    if macroData.fatAchieved {
+                        MacroBorderSegment(position: .bottomRight)
+                    }
+                }
+            )
             .scaleEffect(workoutSession != nil ? 1.05 : 1.0)
             .shadow(color: workoutSession != nil ? 
-                    (workoutPreview?.isGymClass == true ? Color.purple.opacity(0.3) : Color.green.opacity(0.3)) : 
+                    Color.green.opacity(0.3) : 
                     .clear, radius: 4, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(workoutSession == nil)
         .task {
             if let session = workoutSession {
-                await loadWorkoutPreview(for: session)
+                await loadMacroData(for: session)
             }
         }
     }
     
-    private func loadWorkoutPreview(for session: WorkoutSession) async {
-        do {
-            let sets = try await workoutDataManager.getSets(for: session.id)
-            let uniqueExercises = Set(sets.map { $0.exerciseId })
-            let isGymClass = uniqueExercises.isEmpty
-            
-            let abbreviatedName = session.name.components(separatedBy: " ").compactMap { $0.first }.map(String.init).joined()
-            
-            await MainActor.run {
-                workoutPreview = WorkoutPreviewData(
-                    abbreviatedName: String(abbreviatedName.prefix(3)).uppercased(),
-                    exerciseCount: uniqueExercises.count,
-                    duration: session.durationMinutes,
-                    isGymClass: isGymClass
-                )
+    private func loadMacroData(for session: WorkoutSession) async {
+        // For now, use sample data - this will be replaced with actual macro data loading
+        await MainActor.run {
+            let day = calendar.component(.day, from: session.startedAt)
+            switch day % 4 {
+            case 0:
+                macroData = MacroData.allAchieved
+            case 1:
+                macroData = MacroData.caloriesOnly
+            case 2:
+                macroData = MacroData.sample
+            default:
+                macroData = MacroData.empty
             }
-        } catch {
-            print("Failed to load workout preview: \(error)")
         }
     }
+    
 }
 
-struct WorkoutPreviewData {
-    let abbreviatedName: String
-    let exerciseCount: Int
-    let duration: Int?
-    let isGymClass: Bool
-}
 
 struct WorkoutDetailView: View {
     let session: WorkoutSession
@@ -566,6 +546,90 @@ struct WeekCalendarView: View {
     private func hasWorkout(_ date: Date) -> Bool {
         workoutSessions.contains { session in
             calendar.isDate(session.startedAt, inSameDayAs: date)
+        }
+    }
+}
+
+enum BorderPosition {
+    case topLeft, topRight, bottomLeft, bottomRight
+}
+
+struct MacroBorderSegment: View {
+    let position: BorderPosition
+    let cornerRadius: CGFloat = 8
+    let borderWidth: CGFloat = 2.5
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius)
+            .strokeBorder(Color.clear, lineWidth: 0)
+            .overlay(
+                borderPath
+                    .stroke(Color.green, lineWidth: borderWidth)
+            )
+    }
+    
+    private var borderPath: Path {
+        Path { path in
+            let rect = CGRect(x: 0, y: 0, width: 45, height: 45)
+            let radius = cornerRadius
+            
+            switch position {
+            case .topLeft:
+                // Top edge
+                path.move(to: CGPoint(x: radius, y: 0))
+                path.addLine(to: CGPoint(x: rect.midX, y: 0))
+                // Left edge
+                path.move(to: CGPoint(x: 0, y: radius))
+                path.addLine(to: CGPoint(x: 0, y: rect.midY))
+                // Top-left corner
+                path.addArc(center: CGPoint(x: radius, y: radius), 
+                           radius: radius, 
+                           startAngle: Angle(degrees: 180), 
+                           endAngle: Angle(degrees: 270), 
+                           clockwise: false)
+                
+            case .topRight:
+                // Top edge
+                path.move(to: CGPoint(x: rect.midX, y: 0))
+                path.addLine(to: CGPoint(x: rect.width - radius, y: 0))
+                // Right edge
+                path.move(to: CGPoint(x: rect.width, y: radius))
+                path.addLine(to: CGPoint(x: rect.width, y: rect.midY))
+                // Top-right corner
+                path.addArc(center: CGPoint(x: rect.width - radius, y: radius), 
+                           radius: radius, 
+                           startAngle: Angle(degrees: 270), 
+                           endAngle: Angle(degrees: 0), 
+                           clockwise: false)
+                
+            case .bottomLeft:
+                // Bottom edge
+                path.move(to: CGPoint(x: radius, y: rect.height))
+                path.addLine(to: CGPoint(x: rect.midX, y: rect.height))
+                // Left edge
+                path.move(to: CGPoint(x: 0, y: rect.midY))
+                path.addLine(to: CGPoint(x: 0, y: rect.height - radius))
+                // Bottom-left corner
+                path.addArc(center: CGPoint(x: radius, y: rect.height - radius), 
+                           radius: radius, 
+                           startAngle: Angle(degrees: 90), 
+                           endAngle: Angle(degrees: 180), 
+                           clockwise: false)
+                
+            case .bottomRight:
+                // Bottom edge
+                path.move(to: CGPoint(x: rect.midX, y: rect.height))
+                path.addLine(to: CGPoint(x: rect.width - radius, y: rect.height))
+                // Right edge
+                path.move(to: CGPoint(x: rect.width, y: rect.midY))
+                path.addLine(to: CGPoint(x: rect.width, y: rect.height - radius))
+                // Bottom-right corner
+                path.addArc(center: CGPoint(x: rect.width - radius, y: rect.height - radius), 
+                           radius: radius, 
+                           startAngle: Angle(degrees: 0), 
+                           endAngle: Angle(degrees: 90), 
+                           clockwise: false)
+            }
         }
     }
 }
