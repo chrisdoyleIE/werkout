@@ -16,8 +16,8 @@ struct GeneratedMealPlan: Codable {
     let description: String
     let totalDays: Int
     let dailyMeals: [DailyMeal]
-    let shoppingList: [String]?
-    let categorizedShoppingList: [String: [String]]?
+    let shoppingList: [ShoppingListItemDetail]?
+    let categorizedShoppingList: [String: [String]]? // Legacy support
     let mealPrepInstructions: [String]?
     let totalNutrition: NutritionSummary?
 }
@@ -78,6 +78,52 @@ enum MealType: String, Codable, CaseIterable {
         case .dinner: return "moon.fill"
         case .snack: return "leaf.fill"
         }
+    }
+}
+
+// MARK: - Shopping Category Types
+enum ShoppingCategory: String, Codable, CaseIterable {
+    case dairy = "Dairy"
+    case meatAndFish = "Meat & Fish"
+    case fruitAndVeg = "Fruit & Veg"
+    case storeCupboard = "Store Cupboard"
+    case frozen = "Frozen"
+    case breadsAndGrains = "Breads & Grains"
+    case other = "Other"
+    
+    var displayName: String {
+        return self.rawValue
+    }
+    
+    var icon: String {
+        switch self {
+        case .dairy: return "drop.fill"
+        case .meatAndFish: return "fish.fill"
+        case .fruitAndVeg: return "leaf.fill"
+        case .storeCupboard: return "archivebox.fill"
+        case .frozen: return "snowflake"
+        case .breadsAndGrains: return "takeoutbag.and.cup.and.straw.fill"
+        case .other: return "bag.fill"
+        }
+    }
+}
+
+struct ShoppingListItemDetail: Codable {
+    let name: String
+    let amount: String
+    let category: ShoppingCategory
+    
+    init(name: String, amount: String, category: ShoppingCategory) {
+        self.name = name
+        self.amount = amount
+        self.category = category
+    }
+    
+    // Fallback initializer for legacy string-only items
+    init(name: String, category: ShoppingCategory? = nil) {
+        self.name = name
+        self.amount = ""
+        self.category = category ?? .other
     }
 }
 

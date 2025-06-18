@@ -256,7 +256,9 @@ struct ShoppingDashboardView: View {
                     Spacer()
                     
                     Button(action: {
-                        shoppingListManager.resetShoppingList(shoppingList)
+                        Task {
+                            await shoppingListManager.resetShoppingList(shoppingList)
+                        }
                     }) {
                         Image(systemName: "arrow.clockwise")
                             .font(.caption)
@@ -277,11 +279,15 @@ struct ShoppingDashboardView: View {
             }
             
             Button("Reset List") {
-                shoppingListManager.resetShoppingList(shoppingList)
+                Task {
+                    await shoppingListManager.resetShoppingList(shoppingList)
+                }
             }
             
             Button("Delete List", role: .destructive) {
-                shoppingListManager.deleteShoppingList(shoppingList)
+                Task {
+                    await shoppingListManager.deleteShoppingList(shoppingList)
+                }
             }
         }
     }
@@ -304,7 +310,9 @@ struct ShoppingDashboardView: View {
             Spacer()
             
             Button("Reset") {
-                shoppingListManager.resetShoppingList(shoppingList)
+                Task {
+                    await shoppingListManager.resetShoppingList(shoppingList)
+                }
             }
             .font(.caption)
             .foregroundColor(.blue)
@@ -379,8 +387,15 @@ struct ShoppingListDetailView: View {
                 
                 // Shopping Items
                 List {
-                    ForEach(Array(shoppingList.categorizedItems.keys.sorted()), id: \.self) { category in
-                        Section(category) {
+                    ForEach(ShoppingCategory.allCases.filter { shoppingList.categorizedItems[$0] != nil && !shoppingList.categorizedItems[$0]!.isEmpty }, id: \.self) { category in
+                        Section(header: HStack {
+                            Image(systemName: category.icon)
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                            Text(category.displayName)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }) {
                             ForEach(shoppingList.categorizedItems[category] ?? [], id: \.id) { item in
                                 shoppingItemRow(item)
                             }
@@ -400,7 +415,9 @@ struct ShoppingListDetailView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Reset") {
-                        shoppingListManager.resetShoppingList(shoppingList)
+                        Task {
+                            await shoppingListManager.resetShoppingList(shoppingList)
+                        }
                     }
                 }
             }
@@ -410,7 +427,9 @@ struct ShoppingListDetailView: View {
     private func shoppingItemRow(_ item: ShoppingListItem) -> some View {
         HStack {
             Button(action: {
-                shoppingListManager.toggleItemCompletion(item)
+                Task {
+                    await shoppingListManager.toggleItemCompletion(item)
+                }
             }) {
                 Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(item.isCompleted ? .green : .gray)
@@ -418,9 +437,18 @@ struct ShoppingListDetailView: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            Text(item.name)
-                .strikethrough(item.isCompleted)
-                .foregroundColor(item.isCompleted ? .secondary : .primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name)
+                    .strikethrough(item.isCompleted)
+                    .foregroundColor(item.isCompleted ? .secondary : .primary)
+                
+                if !item.amount.isEmpty {
+                    Text(item.amount)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .strikethrough(item.isCompleted)
+                }
+            }
             
             Spacer()
         }

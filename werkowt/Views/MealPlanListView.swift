@@ -64,7 +64,9 @@ struct MealPlanListView: View {
     private func deleteMealPlans(offsets: IndexSet) {
         for index in offsets {
             let mealPlan = mealPlanManager.mealPlans[index]
-            mealPlanManager.deleteMealPlan(mealPlan)
+            Task {
+                await mealPlanManager.deleteMealPlan(mealPlan)
+            }
         }
     }
 }
@@ -160,7 +162,9 @@ struct MealPlanRowView: View {
         createdAt: Calendar.current.date(byAdding: .day, value: -2, to: Date()) ?? Date()
     )
     
-    manager.saveMealPlan(sampleManualPlan)
+    Task {
+        await manager.saveMealPlan(sampleManualPlan)
+    }
     
     return MealPlanListView()
         .environmentObject(manager)

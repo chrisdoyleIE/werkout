@@ -8,7 +8,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "werkowt/ClaudeAPIClient.swift"
@@ -19,20 +19,6 @@
             landmarkName = "generateMealPlan(numberOfDays:startDate:macroGoals:configuration:measurementUnit:temperatureUnit:)"
             landmarkType = "7">
             <Locations>
-               <Location
-                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - 1d5c0c2a0b1d054b"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration) async throws -&gt; werkowt.GeneratedMealPlan"
-                  moduleName = "werkowt.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "70"
-                  endingLineNumber = "70">
-               </Location>
                <Location
                   uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - 64969f257c2dff2"
                   shouldBeEnabled = "Yes"

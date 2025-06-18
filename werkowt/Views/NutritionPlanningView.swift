@@ -294,7 +294,9 @@ struct NutritionPlanningView: View {
             
             if !isActive {
                 Button("Delete Plan", role: .destructive) {
-                    mealPlanManager.deleteMealPlan(plan)
+                    Task {
+                        await mealPlanManager.deleteMealPlan(plan)
+                    }
                 }
             }
         }

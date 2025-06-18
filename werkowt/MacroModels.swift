@@ -94,29 +94,54 @@ struct MealPlan: Identifiable, Codable {
         self.isAIGenerated = true
         self.generatedMealPlan = generatedMealPlan
     }
+    
+    // Database initializer
+    init(id: UUID, startDate: Date, numberOfDays: Int, mealPlanText: String, createdAt: Date, isAIGenerated: Bool, generatedMealPlan: GeneratedMealPlan?) {
+        self.id = id
+        self.startDate = startDate
+        self.numberOfDays = numberOfDays
+        self.mealPlanText = mealPlanText
+        self.createdAt = createdAt
+        self.isAIGenerated = isAIGenerated
+        self.generatedMealPlan = generatedMealPlan
+    }
 }
 
 class MealPlanManager: ObservableObject {
     @Published var mealPlans: [MealPlan] = []
     @Published var isGeneratingMealPlan = false
     @Published var generationError: Error?
+    @Published var isLoading = false
     
-    private let userDefaults = UserDefaults.standard
-    private let mealPlansKey = "SavedMealPlans"
+    private let supabaseService = SupabaseService.shared
     private let claudeClient = ClaudeAPIClient.shared
     
     init() {
-        loadMealPlans()
+        Task {
+            await loadMealPlans()
+        }
     }
     
-    func saveMealPlan(_ mealPlan: MealPlan) {
-        mealPlans.append(mealPlan)
-        saveMealPlans()
+    @MainActor
+    func saveMealPlan(_ mealPlan: MealPlan) async {
+        do {
+            try await supabaseService.saveMealPlan(mealPlan)
+            if !mealPlans.contains(where: { $0.id == mealPlan.id }) {
+                mealPlans.append(mealPlan)
+            }
+        } catch {
+            generationError = error
+        }
     }
     
-    func deleteMealPlan(_ mealPlan: MealPlan) {
-        mealPlans.removeAll { $0.id == mealPlan.id }
-        saveMealPlans()
+    @MainActor
+    func deleteMealPlan(_ mealPlan: MealPlan) async {
+        do {
+            try await supabaseService.deleteMealPlan(mealPlan)
+            mealPlans.removeAll { $0.id == mealPlan.id }
+        } catch {
+            generationError = error
+        }
     }
     
     @MainActor
@@ -149,7 +174,7 @@ class MealPlanManager: ObservableObject {
                 createdAt: Date()
             )
             
-            saveMealPlan(mealPlan)
+            await saveMealPlan(mealPlan)
             isGeneratingMealPlan = false
             return mealPlan
             
@@ -165,53 +190,66 @@ class MealPlanManager: ObservableObject {
         return try await claudeClient.generateQuickMealSuggestion(preferences: preferences)
     }
     
-    private func saveMealPlans() {
-        if let encoded = try? JSONEncoder().encode(mealPlans) {
-            userDefaults.set(encoded, forKey: mealPlansKey)
+    @MainActor
+    private func loadMealPlans() async {
+        isLoading = true
+        do {
+            mealPlans = try await supabaseService.getMealPlans()
+        } catch {
+            generationError = error
         }
+        isLoading = false
     }
     
-    private func loadMealPlans() {
-        if let data = userDefaults.data(forKey: mealPlansKey),
-           let decoded = try? JSONDecoder().decode([MealPlan].self, from: data) {
-            mealPlans = decoded.sorted { $0.createdAt > $1.createdAt }
-        }
+    @MainActor
+    func refreshMealPlans() async {
+        await loadMealPlans()
     }
 }
 
 class MacroGoalsManager: ObservableObject {
     @Published var goals: MacroGoals = .default
+    @Published var isLoading = false
+    @Published var error: Error?
     
-    private let userDefaults = UserDefaults.standard
-    private let goalsKey = "MacroGoals"
+    private let supabaseService = SupabaseService.shared
     
     init() {
-        loadGoals()
-    }
-    
-    func updateGoals(calories: Double, protein: Double, carbs: Double, fat: Double) {
-        goals = MacroGoals(calories: calories, protein: protein, carbs: carbs, fat: fat)
-        saveGoals()
-    }
-    
-    private func saveGoals() {
-        let goalsData = [
-            "calories": goals.calories,
-            "protein": goals.protein,
-            "carbs": goals.carbs,
-            "fat": goals.fat
-        ]
-        userDefaults.set(goalsData, forKey: goalsKey)
-    }
-    
-    private func loadGoals() {
-        if let goalsData = userDefaults.dictionary(forKey: goalsKey) as? [String: Double] {
-            goals = MacroGoals(
-                calories: goalsData["calories"] ?? MacroGoals.default.calories,
-                protein: goalsData["protein"] ?? MacroGoals.default.protein,
-                carbs: goalsData["carbs"] ?? MacroGoals.default.carbs,
-                fat: goalsData["fat"] ?? MacroGoals.default.fat
-            )
+        Task {
+            await loadGoals()
         }
+    }
+    
+    @MainActor
+    func updateGoals(calories: Double, protein: Double, carbs: Double, fat: Double) async {
+        goals = MacroGoals(calories: calories, protein: protein, carbs: carbs, fat: fat)
+        await saveGoals()
+    }
+    
+    @MainActor
+    private func saveGoals() async {
+        do {
+            try await supabaseService.saveMacroGoals(goals)
+        } catch {
+            self.error = error
+        }
+    }
+    
+    @MainActor
+    private func loadGoals() async {
+        isLoading = true
+        do {
+            if let loadedGoals = try await supabaseService.getMacroGoals() {
+                goals = loadedGoals
+            }
+        } catch {
+            self.error = error
+        }
+        isLoading = false
+    }
+    
+    @MainActor
+    func refreshGoals() async {
+        await loadGoals()
     }
 }

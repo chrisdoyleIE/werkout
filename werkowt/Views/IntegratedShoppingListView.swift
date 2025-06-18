@@ -6,44 +6,20 @@ struct IntegratedShoppingListView: View {
     @StateObject private var settingsManager = SettingsManager()
     @State private var checkedItems: Set<String> = []
     
-    private let storeCategories: [String: [String]] = [
-        "Produce": ["vegetables", "fruits", "herbs", "leafy", "onion", "garlic", "tomato", "tomatoes", "potato", "potatoes", "carrot", "carrots", "bell pepper", "bell peppers", "peppers", "pepper", "cucumber", "lettuce", "spinach", "broccoli", "cauliflower", "zucchini", "mushroom", "mushrooms", "avocado", "lemon", "lemons", "lime", "limes", "apple", "apples", "banana", "bananas", "berries", "cilantro", "parsley", "basil", "thyme", "rosemary", "ginger", "celery"],
-        "Meat & Seafood": ["chicken", "beef", "pork", "fish", "salmon", "tuna", "shrimp", "turkey", "lamb", "bacon", "sausage", "ground", "cod", "halibut", "tilapia", "mahi", "sea bass", "trout", "sardines", "anchovies", "crab", "lobster", "scallops", "mussels", "clams", "chicken breast", "chicken thighs", "ground beef", "ground turkey", "pork chops", "lamb chops", "filet", "steak"],
-        "Dairy & Eggs": ["milk", "cheese", "yogurt", "butter", "cream", "eggs", "sour cream", "cottage cheese", "mozzarella", "cheddar", "parmesan", "feta", "goat cheese", "ricotta", "heavy cream", "half and half", "greek yogurt"],
-        "Pantry": ["rice", "pasta", "bread", "flour", "sugar", "salt", "pepper", "oil", "vinegar", "spices", "canned", "dried", "beans", "lentils", "quinoa", "oats", "nuts", "seeds", "honey", "maple syrup", "vanilla", "baking powder", "baking soda", "olive oil", "coconut oil", "soy sauce", "hot sauce", "mustard", "ketchup", "mayo", "mayonnaise"],
-        "Frozen": ["frozen", "ice cream", "frozen vegetables", "frozen fruit", "frozen berries", "frozen peas", "frozen corn"],
-        "Other": []
-    ]
-    
-    var categorizedItems: [String: [String]] {
+    var categorizedItems: [String: [ShoppingListItemDetail]] {
         guard let shoppingList = mealPlan.generatedMealPlan?.shoppingList else {
             return [:]
         }
         
-        var categorized: [String: [String]] = [:]
+        // Use the categories that Claude already assigned
+        let groupedItems = Dictionary(grouping: shoppingList) { $0.category }
         
-        for category in storeCategories.keys {
-            categorized[category] = []
+        // Convert to string keys for compatibility with existing UI
+        var categorized: [String: [ShoppingListItemDetail]] = [:]
+        for (category, items) in groupedItems {
+            categorized[category.displayName] = items
         }
         
-        for item in shoppingList {
-            let lowercaseItem = item.lowercased()
-            var categorized_item = false
-            
-            for (category, keywords) in storeCategories {
-                if keywords.contains(where: { lowercaseItem.contains($0) }) {
-                    categorized[category]?.append(item)
-                    categorized_item = true
-                    break
-                }
-            }
-            
-            if !categorized_item {
-                categorized["Other"]?.append(item)
-            }
-        }
-        
-        // Remove empty categories
         return categorized.filter { !$0.value.isEmpty }
     }
     
@@ -100,7 +76,7 @@ struct IntegratedShoppingListView: View {
                         
                         Button(action: {
                             if let shoppingList = mealPlan.generatedMealPlan?.shoppingList {
-                                checkedItems = Set(shoppingList)
+                                checkedItems = Set(shoppingList.map { $0.name })
                             }
                         }) {
                             Label("Check All", systemImage: "checkmark.square")
@@ -117,7 +93,7 @@ struct IntegratedShoppingListView: View {
         mealPlan.generatedMealPlan?.shoppingList?.count ?? 0
     }
     
-    private func categorySection(category: String, items: [String]) -> some View {
+    private func categorySection(category: String, items: [ShoppingListItemDetail]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Label(category, systemImage: categoryIcon(for: category))
@@ -138,7 +114,7 @@ struct IntegratedShoppingListView: View {
             }
             
             VStack(spacing: 8) {
-                ForEach(items, id: \.self) { item in
+                ForEach(items, id: \.name) { item in
                     shoppingListItem(item)
                 }
             }
@@ -149,24 +125,34 @@ struct IntegratedShoppingListView: View {
         .padding(.horizontal)
     }
     
-    private func shoppingListItem(_ item: String) -> some View {
+    private func shoppingListItem(_ item: ShoppingListItemDetail) -> some View {
         Button(action: {
-            if checkedItems.contains(item) {
-                checkedItems.remove(item)
+            if checkedItems.contains(item.name) {
+                checkedItems.remove(item.name)
             } else {
-                checkedItems.insert(item)
+                checkedItems.insert(item.name)
             }
         }) {
             HStack(spacing: 12) {
-                Image(systemName: checkedItems.contains(item) ? "checkmark.square.fill" : "square")
+                Image(systemName: checkedItems.contains(item.name) ? "checkmark.square.fill" : "square")
                     .font(.title3)
-                    .foregroundColor(checkedItems.contains(item) ? .green : .gray)
+                    .foregroundColor(checkedItems.contains(item.name) ? .green : .gray)
                 
-                Text(item)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-                    .strikethrough(checkedItems.contains(item))
-                    .opacity(checkedItems.contains(item) ? 0.6 : 1.0)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .strikethrough(checkedItems.contains(item.name))
+                        .opacity(checkedItems.contains(item.name) ? 0.6 : 1.0)
+                    
+                    if !item.amount.isEmpty {
+                        Text(item.amount)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .strikethrough(checkedItems.contains(item.name))
+                            .opacity(checkedItems.contains(item.name) ? 0.6 : 1.0)
+                    }
+                }
                 
                 Spacer()
             }
@@ -178,55 +164,27 @@ struct IntegratedShoppingListView: View {
     
     private func categoryIcon(for category: String) -> String {
         switch category {
-        case "Produce": return "leaf"
-        case "Meat & Seafood": return "fish"
-        case "Dairy & Eggs": return "drop"
-        case "Pantry": return "archivebox"
+        case "Dairy": return "drop.fill"
+        case "Meat & Fish": return "fish.fill"
+        case "Fruit & Veg": return "leaf.fill"
+        case "Store Cupboard": return "archivebox.fill"
         case "Frozen": return "snowflake"
-        default: return "bag"
+        case "Breads & Grains": return "takeoutbag.and.cup.and.straw.fill"
+        case "Other": return "bag.fill"
+        default: return "bag.fill"
         }
     }
     
     private func categoryColor(for category: String) -> Color {
         switch category {
-        case "Produce": return .green
-        case "Meat & Seafood": return .red
-        case "Dairy & Eggs": return .blue
-        case "Pantry": return .orange
+        case "Dairy": return .blue
+        case "Meat & Fish": return .red
+        case "Fruit & Veg": return .green
+        case "Store Cupboard": return .orange
         case "Frozen": return .cyan
+        case "Breads & Grains": return .brown
+        case "Other": return .gray
         default: return .gray
         }
     }
-}
-
-#Preview {
-    IntegratedShoppingListView(mealPlan: MealPlan(
-        startDate: Date(),
-        numberOfDays: 4,
-        userPreferences: "Sample preferences",
-        generatedMealPlan: GeneratedMealPlan(
-            title: "4-Day Balanced Meal Plan",
-            description: "Healthy and delicious meals",
-            totalDays: 4,
-            dailyMeals: [],
-            shoppingList: [
-                "2 lbs chicken breast",
-                "1 lb ground beef",
-                "12 eggs",
-                "1 gallon milk",
-                "2 cups broccoli",
-                "3 bell peppers",
-                "2 lbs rice",
-                "1 loaf bread",
-                "2 tbsp olive oil",
-                "Salt and pepper",
-                "1 lb frozen vegetables",
-                "2 cups cheddar cheese"
-            ],
-            categorizedShoppingList: nil,
-            mealPrepInstructions: nil,
-            totalNutrition: nil
-        ),
-        createdAt: Date()
-    ))
 }

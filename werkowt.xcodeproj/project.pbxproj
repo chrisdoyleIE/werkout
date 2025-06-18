@@ -15,110 +15,112 @@
 		2E3FAF6E2DFCB43500BAAED8 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2E3FAF6D2DFCB43500BAAED8 /* Supabase */; };
 		2E3FAF892DFCB83000BAAED8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2E3FAF7C2DFCB83000BAAED8 /* Assets.xcassets */; };
 		2E3FAF992DFCB8E100BAAED8 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2E3FAF8E2DFCB8E000BAAED8 /* Preview Assets.xcassets */; };
-		2E3FAFCD2DFCBCE000BAAED8 /* supabase_schema.sql in Resources */ = {isa = PBXBuildFile; fileRef = 2E3FAFB42DFCBCE000BAAED8 /* supabase_schema.sql */; };
 		2E3FAFE12DFCBCE000BAAED8 /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 2E3FAFCB2DFCBCE000BAAED8 /* Config.xcconfig */; };
 		2E3FAFE22DFCBCE000BAAED8 /* Config.xcconfig.example in Resources */ = {isa = PBXBuildFile; fileRef = 2E3FAFCC2DFCBCE000BAAED8 /* Config.xcconfig.example */; };
-		64F1BF7A2E0311220001E51C /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = 64F1BF6D2E0311220001E51C /* exercises.json */; };
-		64F1BF7B2E0311220001E51C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64F1BF652E0311220001E51C /* Assets.xcassets */; };
-		64F1BF7C2E0311220001E51C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64F1BF492E0311220001E51C /* Preview Assets.xcassets */; };
-		64F1BF7D2E0311220001E51C /* WorkoutProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF622E0311220001E51C /* WorkoutProgressView.swift */; };
-		64F1BF7E2E0311220001E51C /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF6E2E0311220001E51C /* Logger.swift */; };
-		64F1BF7F2E0311220001E51C /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF742E0311220001E51C /* SupabaseManager.swift */; };
-		64F1BF802E0311220001E51C /* ExerciseDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF6B2E0311220001E51C /* ExerciseDataManager.swift */; };
-		64F1BF812E0311220001E51C /* MealPlanListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF542E0311220001E51C /* MealPlanListView.swift */; };
-		64F1BF822E0311220001E51C /* ErrorTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF6A2E0311220001E51C /* ErrorTypes.swift */; };
-		64F1BF832E0311220001E51C /* MealPlanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF562E0311220001E51C /* MealPlanningView.swift */; };
-		64F1BF842E0311220001E51C /* LiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF502E0311220001E51C /* LiveWorkoutView.swift */; };
-		64F1BF852E0311220001E51C /* WeightTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF602E0311220001E51C /* WeightTrackingView.swift */; };
-		64F1BF862E0311220001E51C /* MealPlanDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF532E0311220001E51C /* MealPlanDetailView.swift */; };
-		64F1BF872E0311220001E51C /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF692E0311220001E51C /* DateFormatters.swift */; };
-		64F1BF882E0311220001E51C /* ExerciseModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF6C2E0311220001E51C /* ExerciseModels.swift */; };
-		64F1BF892E0311220001E51C /* DateNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF4C2E0311220001E51C /* DateNavigationView.swift */; };
-		64F1BF8A2E0311220001E51C /* NutritionTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF592E0311220001E51C /* NutritionTabView.swift */; };
-		64F1BF8B2E0311220001E51C /* ShoppingDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF5C2E0311220001E51C /* ShoppingDashboardView.swift */; };
-		64F1BF8C2E0311220001E51C /* WorkoutModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF782E0311220001E51C /* WorkoutModels.swift */; };
-		64F1BF8D2E0311220001E51C /* MacroModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF6F2E0311220001E51C /* MacroModels.swift */; };
-		64F1BF8E2E0311220001E51C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF5B2E0311220001E51C /* SettingsView.swift */; };
-		64F1BF8F2E0311220001E51C /* MealTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF572E0311220001E51C /* MealTrackingView.swift */; };
-		64F1BF902E0311220001E51C /* NutritionPlanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF582E0311220001E51C /* NutritionPlanningView.swift */; };
-		64F1BF912E0311220001E51C /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF662E0311220001E51C /* AuthManager.swift */; };
-		64F1BF922E0311220001E51C /* WorkoutDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF772E0311220001E51C /* WorkoutDataManager.swift */; };
-		64F1BF932E0311220001E51C /* ClaudeAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF672E0311220001E51C /* ClaudeAPIClient.swift */; };
-		64F1BF942E0311220001E51C /* MealPlanLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF552E0311220001E51C /* MealPlanLoadingView.swift */; };
-		64F1BF952E0311220001E51C /* UnifiedActionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF5E2E0311220001E51C /* UnifiedActionWidget.swift */; };
-		64F1BF962E0311220001E51C /* UnifiedNutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF5F2E0311220001E51C /* UnifiedNutritionView.swift */; };
-		64F1BF972E0311220001E51C /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF4B2E0311220001E51C /* AuthView.swift */; };
-		64F1BF982E0311220001E51C /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF722E0311220001E51C /* Models.swift */; };
-		64F1BF992E0311220001E51C /* MealDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF522E0311220001E51C /* MealDetailView.swift */; };
-		64F1BF9A2E0311220001E51C /* GoalSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF4D2E0311220001E51C /* GoalSettingsView.swift */; };
-		64F1BF9B2E0311220001E51C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF4E2E0311220001E51C /* HomeView.swift */; };
-		64F1BF9C2E0311220001E51C /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF702E0311220001E51C /* MainTabView.swift */; };
-		64F1BF9D2E0311220001E51C /* QuickClassLoggerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF5A2E0311220001E51C /* QuickClassLoggerView.swift */; };
-		64F1BF9E2E0311220001E51C /* TodayNutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF5D2E0311220001E51C /* TodayNutritionView.swift */; };
-		64F1BF9F2E0311220001E51C /* werkowtApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF762E0311220001E51C /* werkowtApp.swift */; };
-		64F1BFA02E0311220001E51C /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF642E0311220001E51C /* AppRootView.swift */; };
-		64F1BFA12E0311220001E51C /* IntegratedShoppingListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF4F2E0311220001E51C /* IntegratedShoppingListView.swift */; };
-		64F1BFA22E0311220001E51C /* MacroPieChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF512E0311220001E51C /* MacroPieChart.swift */; };
-		64F1BFA32E0311220001E51C /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF682E0311220001E51C /* Config.swift */; };
-		64F1BFA42E0311220001E51C /* ShoppingListManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF732E0311220001E51C /* ShoppingListManager.swift */; };
-		64F1BFA52E0311220001E51C /* TimerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF752E0311220001E51C /* TimerManager.swift */; };
-		64F1BFA62E0311220001E51C /* WorkoutCreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF612E0311220001E51C /* WorkoutCreatorView.swift */; };
-		64F1BFA72E0311220001E51C /* MealPlanAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1BF712E0311220001E51C /* MealPlanAPIModels.swift */; };
+		64F1C0A12E0331DE0001E51C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64F1C08A2E0331DE0001E51C /* Assets.xcassets */; };
+		64F1C0A22E0331DE0001E51C /* exercises.json in Resources */ = {isa = PBXBuildFile; fileRef = 64F1C0932E0331DE0001E51C /* exercises.json */; };
+		64F1C0A32E0331DE0001E51C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 64F1C06E2E0331DE0001E51C /* Preview Assets.xcassets */; };
+		64F1C0A42E0331DE0001E51C /* WorkoutCreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0862E0331DE0001E51C /* WorkoutCreatorView.swift */; };
+		64F1C0A52E0331DE0001E51C /* ShoppingListManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0992E0331DE0001E51C /* ShoppingListManager.swift */; };
+		64F1C0A62E0331DE0001E51C /* LiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0752E0331DE0001E51C /* LiveWorkoutView.swift */; };
+		64F1C0A72E0331DE0001E51C /* WorkoutProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0872E0331DE0001E51C /* WorkoutProgressView.swift */; };
+		64F1C0A82E0331DE0001E51C /* WorkoutDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C09E2E0331DE0001E51C /* WorkoutDataManager.swift */; };
+		64F1C0A92E0331DE0001E51C /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C08B2E0331DE0001E51C /* AuthManager.swift */; };
+		64F1C0AA2E0331DE0001E51C /* ExerciseModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0922E0331DE0001E51C /* ExerciseModels.swift */; };
+		64F1C0AB2E0331DE0001E51C /* QuickClassLoggerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C07F2E0331DE0001E51C /* QuickClassLoggerView.swift */; };
+		64F1C0AC2E0331DE0001E51C /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C09A2E0331DE0001E51C /* SupabaseManager.swift */; };
+		64F1C0AD2E0331DE0001E51C /* MealPlanAPIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0972E0331DE0001E51C /* MealPlanAPIModels.swift */; };
+		64F1C0AE2E0331DE0001E51C /* ShoppingDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0812E0331DE0001E51C /* ShoppingDashboardView.swift */; };
+		64F1C0AF2E0331DE0001E51C /* NutritionPlanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C07D2E0331DE0001E51C /* NutritionPlanningView.swift */; };
+		64F1C0B02E0331DE0001E51C /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0962E0331DE0001E51C /* MainTabView.swift */; };
+		64F1C0B12E0331DE0001E51C /* MacroPieChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0762E0331DE0001E51C /* MacroPieChart.swift */; };
+		64F1C0B22E0331DE0001E51C /* TodayNutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0822E0331DE0001E51C /* TodayNutritionView.swift */; };
+		64F1C0B32E0331DE0001E51C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0732E0331DE0001E51C /* HomeView.swift */; };
+		64F1C0B42E0331DE0001E51C /* MealPlanDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0782E0331DE0001E51C /* MealPlanDetailView.swift */; };
+		64F1C0B52E0331DE0001E51C /* WorkoutModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C09F2E0331DE0001E51C /* WorkoutModels.swift */; };
+		64F1C0B62E0331DE0001E51C /* MealPlanLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C07A2E0331DE0001E51C /* MealPlanLoadingView.swift */; };
+		64F1C0B72E0331DE0001E51C /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0702E0331DE0001E51C /* AuthView.swift */; };
+		64F1C0B82E0331DE0001E51C /* WeightTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0852E0331DE0001E51C /* WeightTrackingView.swift */; };
+		64F1C0B92E0331DE0001E51C /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0942E0331DE0001E51C /* Logger.swift */; };
+		64F1C0BA2E0331DE0001E51C /* TimerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C09C2E0331DE0001E51C /* TimerManager.swift */; };
+		64F1C0BB2E0331DE0001E51C /* ErrorTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0902E0331DE0001E51C /* ErrorTypes.swift */; };
+		64F1C0BC2E0331DE0001E51C /* werkowtApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C09D2E0331DE0001E51C /* werkowtApp.swift */; };
+		64F1C0BD2E0331DE0001E51C /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0982E0331DE0001E51C /* Models.swift */; };
+		64F1C0BE2E0331DE0001E51C /* MealPlanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C07B2E0331DE0001E51C /* MealPlanningView.swift */; };
+		64F1C0BF2E0331DE0001E51C /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C09B2E0331DE0001E51C /* SupabaseService.swift */; };
+		64F1C0C02E0331DE0001E51C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0802E0331DE0001E51C /* SettingsView.swift */; };
+		64F1C0C12E0331DE0001E51C /* DateNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0712E0331DE0001E51C /* DateNavigationView.swift */; };
+		64F1C0C22E0331DE0001E51C /* NutritionTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C07E2E0331DE0001E51C /* NutritionTabView.swift */; };
+		64F1C0C32E0331DE0001E51C /* MealPlanListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0792E0331DE0001E51C /* MealPlanListView.swift */; };
+		64F1C0C42E0331DE0001E51C /* MacroModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0952E0331DE0001E51C /* MacroModels.swift */; };
+		64F1C0C52E0331DE0001E51C /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C08F2E0331DE0001E51C /* DateFormatters.swift */; };
+		64F1C0C62E0331DE0001E51C /* DataMigrationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C08E2E0331DE0001E51C /* DataMigrationHelper.swift */; };
+		64F1C0C72E0331DE0001E51C /* MealDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0772E0331DE0001E51C /* MealDetailView.swift */; };
+		64F1C0C82E0331DE0001E51C /* UnifiedNutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0842E0331DE0001E51C /* UnifiedNutritionView.swift */; };
+		64F1C0C92E0331DE0001E51C /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C08D2E0331DE0001E51C /* Config.swift */; };
+		64F1C0CA2E0331DE0001E51C /* ClaudeAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C08C2E0331DE0001E51C /* ClaudeAPIClient.swift */; };
+		64F1C0CB2E0331DE0001E51C /* GoalSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0722E0331DE0001E51C /* GoalSettingsView.swift */; };
+		64F1C0CC2E0331DE0001E51C /* ExerciseDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0912E0331DE0001E51C /* ExerciseDataManager.swift */; };
+		64F1C0CD2E0331DE0001E51C /* UnifiedActionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0832E0331DE0001E51C /* UnifiedActionWidget.swift */; };
+		64F1C0CE2E0331DE0001E51C /* IntegratedShoppingListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0742E0331DE0001E51C /* IntegratedShoppingListView.swift */; };
+		64F1C0CF2E0331DE0001E51C /* MealTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C07C2E0331DE0001E51C /* MealTrackingView.swift */; };
+		64F1C0D02E0331DE0001E51C /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1C0892E0331DE0001E51C /* AppRootView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		2E3FAF7C2DFCB83000BAAED8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = werkowt/Assets.xcassets; sourceTree = "<group>"; };
 		2E3FAF8E2DFCB8E000BAAED8 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		2E3FAFB32DFCBCCF00BAAED8 /* werkowt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = werkowt.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2E3FAFB42DFCBCE000BAAED8 /* supabase_schema.sql */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = supabase_schema.sql; sourceTree = "<group>"; };
 		2E3FAFCB2DFCBCE000BAAED8 /* Config.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		2E3FAFCC2DFCBCE000BAAED8 /* Config.xcconfig.example */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Config.xcconfig.example; sourceTree = "<group>"; };
-		64F1BF492E0311220001E51C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		64F1BF4B2E0311220001E51C /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
-		64F1BF4C2E0311220001E51C /* DateNavigationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateNavigationView.swift; sourceTree = "<group>"; };
-		64F1BF4D2E0311220001E51C /* GoalSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalSettingsView.swift; sourceTree = "<group>"; };
-		64F1BF4E2E0311220001E51C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		64F1BF4F2E0311220001E51C /* IntegratedShoppingListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegratedShoppingListView.swift; sourceTree = "<group>"; };
-		64F1BF502E0311220001E51C /* LiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveWorkoutView.swift; sourceTree = "<group>"; };
-		64F1BF512E0311220001E51C /* MacroPieChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroPieChart.swift; sourceTree = "<group>"; };
-		64F1BF522E0311220001E51C /* MealDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealDetailView.swift; sourceTree = "<group>"; };
-		64F1BF532E0311220001E51C /* MealPlanDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanDetailView.swift; sourceTree = "<group>"; };
-		64F1BF542E0311220001E51C /* MealPlanListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanListView.swift; sourceTree = "<group>"; };
-		64F1BF552E0311220001E51C /* MealPlanLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanLoadingView.swift; sourceTree = "<group>"; };
-		64F1BF562E0311220001E51C /* MealPlanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanningView.swift; sourceTree = "<group>"; };
-		64F1BF572E0311220001E51C /* MealTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealTrackingView.swift; sourceTree = "<group>"; };
-		64F1BF582E0311220001E51C /* NutritionPlanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionPlanningView.swift; sourceTree = "<group>"; };
-		64F1BF592E0311220001E51C /* NutritionTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionTabView.swift; sourceTree = "<group>"; };
-		64F1BF5A2E0311220001E51C /* QuickClassLoggerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickClassLoggerView.swift; sourceTree = "<group>"; };
-		64F1BF5B2E0311220001E51C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		64F1BF5C2E0311220001E51C /* ShoppingDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingDashboardView.swift; sourceTree = "<group>"; };
-		64F1BF5D2E0311220001E51C /* TodayNutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayNutritionView.swift; sourceTree = "<group>"; };
-		64F1BF5E2E0311220001E51C /* UnifiedActionWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedActionWidget.swift; sourceTree = "<group>"; };
-		64F1BF5F2E0311220001E51C /* UnifiedNutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedNutritionView.swift; sourceTree = "<group>"; };
-		64F1BF602E0311220001E51C /* WeightTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightTrackingView.swift; sourceTree = "<group>"; };
-		64F1BF612E0311220001E51C /* WorkoutCreatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCreatorView.swift; sourceTree = "<group>"; };
-		64F1BF622E0311220001E51C /* WorkoutProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutProgressView.swift; sourceTree = "<group>"; };
-		64F1BF642E0311220001E51C /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
-		64F1BF652E0311220001E51C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		64F1BF662E0311220001E51C /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
-		64F1BF672E0311220001E51C /* ClaudeAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAPIClient.swift; sourceTree = "<group>"; };
-		64F1BF682E0311220001E51C /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
-		64F1BF692E0311220001E51C /* DateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatters.swift; sourceTree = "<group>"; };
-		64F1BF6A2E0311220001E51C /* ErrorTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorTypes.swift; sourceTree = "<group>"; };
-		64F1BF6B2E0311220001E51C /* ExerciseDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDataManager.swift; sourceTree = "<group>"; };
-		64F1BF6C2E0311220001E51C /* ExerciseModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseModels.swift; sourceTree = "<group>"; };
-		64F1BF6D2E0311220001E51C /* exercises.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = exercises.json; sourceTree = "<group>"; };
-		64F1BF6E2E0311220001E51C /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
-		64F1BF6F2E0311220001E51C /* MacroModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroModels.swift; sourceTree = "<group>"; };
-		64F1BF702E0311220001E51C /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
-		64F1BF712E0311220001E51C /* MealPlanAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanAPIModels.swift; sourceTree = "<group>"; };
-		64F1BF722E0311220001E51C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		64F1BF732E0311220001E51C /* ShoppingListManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingListManager.swift; sourceTree = "<group>"; };
-		64F1BF742E0311220001E51C /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
-		64F1BF752E0311220001E51C /* TimerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerManager.swift; sourceTree = "<group>"; };
-		64F1BF762E0311220001E51C /* werkowtApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = werkowtApp.swift; sourceTree = "<group>"; };
-		64F1BF772E0311220001E51C /* WorkoutDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDataManager.swift; sourceTree = "<group>"; };
-		64F1BF782E0311220001E51C /* WorkoutModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutModels.swift; sourceTree = "<group>"; };
+		64F1C06E2E0331DE0001E51C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		64F1C0702E0331DE0001E51C /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
+		64F1C0712E0331DE0001E51C /* DateNavigationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateNavigationView.swift; sourceTree = "<group>"; };
+		64F1C0722E0331DE0001E51C /* GoalSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalSettingsView.swift; sourceTree = "<group>"; };
+		64F1C0732E0331DE0001E51C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		64F1C0742E0331DE0001E51C /* IntegratedShoppingListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegratedShoppingListView.swift; sourceTree = "<group>"; };
+		64F1C0752E0331DE0001E51C /* LiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveWorkoutView.swift; sourceTree = "<group>"; };
+		64F1C0762E0331DE0001E51C /* MacroPieChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroPieChart.swift; sourceTree = "<group>"; };
+		64F1C0772E0331DE0001E51C /* MealDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealDetailView.swift; sourceTree = "<group>"; };
+		64F1C0782E0331DE0001E51C /* MealPlanDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanDetailView.swift; sourceTree = "<group>"; };
+		64F1C0792E0331DE0001E51C /* MealPlanListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanListView.swift; sourceTree = "<group>"; };
+		64F1C07A2E0331DE0001E51C /* MealPlanLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanLoadingView.swift; sourceTree = "<group>"; };
+		64F1C07B2E0331DE0001E51C /* MealPlanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanningView.swift; sourceTree = "<group>"; };
+		64F1C07C2E0331DE0001E51C /* MealTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealTrackingView.swift; sourceTree = "<group>"; };
+		64F1C07D2E0331DE0001E51C /* NutritionPlanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionPlanningView.swift; sourceTree = "<group>"; };
+		64F1C07E2E0331DE0001E51C /* NutritionTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionTabView.swift; sourceTree = "<group>"; };
+		64F1C07F2E0331DE0001E51C /* QuickClassLoggerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickClassLoggerView.swift; sourceTree = "<group>"; };
+		64F1C0802E0331DE0001E51C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		64F1C0812E0331DE0001E51C /* ShoppingDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingDashboardView.swift; sourceTree = "<group>"; };
+		64F1C0822E0331DE0001E51C /* TodayNutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayNutritionView.swift; sourceTree = "<group>"; };
+		64F1C0832E0331DE0001E51C /* UnifiedActionWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedActionWidget.swift; sourceTree = "<group>"; };
+		64F1C0842E0331DE0001E51C /* UnifiedNutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedNutritionView.swift; sourceTree = "<group>"; };
+		64F1C0852E0331DE0001E51C /* WeightTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightTrackingView.swift; sourceTree = "<group>"; };
+		64F1C0862E0331DE0001E51C /* WorkoutCreatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCreatorView.swift; sourceTree = "<group>"; };
+		64F1C0872E0331DE0001E51C /* WorkoutProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutProgressView.swift; sourceTree = "<group>"; };
+		64F1C0892E0331DE0001E51C /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
+		64F1C08A2E0331DE0001E51C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		64F1C08B2E0331DE0001E51C /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		64F1C08C2E0331DE0001E51C /* ClaudeAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAPIClient.swift; sourceTree = "<group>"; };
+		64F1C08D2E0331DE0001E51C /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
+		64F1C08E2E0331DE0001E51C /* DataMigrationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataMigrationHelper.swift; sourceTree = "<group>"; };
+		64F1C08F2E0331DE0001E51C /* DateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatters.swift; sourceTree = "<group>"; };
+		64F1C0902E0331DE0001E51C /* ErrorTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorTypes.swift; sourceTree = "<group>"; };
+		64F1C0912E0331DE0001E51C /* ExerciseDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDataManager.swift; sourceTree = "<group>"; };
+		64F1C0922E0331DE0001E51C /* ExerciseModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseModels.swift; sourceTree = "<group>"; };
+		64F1C0932E0331DE0001E51C /* exercises.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = exercises.json; sourceTree = "<group>"; };
+		64F1C0942E0331DE0001E51C /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		64F1C0952E0331DE0001E51C /* MacroModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroModels.swift; sourceTree = "<group>"; };
+		64F1C0962E0331DE0001E51C /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		64F1C0972E0331DE0001E51C /* MealPlanAPIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanAPIModels.swift; sourceTree = "<group>"; };
+		64F1C0982E0331DE0001E51C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		64F1C0992E0331DE0001E51C /* ShoppingListManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingListManager.swift; sourceTree = "<group>"; };
+		64F1C09A2E0331DE0001E51C /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
+		64F1C09B2E0331DE0001E51C /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		64F1C09C2E0331DE0001E51C /* TimerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerManager.swift; sourceTree = "<group>"; };
+		64F1C09D2E0331DE0001E51C /* werkowtApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = werkowtApp.swift; sourceTree = "<group>"; };
+		64F1C09E2E0331DE0001E51C /* WorkoutDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDataManager.swift; sourceTree = "<group>"; };
+		64F1C09F2E0331DE0001E51C /* WorkoutModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,81 +152,82 @@
 		2E731DAA2DFCA0A00001CCED = {
 			isa = PBXGroup;
 			children = (
-				64F1BF792E0311220001E51C /* werkowt */,
+				64F1C0A02E0331DE0001E51C /* werkowt */,
 				2E3FAFCB2DFCBCE000BAAED8 /* Config.xcconfig */,
 				2E3FAFCC2DFCBCE000BAAED8 /* Config.xcconfig.example */,
-				2E3FAFB42DFCBCE000BAAED8 /* supabase_schema.sql */,
 				2E3FAF7C2DFCB83000BAAED8 /* Assets.xcassets */,
 				2E3FAF8D2DFCB8E000BAAED8 /* Preview Content */,
 				2E3FAFB32DFCBCCF00BAAED8 /* werkowt.app */,
 			);
 			sourceTree = "<group>";
 		};
-		64F1BF4A2E0311220001E51C /* Preview Content */ = {
+		64F1C06F2E0331DE0001E51C /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
-				64F1BF492E0311220001E51C /* Preview Assets.xcassets */,
+				64F1C06E2E0331DE0001E51C /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
-		64F1BF632E0311220001E51C /* Views */ = {
+		64F1C0882E0331DE0001E51C /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				64F1BF4B2E0311220001E51C /* AuthView.swift */,
-				64F1BF4C2E0311220001E51C /* DateNavigationView.swift */,
-				64F1BF4D2E0311220001E51C /* GoalSettingsView.swift */,
-				64F1BF4E2E0311220001E51C /* HomeView.swift */,
-				64F1BF4F2E0311220001E51C /* IntegratedShoppingListView.swift */,
-				64F1BF502E0311220001E51C /* LiveWorkoutView.swift */,
-				64F1BF512E0311220001E51C /* MacroPieChart.swift */,
-				64F1BF522E0311220001E51C /* MealDetailView.swift */,
-				64F1BF532E0311220001E51C /* MealPlanDetailView.swift */,
-				64F1BF542E0311220001E51C /* MealPlanListView.swift */,
-				64F1BF552E0311220001E51C /* MealPlanLoadingView.swift */,
-				64F1BF562E0311220001E51C /* MealPlanningView.swift */,
-				64F1BF572E0311220001E51C /* MealTrackingView.swift */,
-				64F1BF582E0311220001E51C /* NutritionPlanningView.swift */,
-				64F1BF592E0311220001E51C /* NutritionTabView.swift */,
-				64F1BF5A2E0311220001E51C /* QuickClassLoggerView.swift */,
-				64F1BF5B2E0311220001E51C /* SettingsView.swift */,
-				64F1BF5C2E0311220001E51C /* ShoppingDashboardView.swift */,
-				64F1BF5D2E0311220001E51C /* TodayNutritionView.swift */,
-				64F1BF5E2E0311220001E51C /* UnifiedActionWidget.swift */,
-				64F1BF5F2E0311220001E51C /* UnifiedNutritionView.swift */,
-				64F1BF602E0311220001E51C /* WeightTrackingView.swift */,
-				64F1BF612E0311220001E51C /* WorkoutCreatorView.swift */,
-				64F1BF622E0311220001E51C /* WorkoutProgressView.swift */,
+				64F1C0702E0331DE0001E51C /* AuthView.swift */,
+				64F1C0712E0331DE0001E51C /* DateNavigationView.swift */,
+				64F1C0722E0331DE0001E51C /* GoalSettingsView.swift */,
+				64F1C0732E0331DE0001E51C /* HomeView.swift */,
+				64F1C0742E0331DE0001E51C /* IntegratedShoppingListView.swift */,
+				64F1C0752E0331DE0001E51C /* LiveWorkoutView.swift */,
+				64F1C0762E0331DE0001E51C /* MacroPieChart.swift */,
+				64F1C0772E0331DE0001E51C /* MealDetailView.swift */,
+				64F1C0782E0331DE0001E51C /* MealPlanDetailView.swift */,
+				64F1C0792E0331DE0001E51C /* MealPlanListView.swift */,
+				64F1C07A2E0331DE0001E51C /* MealPlanLoadingView.swift */,
+				64F1C07B2E0331DE0001E51C /* MealPlanningView.swift */,
+				64F1C07C2E0331DE0001E51C /* MealTrackingView.swift */,
+				64F1C07D2E0331DE0001E51C /* NutritionPlanningView.swift */,
+				64F1C07E2E0331DE0001E51C /* NutritionTabView.swift */,
+				64F1C07F2E0331DE0001E51C /* QuickClassLoggerView.swift */,
+				64F1C0802E0331DE0001E51C /* SettingsView.swift */,
+				64F1C0812E0331DE0001E51C /* ShoppingDashboardView.swift */,
+				64F1C0822E0331DE0001E51C /* TodayNutritionView.swift */,
+				64F1C0832E0331DE0001E51C /* UnifiedActionWidget.swift */,
+				64F1C0842E0331DE0001E51C /* UnifiedNutritionView.swift */,
+				64F1C0852E0331DE0001E51C /* WeightTrackingView.swift */,
+				64F1C0862E0331DE0001E51C /* WorkoutCreatorView.swift */,
+				64F1C0872E0331DE0001E51C /* WorkoutProgressView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
 		};
-		64F1BF792E0311220001E51C /* werkowt */ = {
+		64F1C0A02E0331DE0001E51C /* werkowt */ = {
 			isa = PBXGroup;
 			children = (
-				64F1BF4A2E0311220001E51C /* Preview Content */,
-				64F1BF632E0311220001E51C /* Views */,
-				64F1BF642E0311220001E51C /* AppRootView.swift */,
-				64F1BF652E0311220001E51C /* Assets.xcassets */,
-				64F1BF662E0311220001E51C /* AuthManager.swift */,
-				64F1BF672E0311220001E51C /* ClaudeAPIClient.swift */,
-				64F1BF682E0311220001E51C /* Config.swift */,
-				64F1BF692E0311220001E51C /* DateFormatters.swift */,
-				64F1BF6A2E0311220001E51C /* ErrorTypes.swift */,
-				64F1BF6B2E0311220001E51C /* ExerciseDataManager.swift */,
-				64F1BF6C2E0311220001E51C /* ExerciseModels.swift */,
-				64F1BF6D2E0311220001E51C /* exercises.json */,
-				64F1BF6E2E0311220001E51C /* Logger.swift */,
-				64F1BF6F2E0311220001E51C /* MacroModels.swift */,
-				64F1BF702E0311220001E51C /* MainTabView.swift */,
-				64F1BF712E0311220001E51C /* MealPlanAPIModels.swift */,
-				64F1BF722E0311220001E51C /* Models.swift */,
-				64F1BF732E0311220001E51C /* ShoppingListManager.swift */,
-				64F1BF742E0311220001E51C /* SupabaseManager.swift */,
-				64F1BF752E0311220001E51C /* TimerManager.swift */,
-				64F1BF762E0311220001E51C /* werkowtApp.swift */,
-				64F1BF772E0311220001E51C /* WorkoutDataManager.swift */,
-				64F1BF782E0311220001E51C /* WorkoutModels.swift */,
+				64F1C06F2E0331DE0001E51C /* Preview Content */,
+				64F1C0882E0331DE0001E51C /* Views */,
+				64F1C0892E0331DE0001E51C /* AppRootView.swift */,
+				64F1C08A2E0331DE0001E51C /* Assets.xcassets */,
+				64F1C08B2E0331DE0001E51C /* AuthManager.swift */,
+				64F1C08C2E0331DE0001E51C /* ClaudeAPIClient.swift */,
+				64F1C08D2E0331DE0001E51C /* Config.swift */,
+				64F1C08E2E0331DE0001E51C /* DataMigrationHelper.swift */,
+				64F1C08F2E0331DE0001E51C /* DateFormatters.swift */,
+				64F1C0902E0331DE0001E51C /* ErrorTypes.swift */,
+				64F1C0912E0331DE0001E51C /* ExerciseDataManager.swift */,
+				64F1C0922E0331DE0001E51C /* ExerciseModels.swift */,
+				64F1C0932E0331DE0001E51C /* exercises.json */,
+				64F1C0942E0331DE0001E51C /* Logger.swift */,
+				64F1C0952E0331DE0001E51C /* MacroModels.swift */,
+				64F1C0962E0331DE0001E51C /* MainTabView.swift */,
+				64F1C0972E0331DE0001E51C /* MealPlanAPIModels.swift */,
+				64F1C0982E0331DE0001E51C /* Models.swift */,
+				64F1C0992E0331DE0001E51C /* ShoppingListManager.swift */,
+				64F1C09A2E0331DE0001E51C /* SupabaseManager.swift */,
+				64F1C09B2E0331DE0001E51C /* SupabaseService.swift */,
+				64F1C09C2E0331DE0001E51C /* TimerManager.swift */,
+				64F1C09D2E0331DE0001E51C /* werkowtApp.swift */,
+				64F1C09E2E0331DE0001E51C /* WorkoutDataManager.swift */,
+				64F1C09F2E0331DE0001E51C /* WorkoutModels.swift */,
 			);
 			path = werkowt;
 			sourceTree = "<group>";
@@ -299,11 +302,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				2E3FAF992DFCB8E100BAAED8 /* Preview Assets.xcassets in Resources */,
-				2E3FAFCD2DFCBCE000BAAED8 /* supabase_schema.sql in Resources */,
 				2E3FAF892DFCB83000BAAED8 /* Assets.xcassets in Resources */,
-				64F1BF7A2E0311220001E51C /* exercises.json in Resources */,
-				64F1BF7B2E0311220001E51C /* Assets.xcassets in Resources */,
-				64F1BF7C2E0311220001E51C /* Preview Assets.xcassets in Resources */,
+				64F1C0A12E0331DE0001E51C /* Assets.xcassets in Resources */,
+				64F1C0A22E0331DE0001E51C /* exercises.json in Resources */,
+				64F1C0A32E0331DE0001E51C /* Preview Assets.xcassets in Resources */,
 				2E3FAFE12DFCBCE000BAAED8 /* Config.xcconfig in Resources */,
 				2E3FAFE22DFCBCE000BAAED8 /* Config.xcconfig.example in Resources */,
 			);
@@ -316,49 +318,51 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				64F1BF7D2E0311220001E51C /* WorkoutProgressView.swift in Sources */,
-				64F1BF7E2E0311220001E51C /* Logger.swift in Sources */,
-				64F1BF7F2E0311220001E51C /* SupabaseManager.swift in Sources */,
-				64F1BF802E0311220001E51C /* ExerciseDataManager.swift in Sources */,
-				64F1BF812E0311220001E51C /* MealPlanListView.swift in Sources */,
-				64F1BF822E0311220001E51C /* ErrorTypes.swift in Sources */,
-				64F1BF832E0311220001E51C /* MealPlanningView.swift in Sources */,
-				64F1BF842E0311220001E51C /* LiveWorkoutView.swift in Sources */,
-				64F1BF852E0311220001E51C /* WeightTrackingView.swift in Sources */,
-				64F1BF862E0311220001E51C /* MealPlanDetailView.swift in Sources */,
-				64F1BF872E0311220001E51C /* DateFormatters.swift in Sources */,
-				64F1BF882E0311220001E51C /* ExerciseModels.swift in Sources */,
-				64F1BF892E0311220001E51C /* DateNavigationView.swift in Sources */,
-				64F1BF8A2E0311220001E51C /* NutritionTabView.swift in Sources */,
-				64F1BF8B2E0311220001E51C /* ShoppingDashboardView.swift in Sources */,
-				64F1BF8C2E0311220001E51C /* WorkoutModels.swift in Sources */,
-				64F1BF8D2E0311220001E51C /* MacroModels.swift in Sources */,
-				64F1BF8E2E0311220001E51C /* SettingsView.swift in Sources */,
-				64F1BF8F2E0311220001E51C /* MealTrackingView.swift in Sources */,
-				64F1BF902E0311220001E51C /* NutritionPlanningView.swift in Sources */,
-				64F1BF912E0311220001E51C /* AuthManager.swift in Sources */,
-				64F1BF922E0311220001E51C /* WorkoutDataManager.swift in Sources */,
-				64F1BF932E0311220001E51C /* ClaudeAPIClient.swift in Sources */,
-				64F1BF942E0311220001E51C /* MealPlanLoadingView.swift in Sources */,
-				64F1BF952E0311220001E51C /* UnifiedActionWidget.swift in Sources */,
-				64F1BF962E0311220001E51C /* UnifiedNutritionView.swift in Sources */,
-				64F1BF972E0311220001E51C /* AuthView.swift in Sources */,
-				64F1BF982E0311220001E51C /* Models.swift in Sources */,
-				64F1BF992E0311220001E51C /* MealDetailView.swift in Sources */,
-				64F1BF9A2E0311220001E51C /* GoalSettingsView.swift in Sources */,
-				64F1BF9B2E0311220001E51C /* HomeView.swift in Sources */,
-				64F1BF9C2E0311220001E51C /* MainTabView.swift in Sources */,
-				64F1BF9D2E0311220001E51C /* QuickClassLoggerView.swift in Sources */,
-				64F1BF9E2E0311220001E51C /* TodayNutritionView.swift in Sources */,
-				64F1BF9F2E0311220001E51C /* werkowtApp.swift in Sources */,
-				64F1BFA02E0311220001E51C /* AppRootView.swift in Sources */,
-				64F1BFA12E0311220001E51C /* IntegratedShoppingListView.swift in Sources */,
-				64F1BFA22E0311220001E51C /* MacroPieChart.swift in Sources */,
-				64F1BFA32E0311220001E51C /* Config.swift in Sources */,
-				64F1BFA42E0311220001E51C /* ShoppingListManager.swift in Sources */,
-				64F1BFA52E0311220001E51C /* TimerManager.swift in Sources */,
-				64F1BFA62E0311220001E51C /* WorkoutCreatorView.swift in Sources */,
-				64F1BFA72E0311220001E51C /* MealPlanAPIModels.swift in Sources */,
+				64F1C0A42E0331DE0001E51C /* WorkoutCreatorView.swift in Sources */,
+				64F1C0A52E0331DE0001E51C /* ShoppingListManager.swift in Sources */,
+				64F1C0A62E0331DE0001E51C /* LiveWorkoutView.swift in Sources */,
+				64F1C0A72E0331DE0001E51C /* WorkoutProgressView.swift in Sources */,
+				64F1C0A82E0331DE0001E51C /* WorkoutDataManager.swift in Sources */,
+				64F1C0A92E0331DE0001E51C /* AuthManager.swift in Sources */,
+				64F1C0AA2E0331DE0001E51C /* ExerciseModels.swift in Sources */,
+				64F1C0AB2E0331DE0001E51C /* QuickClassLoggerView.swift in Sources */,
+				64F1C0AC2E0331DE0001E51C /* SupabaseManager.swift in Sources */,
+				64F1C0AD2E0331DE0001E51C /* MealPlanAPIModels.swift in Sources */,
+				64F1C0AE2E0331DE0001E51C /* ShoppingDashboardView.swift in Sources */,
+				64F1C0AF2E0331DE0001E51C /* NutritionPlanningView.swift in Sources */,
+				64F1C0B02E0331DE0001E51C /* MainTabView.swift in Sources */,
+				64F1C0B12E0331DE0001E51C /* MacroPieChart.swift in Sources */,
+				64F1C0B22E0331DE0001E51C /* TodayNutritionView.swift in Sources */,
+				64F1C0B32E0331DE0001E51C /* HomeView.swift in Sources */,
+				64F1C0B42E0331DE0001E51C /* MealPlanDetailView.swift in Sources */,
+				64F1C0B52E0331DE0001E51C /* WorkoutModels.swift in Sources */,
+				64F1C0B62E0331DE0001E51C /* MealPlanLoadingView.swift in Sources */,
+				64F1C0B72E0331DE0001E51C /* AuthView.swift in Sources */,
+				64F1C0B82E0331DE0001E51C /* WeightTrackingView.swift in Sources */,
+				64F1C0B92E0331DE0001E51C /* Logger.swift in Sources */,
+				64F1C0BA2E0331DE0001E51C /* TimerManager.swift in Sources */,
+				64F1C0BB2E0331DE0001E51C /* ErrorTypes.swift in Sources */,
+				64F1C0BC2E0331DE0001E51C /* werkowtApp.swift in Sources */,
+				64F1C0BD2E0331DE0001E51C /* Models.swift in Sources */,
+				64F1C0BE2E0331DE0001E51C /* MealPlanningView.swift in Sources */,
+				64F1C0BF2E0331DE0001E51C /* SupabaseService.swift in Sources */,
+				64F1C0C02E0331DE0001E51C /* SettingsView.swift in Sources */,
+				64F1C0C12E0331DE0001E51C /* DateNavigationView.swift in Sources */,
+				64F1C0C22E0331DE0001E51C /* NutritionTabView.swift in Sources */,
+				64F1C0C32E0331DE0001E51C /* MealPlanListView.swift in Sources */,
+				64F1C0C42E0331DE0001E51C /* MacroModels.swift in Sources */,
+				64F1C0C52E0331DE0001E51C /* DateFormatters.swift in Sources */,
+				64F1C0C62E0331DE0001E51C /* DataMigrationHelper.swift in Sources */,
+				64F1C0C72E0331DE0001E51C /* MealDetailView.swift in Sources */,
+				64F1C0C82E0331DE0001E51C /* UnifiedNutritionView.swift in Sources */,
+				64F1C0C92E0331DE0001E51C /* Config.swift in Sources */,
+				64F1C0CA2E0331DE0001E51C /* ClaudeAPIClient.swift in Sources */,
+				64F1C0CB2E0331DE0001E51C /* GoalSettingsView.swift in Sources */,
+				64F1C0CC2E0331DE0001E51C /* ExerciseDataManager.swift in Sources */,
+				64F1C0CD2E0331DE0001E51C /* UnifiedActionWidget.swift in Sources */,
+				64F1C0CE2E0331DE0001E51C /* IntegratedShoppingListView.swift in Sources */,
+				64F1C0CF2E0331DE0001E51C /* MealTrackingView.swift in Sources */,
+				64F1C0D02E0331DE0001E51C /* AppRootView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

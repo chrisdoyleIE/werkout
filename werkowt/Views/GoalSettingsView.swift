@@ -138,14 +138,15 @@ struct GoalSettingsView: View {
             return
         }
         
-        macroGoalsManager.updateGoals(
-            calories: caloriesValue,
-            protein: proteinValue,
-            carbs: carbsValue,
-            fat: fatValue
-        )
-        
-        dismiss()
+        Task {
+            await macroGoalsManager.updateGoals(
+                calories: caloriesValue,
+                protein: proteinValue,
+                carbs: carbsValue,
+                fat: fatValue
+            )
+            dismiss()
+        }
     }
     
     private func resetToDefaults() {

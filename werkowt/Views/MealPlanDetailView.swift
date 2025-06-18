@@ -10,47 +10,6 @@ struct MealPlanDetailView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Shopping List Button
-                    if mealPlan.isAIGenerated && mealPlan.generatedMealPlan?.shoppingList != nil {
-                        Button(action: {
-                            showingShoppingList = true
-                        }) {
-                            HStack {
-                                Image(systemName: "list.bullet.clipboard")
-                                    .font(.title3)
-                                    .foregroundColor(.white)
-                                
-                                Text("SHOPPING LIST")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.white)
-                                
-                                Spacer()
-                                
-                                if let count = mealPlan.generatedMealPlan?.shoppingList?.count {
-                                    Text("\(count) items")
-                                        .font(.subheadline)
-                                        .foregroundColor(.white.opacity(0.9))
-                                }
-                                
-                                Image(systemName: "arrow.right")
-                                    .font(.title3)
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
-                            .padding(16)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.gray.opacity(0.8), Color.gray.opacity(0.6)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(12)
-                            .shadow(color: .gray.opacity(0.2), radius: 4, x: 0, y: 2)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
                     // Header Info
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
@@ -79,6 +38,59 @@ struct MealPlanDetailView: View {
                         Text("\(mealPlan.numberOfDays) day\(mealPlan.numberOfDays > 1 ? "s" : "")")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
+                    }
+                    
+                    // Enhanced Shopping List Button
+                    if mealPlan.isAIGenerated && mealPlan.generatedMealPlan?.shoppingList != nil {
+                        Button(action: {
+                            showingShoppingList = true
+                        }) {
+                            HStack(spacing: 12) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "wand.and.stars")
+                                        .font(.title3)
+                                        .foregroundColor(.blue)
+                                    
+                                    Image(systemName: "cart")
+                                        .font(.title3)
+                                        .foregroundColor(.blue)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("View Shopping List")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primary)
+                                    
+                                    HStack(spacing: 4) {
+                                        if let count = mealPlan.generatedMealPlan?.shoppingList?.count {
+                                            Text("\(count) items")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        Text("• Organized by category")
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.blue)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(Color.blue.opacity(0.05))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     
                     Divider()
@@ -131,11 +143,6 @@ struct MealPlanDetailView: View {
             // Daily Meals
             ForEach(generatedPlan.dailyMeals, id: \.day) { dailyMeal in
                 dailyMealCard(dailyMeal)
-            }
-            
-            // Shopping List
-            if let shoppingList = generatedPlan.shoppingList, !shoppingList.isEmpty {
-                shoppingListSection(shoppingList)
             }
             
             // Nutrition Summary
@@ -273,28 +280,6 @@ struct MealPlanDetailView: View {
         .font(.caption)
     }
     
-    @ViewBuilder
-    private func shoppingListSection(_ shoppingList: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Shopping List")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 8) {
-                ForEach(shoppingList, id: \.self) { item in
-                    Text("• \(item)")
-                        .font(.body)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-    }
     
     @ViewBuilder
     private func nutritionSummarySection(_ nutrition: NutritionSummary) -> some View {

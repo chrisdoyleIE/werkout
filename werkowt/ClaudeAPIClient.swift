@@ -191,7 +191,11 @@ class ClaudeAPIClient {
                     }
                 }
             ],
-            "shoppingList": ["item 1", "item 2"],
+            "shoppingList": [
+                {"name": "chicken breast", "amount": "500g", "category": "Meat & Fish"},
+                {"name": "bell peppers", "amount": "3 large", "category": "Fruit & Veg"},
+                {"name": "cheddar cheese", "amount": "200g", "category": "Dairy"}
+            ],
             "totalNutrition": {
                 "totalCalories": 14000,
                 "totalProtein": 1050,
@@ -219,8 +223,19 @@ class ClaudeAPIClient {
         12. Ensure meals are varied and interesting
         13. Instructions should be clear and appropriate for the skill level, using \(temperatureUnit.symbol) for temperatures
         14. **LEFTOVER OPTIMIZATION**: For lunches that use dinner leftovers, provide simple transformation tips (add fresh herbs, different sauce, serve over greens, etc.) to make them feel like new meals
-        15. **MINIMIZE INGREDIENT WASTE**: Design meals that strategically reuse ingredients across multiple recipes to minimize waste and maximize the shopping list. Prefer recipes that share common ingredients and use full quantities purchased.
-        16. **SHOPPING LIST CATEGORIZATION**: Format shopping list items clearly for proper categorization. Use specific terms like "cod fillets", "bell peppers", "chicken breast" rather than generic terms.
+        15. **MINIMIZE INGREDIENT WASTE**: Design meals that strategically reuse ingredients across multiple recipes to minimize waste and the length of the shopping list. Prefer recipes that share common ingredients and use full quantities purchased.
+        16. **SHOPPING LIST FORMAT**: The shoppingList must be an array of objects with exactly these keys:
+            - "name": specific item name (e.g., "chicken breast", "bell peppers", "whole milk")
+            - "amount": quantity with units (e.g., "500g", "3 large", "1 liter", "2 cups")
+            - "category": MUST be one of these exact values: "Dairy", "Meat & Fish", "Fruit & Veg", "Store Cupboard", "Frozen", "Breads & Grains", "Other"
+        17. **CATEGORIZATION GUIDELINES**:
+            - Dairy: milk, cheese, yogurt, butter, cream, eggs
+            - Meat & Fish: all meats, poultry, fish, seafood
+            - Fruit & Veg: fresh fruits, vegetables, herbs, salads
+            - Store Cupboard: spices, oils, vinegars, canned goods, pasta, rice, flour, sugar
+            - Frozen: frozen vegetables, frozen fruits, ice cream, frozen meals
+            - Breads & Grains: bread, cereals, oats, quinoa, fresh grains
+            - Other: cleaning supplies, non-food items, unusual ingredients
         
         Return ONLY the JSON object, no additional text or formatting.
         """
