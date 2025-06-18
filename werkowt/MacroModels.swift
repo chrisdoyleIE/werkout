@@ -124,7 +124,9 @@ class MealPlanManager: ObservableObject {
         startDate: Date,
         numberOfDays: Int,
         macroGoals: MacroGoals?,
-        configuration: MealPlanningConfiguration
+        configuration: MealPlanningConfiguration,
+        measurementUnit: MeasurementUnit = .metric,
+        temperatureUnit: TemperatureUnit = .celsius
     ) async throws -> MealPlan {
         isGeneratingMealPlan = true
         generationError = nil
@@ -134,7 +136,9 @@ class MealPlanManager: ObservableObject {
                 numberOfDays: numberOfDays,
                 startDate: startDate,
                 macroGoals: macroGoals,
-                configuration: configuration
+                configuration: configuration,
+                measurementUnit: measurementUnit,
+                temperatureUnit: temperatureUnit
             )
             
             let mealPlan = MealPlan(

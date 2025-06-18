@@ -2,13 +2,13 @@ import SwiftUI
 
 struct UnifiedActionWidget: View {
     let onWorkoutTap: () -> Void
-    let onFoodTap: () -> Void
+    let onFoodTap: (() -> Void)?
     let onWeightTap: () -> Void
     
     var body: some View {
         VStack(spacing: 8) {
             // Header label
-            Text("Record")
+            Text("Track Your")
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.white.opacity(0.8))
@@ -23,15 +23,16 @@ struct UnifiedActionWidget: View {
                     action: onWorkoutTap
                 )
                 
-                Divider()
-                    .frame(height: 50)
-                    .foregroundColor(.white.opacity(0.3))
-                
-                ActionSegment(
-                    icon: "fork.knife",
-                    title: "FOOD",
-                    action: onFoodTap
-                )
+                if let foodAction = onFoodTap {
+                    Divider()
+                        .frame(height: 50)
+                        .foregroundColor(.white.opacity(0.3))
+                    ActionSegment(
+                        icon: "fork.knife",
+                        title: "FOOD",
+                        action: foodAction
+                    )
+                }
                 
                 Divider()
                     .frame(height: 50)

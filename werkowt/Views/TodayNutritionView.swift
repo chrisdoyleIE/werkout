@@ -5,10 +5,6 @@ struct TodayNutritionView: View {
     @EnvironmentObject var mealPlanManager: MealPlanManager
     
     @State private var selectedDate = Date()
-    @State private var caloriesConsumed: Double = 2200
-    @State private var proteinConsumed: Double = 165
-    @State private var carbsConsumed: Double = 120
-    @State private var fatConsumed: Double = 30
     
     @State private var showingGoalSettings = false
     
@@ -41,9 +37,6 @@ struct TodayNutritionView: View {
                 
                 // Macro Progress
                 macroProgressSection
-                
-                // Quick Actions
-                quickActionsSection
                 
                 Spacer(minLength: 100)
             }
@@ -177,7 +170,7 @@ struct TodayNutritionView: View {
             VStack(spacing: 12) {
                 MacroProgressBar(
                     title: "Calories",
-                    current: caloriesConsumed,
+                    current: 0,
                     target: macroGoalsManager.goals.calories,
                     unit: "",
                     color: .red
@@ -185,7 +178,7 @@ struct TodayNutritionView: View {
                 
                 MacroProgressBar(
                     title: "Protein",
-                    current: proteinConsumed,
+                    current: 0,
                     target: macroGoalsManager.goals.protein,
                     unit: "g",
                     color: .blue
@@ -193,7 +186,7 @@ struct TodayNutritionView: View {
                 
                 MacroProgressBar(
                     title: "Carbs",
-                    current: carbsConsumed,
+                    current: 0,
                     target: macroGoalsManager.goals.carbs,
                     unit: "g",
                     color: .orange
@@ -201,7 +194,7 @@ struct TodayNutritionView: View {
                 
                 MacroProgressBar(
                     title: "Fat",
-                    current: fatConsumed,
+                    current: 0,
                     target: macroGoalsManager.goals.fat,
                     unit: "g",
                     color: .purple
@@ -213,31 +206,6 @@ struct TodayNutritionView: View {
         .cornerRadius(12)
     }
     
-    private var quickActionsSection: some View {
-        VStack(spacing: 12) {
-            // Primary Action - Log Food
-            Button(action: {
-                // Add food action
-            }) {
-                HStack {
-                    Image(systemName: "plus.circle")
-                        .font(.title3)
-                    Text("LOG FOOD")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                }
-                .foregroundColor(.blue)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                )
-            }
-        }
-    }
     
     private func plannedMealCard(_ meal: Meal) -> some View {
         VStack(alignment: .leading, spacing: 8) {

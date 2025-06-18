@@ -14,7 +14,9 @@ class ClaudeAPIClient {
         numberOfDays: Int,
         startDate: Date,
         macroGoals: MacroGoals?,
-        configuration: MealPlanningConfiguration
+        configuration: MealPlanningConfiguration,
+        measurementUnit: MeasurementUnit = .metric,
+        temperatureUnit: TemperatureUnit = .celsius
     ) async throws -> GeneratedMealPlan {
         
         guard let url = URL(string: baseURL) else {
@@ -37,7 +39,9 @@ class ClaudeAPIClient {
             numberOfDays: numberOfDays,
             startDate: startDate,
             macroGoals: macroGoals,
-            configuration: configuration
+            configuration: configuration,
+            measurementUnit: measurementUnit,
+            temperatureUnit: temperatureUnit
         )
         
         let body: [String: Any] = [
@@ -111,7 +115,9 @@ class ClaudeAPIClient {
         numberOfDays: Int,
         startDate: Date,
         macroGoals: MacroGoals?,
-        configuration: MealPlanningConfiguration
+        configuration: MealPlanningConfiguration,
+        measurementUnit: MeasurementUnit,
+        temperatureUnit: TemperatureUnit
     ) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium
@@ -195,18 +201,26 @@ class ClaudeAPIClient {
         }
         
         **Instructions:**
+        
+        **MEASUREMENT UNITS**: \(measurementUnit == .metric ? "Use ONLY metric measurements throughout (grams, milliliters, liters, kilograms). Never use imperial units like ounces, cups, pounds, or tablespoons." : "Use ONLY imperial measurements throughout (ounces, cups, pounds, tablespoons, teaspoons). Never use metric units like grams, milliliters, or kilograms.")
+        **TEMPERATURE UNITS**: \(temperatureUnit == .celsius ? "Use ONLY Celsius (°C) for all cooking temperatures. Never use Fahrenheit." : "Use ONLY Fahrenheit (°F) for all cooking temperatures. Never use Celsius.")
+        
         1. Include only these meal types each day: \(configuration.selectedMealTypes.map { $0.displayName }.sorted().joined(separator: ", "))
         2. All meals must be suitable for \(configuration.dietType.rawValue) diet
-        3. Respect the \(configuration.skillLevel.rawValue) cooking skill level in recipe complexity
-        4. Keep all prep times at or under \(configuration.maxPrepTime.minutes) minutes
-        5. Account for \(configuration.budgetLevel.rawValue) budget level in ingredient selection
-        6. Strictly avoid all listed allergens: \(configuration.selectedAllergens.isEmpty ? "None" : Array(configuration.selectedAllergens).joined(separator: ", "))
-        7. Scale recipes appropriately for \(configuration.householdSize) people
-        8. Provide realistic nutrition estimates
-        9. Create a comprehensive shopping list tailored for \(configuration.shopType.rawValue) shopping
-        10. Choose ingredients that are typically available at \(configuration.shopType.rawValue.lowercased()) locations
-        11. Ensure meals are varied and interesting
-        12. Instructions should be clear and appropriate for the skill level
+        3. **PRIORITIZE LEFTOVERS**: When both lunch and dinner are selected, design dinners that intentionally create leftovers perfect for the next day's lunch. Make this a key strategy for meal efficiency and variety.
+        4. Respect the \(configuration.skillLevel.rawValue) cooking skill level in recipe complexity
+        5. Keep all prep times at or under \(configuration.maxPrepTime.minutes) minutes
+        6. Account for \(configuration.budgetLevel.rawValue) budget level in ingredient selection
+        7. Strictly avoid all listed allergens: \(configuration.selectedAllergens.isEmpty ? "None" : Array(configuration.selectedAllergens).joined(separator: ", "))
+        8. Scale recipes appropriately for \(configuration.householdSize) people
+        9. Provide realistic nutrition estimates
+        10. Create a comprehensive shopping list tailored for \(configuration.shopType.rawValue) shopping - use \(measurementUnit.rawValue.lowercased()) units only
+        11. Choose ingredients that are typically available at \(configuration.shopType.rawValue.lowercased()) locations
+        12. Ensure meals are varied and interesting
+        13. Instructions should be clear and appropriate for the skill level, using \(temperatureUnit.symbol) for temperatures
+        14. **LEFTOVER OPTIMIZATION**: For lunches that use dinner leftovers, provide simple transformation tips (add fresh herbs, different sauce, serve over greens, etc.) to make them feel like new meals
+        15. **MINIMIZE INGREDIENT WASTE**: Design meals that strategically reuse ingredients across multiple recipes to minimize waste and maximize the shopping list. Prefer recipes that share common ingredients and use full quantities purchased.
+        16. **SHOPPING LIST CATEGORIZATION**: Format shopping list items clearly for proper categorization. Use specific terms like "cod fillets", "bell peppers", "chicken breast" rather than generic terms.
         
         Return ONLY the JSON object, no additional text or formatting.
         """

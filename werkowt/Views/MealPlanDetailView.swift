@@ -3,11 +3,54 @@ import SwiftUI
 struct MealPlanDetailView: View {
     let mealPlan: MealPlan
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedMeal: Meal?
+    @State private var showingShoppingList = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Shopping List Button
+                    if mealPlan.isAIGenerated && mealPlan.generatedMealPlan?.shoppingList != nil {
+                        Button(action: {
+                            showingShoppingList = true
+                        }) {
+                            HStack {
+                                Image(systemName: "list.bullet.clipboard")
+                                    .font(.title3)
+                                    .foregroundColor(.white)
+                                
+                                Text("SHOPPING LIST")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                                
+                                if let count = mealPlan.generatedMealPlan?.shoppingList?.count {
+                                    Text("\(count) items")
+                                        .font(.subheadline)
+                                        .foregroundColor(.white.opacity(0.9))
+                                }
+                                
+                                Image(systemName: "arrow.right")
+                                    .font(.title3)
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                            .padding(16)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.gray.opacity(0.8), Color.gray.opacity(0.6)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(12)
+                            .shadow(color: .gray.opacity(0.2), radius: 4, x: 0, y: 2)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
                     // Header Info
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
@@ -59,6 +102,12 @@ struct MealPlanDetailView: View {
                     }
                 }
             }
+        }
+        .sheet(item: $selectedMeal) { meal in
+            MealDetailView(meal: meal)
+        }
+        .sheet(isPresented: $showingShoppingList) {
+            IntegratedShoppingListView(mealPlan: mealPlan)
         }
     }
     
@@ -189,6 +238,9 @@ struct MealPlanDetailView: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(8)
+        .onTapGesture {
+            selectedMeal = meal
+        }
     }
     
     @ViewBuilder

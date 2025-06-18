@@ -11,14 +11,10 @@ struct HomeView: View {
     @State private var showingLiveWorkout = false
     @State private var showingAddWeight = false
     @State private var showingFoodLogger = false
+    @State private var showingSettings = false
     @State private var selectedDate = Date()
     @State private var selectedSession: WorkoutSession?
     
-    // Nutrition state
-    @State private var caloriesConsumed: Double = 2200
-    @State private var proteinConsumed: Double = 165
-    @State private var carbsConsumed: Double = 120
-    @State private var fatConsumed: Double = 30
     
     private let calendar = Calendar.current
     private let dateFormatter: DateFormatter = {
@@ -31,15 +27,32 @@ struct HomeView: View {
         VStack(spacing: 0) {
             // Header with inline counter
             VStack(spacing: 16) {
-                HStack {
-                    Text("WERKOUT ")
-                        .font(.largeTitle)
-                        .fontWeight(.black)
-                    + Text("\(workoutDataManager.workoutSessions.count)")
-                        .font(.largeTitle)
-                        .fontWeight(.black)
-                        .foregroundColor(.blue)
+                ZStack{
+                    HStack {
+                        Spacer()
+                        HStack {
+                            Text("WERKOUT ")
+                                .font(.largeTitle)
+                                .fontWeight(.black)
+                            + Text("\(workoutDataManager.workoutSessions.count)")
+                                .font(.largeTitle)
+                                .fontWeight(.black)
+                                .foregroundColor(.blue)
+                        }
+                        Spacer()
+                    }
+                    HStack{
+                        Spacer()
+                        Button(action: {
+                            showingSettings = true
+                        }) {
+                            Image(systemName: "person.circle")
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
+
                 
                 // Date Navigation
                 DateNavigationView(
@@ -62,10 +75,10 @@ struct HomeView: View {
             
             // Macro Progress Pie Charts
             HorizontalMacroCharts(
-                calories: caloriesConsumed,
-                protein: proteinConsumed,
-                carbs: carbsConsumed,
-                fat: fatConsumed,
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
                 goals: macroGoalsManager.goals
             )
             
@@ -103,21 +116,52 @@ struct HomeView: View {
             WorkoutDetailView(session: session)
         }
         .sheet(isPresented: $showingFoodLogger) {
-            // Food logging view - placeholder for now
+            // Food logging - Coming Soon placeholder
             NavigationView {
-                VStack {
-                    Text("Food Logging")
-                        .font(.title)
-                    Text("This will integrate with the nutrition system")
-                        .foregroundColor(.secondary)
+                VStack(spacing: 32) {
+                    Image(systemName: "fork.knife.circle")
+                        .font(.system(size: 80))
+                        .foregroundColor(.blue)
+                    
+                    VStack(spacing: 16) {
+                        Text("Food Tracking")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        
+                        Text("Coming Soon")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                        
+                        Text("Food logging will integrate with your meal plans and nutrition goals.")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                    
+                    Spacer()
                     
                     Button("Close") {
                         showingFoodLogger = false
                     }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
                     .padding()
+                    .background(Color.blue)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
                 }
-                .navigationTitle("Log Food")
+                .padding()
+                .navigationTitle("Track Food")
                 .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            showingFoodLogger = false
+                        }
+                    }
+                }
             }
         }
         .onChange(of: activeWorkout.isActive) { isActive in
@@ -136,6 +180,9 @@ struct HomeView: View {
                 .onDisappear {
                     showingLiveWorkout = false
                 }
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
         }
     }
     

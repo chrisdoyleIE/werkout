@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   uuid = "7607B8FA-938B-4B4B-8D34-6D21F5C186FE"
+   type = "1"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "70"
+            endingLineNumber = "70"
+            landmarkName = "generateMealPlan(numberOfDays:startDate:macroGoals:configuration:measurementUnit:temperatureUnit:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - 1d5c0c2a0b1d054b"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "70"
+                  endingLineNumber = "70">
+               </Location>
+               <Location
+                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - 64969f257c2dff2"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71">
+               </Location>
+               <Location
+                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - 78909f0100869436"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "31"
+                  endingLineNumber = "31">
+               </Location>
+               <Location
+                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - 78909f010086916e"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71">
+               </Location>
+               <Location
+                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - 74e2e88336bd16ec"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "31"
+                  endingLineNumber = "31">
+               </Location>
+               <Location
+                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - 74e2e88336bd13b4"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71">
+               </Location>
+               <Location
+                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - cc2e28d8453c34cf"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "31"
+                  endingLineNumber = "31">
+               </Location>
+               <Location
+                  uuid = "CE2FA115-1412-42D8-A55C-47A58BCEA65A - cc2e28d8453c3197"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/chris.doyle/code/werkout/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>

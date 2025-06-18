@@ -3,9 +3,10 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject var activeWorkout: ActiveWorkout
     @EnvironmentObject var authManager: AuthManager
+    @State private var selectedTab = 0
     
     var body: some View {
-        TabView(selection: .constant(0)) {
+        TabView(selection: $selectedTab) {
             NutritionTabView()
                 .tabItem {
                     Image(systemName: "carrot")
@@ -15,15 +16,15 @@ struct MainTabView: View {
             
             HomeView()
                 .tabItem {
-                    Image(systemName: "house")
-                    Text("Workouts")
+                    Image(systemName: "play.house.fill")
+                    Text("Track")
                 }
                 .tag(1)
             
             WorkoutProgressView()
                 .tabItem {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                    Text("Progress")
+                    Image(systemName: "dumbbell.fill")
+                    Text("Training")
                 }
                 .tag(2)
         }

@@ -29,7 +29,8 @@ struct DailyMeal: Codable {
     let dailyNutrition: NutritionSummary?
 }
 
-struct Meal: Codable {
+struct Meal: Codable, Identifiable {
+    var id: String { name + type.rawValue }
     let type: MealType
     let name: String
     let description: String

@@ -4,14 +4,15 @@ struct MealPlanningView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var mealPlanManager: MealPlanManager
     @EnvironmentObject var macroGoalsManager: MacroGoalsManager
+    @StateObject private var settingsManager = SettingsManager()
     
     // Date Selection
     @State private var startDate = Date()
-    @State private var endDate = Calendar.current.date(byAdding: .day, value: 6, to: Date()) ?? Date()
+    @State private var endDate = Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date()
     
     // Meal Configuration
     @State private var selectedMealTypes: Set<MealType> = [.breakfast, .lunch, .dinner]
-    @State private var householdSize: Int = 2
+    @State private var householdSize: Int = 1
     @State private var maxPrepTime: PrepTime = .medium
     @State private var cookingFrequency: CookingFrequency = .everyOtherDay
     
@@ -24,6 +25,12 @@ struct MealPlanningView: View {
     @State private var budgetLevel: BudgetLevel = .medium
     @State private var shopType: ShopType = .supermarket
     @State private var additionalNotes: String = ""
+    
+    // Adjusted Macro Goals for Generated Meals
+    @State private var adjustedCalories: Double = 0
+    @State private var adjustedProtein: Double = 0
+    @State private var adjustedCarbs: Double = 0
+    @State private var adjustedFat: Double = 0
     
     // UI State
     @State private var showingSuccess = false
@@ -42,6 +49,18 @@ struct MealPlanningView: View {
         mealPlanManager.isGeneratingMealPlan
     }
     
+    // Calculate proportional macros based on selected meal types
+    private func calculateAdjustedMacros() {
+        let totalMealTypes = MealType.allCases.count
+        let selectedCount = selectedMealTypes.count
+        let proportion = Double(selectedCount) / Double(totalMealTypes)
+        
+        adjustedCalories = macroGoalsManager.goals.calories * proportion
+        adjustedProtein = macroGoalsManager.goals.protein * proportion
+        adjustedCarbs = macroGoalsManager.goals.carbs * proportion
+        adjustedFat = macroGoalsManager.goals.fat * proportion
+    }
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -52,7 +71,7 @@ struct MealPlanningView: View {
                     // Daily Macro Goals (Read-only)
                     macroGoalsCard
                     
-                    // Date Selection
+                    // Date Selection - moved to top
                     dateSelectionCard
                     
                     // Meal Configuration
@@ -93,7 +112,20 @@ struct MealPlanningView: View {
             } message: {
                 Text(errorMessage)
             }
+            .onAppear {
+                calculateAdjustedMacros()
+            }
+            .onChange(of: selectedMealTypes) { _ in
+                calculateAdjustedMacros()
+            }
         }
+        .overlay(
+            Group {
+                if mealPlanManager.isGeneratingMealPlan {
+                    MealPlanLoadingView()
+                }
+            }
+        )
     }
     
     private var headerSection: some View {
@@ -137,6 +169,89 @@ struct MealPlanningView: View {
             Text(label)
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    private var adjustedMacroGoalsWidget: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "target")
+                    .foregroundColor(.orange)
+                    .font(.system(size: 16))
+                Text("Target Macros")
+                    .fontWeight(.medium)
+                Spacer()
+                Text("Adjust as needed")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color(.systemGray5))
+                    .cornerRadius(8)
+            }
+            
+            Text("Macro targets for the \(selectedMealTypes.count) selected meal\(selectedMealTypes.count > 1 ? "s" : "") only")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            VStack(spacing: 12) {
+                HStack(spacing: 16) {
+                    adjustableMacroItem("Calories", value: $adjustedCalories, color: .red, range: 100...4000, step: 50)
+                    adjustableMacroItem("Protein", value: $adjustedProtein, color: .blue, range: 10...300, step: 5, unit: "g")
+                }
+                
+                HStack(spacing: 16) {
+                    adjustableMacroItem("Carbs", value: $adjustedCarbs, color: .orange, range: 20...400, step: 10, unit: "g")
+                    adjustableMacroItem("Fat", value: $adjustedFat, color: .purple, range: 10...200, step: 5, unit: "g")
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.orange.opacity(0.05))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private func adjustableMacroItem(_ label: String, value: Binding<Double>, color: Color, range: ClosedRange<Double>, step: Double, unit: String = "") -> some View {
+        VStack(spacing: 8) {
+            Text(label)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(color)
+            
+            HStack(spacing: 8) {
+                Button(action: {
+                    if value.wrappedValue > range.lowerBound {
+                        value.wrappedValue = max(range.lowerBound, value.wrappedValue - step)
+                    }
+                }) {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundColor(color.opacity(0.7))
+                        .font(.title3)
+                }
+                .disabled(value.wrappedValue <= range.lowerBound)
+                
+                Text("\(Int(value.wrappedValue))\(unit)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(color)
+                    .frame(minWidth: 50)
+                
+                Button(action: {
+                    if value.wrappedValue < range.upperBound {
+                        value.wrappedValue = min(range.upperBound, value.wrappedValue + step)
+                    }
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundColor(color.opacity(0.7))
+                        .font(.title3)
+                }
+                .disabled(value.wrappedValue >= range.upperBound)
+            }
         }
         .frame(maxWidth: .infinity)
     }
@@ -224,17 +339,52 @@ struct MealPlanningView: View {
                 
                 Divider()
                 
+                // Adjusted Macro Goals for Generated Meals
+                adjustedMacroGoalsWidget
+                
+                Divider()
+                
                 // Household size
-                HStack {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Household size")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Picker("Household size", selection: $householdSize) {
-                        ForEach(1...8, id: \.self) { size in
-                            Text("\(size) \(size == 1 ? "person" : "people")")
-                                .tag(size)
+                    
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            if householdSize > 1 {
+                                householdSize -= 1
+                            }
+                        }) {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundColor(householdSize > 1 ? .blue : .gray.opacity(0.5))
+                                .font(.title2)
                         }
+                        .disabled(householdSize <= 1)
+                        
+                        VStack(spacing: 2) {
+                            Text("\(householdSize)")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.blue)
+                            
+                            Text(householdSize == 1 ? "person" : "people")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(minWidth: 80)
+                        
+                        Button(action: {
+                            if householdSize < 8 {
+                                householdSize += 1
+                            }
+                        }) {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(householdSize < 8 ? .blue : .gray.opacity(0.5))
+                                .font(.title2)
+                        }
+                        .disabled(householdSize >= 8)
+                        
+                        Spacer()
                     }
-                    .pickerStyle(.menu)
                 }
                 
                 Divider()
@@ -253,18 +403,56 @@ struct MealPlanningView: View {
                 Divider()
                 
                 // Cooking frequency
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text("How often do you want to cook?")
-                    Picker("Cooking frequency", selection: $cookingFrequency) {
+                    
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
                         ForEach(CookingFrequency.allCases, id: \.self) { frequency in
-                            Text(frequency.rawValue).tag(frequency)
+                            Button(action: {
+                                cookingFrequency = frequency
+                            }) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(frequency.rawValue)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                        Spacer()
+                                        if cookingFrequency == frequency {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.blue)
+                                                .font(.system(size: 16))
+                                        }
+                                    }
+                                    
+                                    Text(frequency.description)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.leading)
+                                        .lineLimit(2)
+                                }
+                                .foregroundColor(
+                                    cookingFrequency == frequency ? .primary : .primary
+                                )
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                                .background(
+                                    cookingFrequency == frequency ?
+                                    Color.blue.opacity(0.1) : Color(.systemGray5)
+                                )
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(
+                                            cookingFrequency == frequency ? Color.blue.opacity(0.3) : Color.clear,
+                                            lineWidth: 1
+                                        )
+                                )
+                            }
                         }
                     }
-                    .pickerStyle(.menu)
-                    
-                    Text(cookingFrequency.description)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
             }
         }
@@ -281,15 +469,53 @@ struct MealPlanningView: View {
             
             VStack(spacing: 16) {
                 // Diet type
-                HStack {
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Diet type")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Picker("Diet type", selection: $dietType) {
+                    
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
                         ForEach(DietType.allCases, id: \.self) { diet in
-                            Text(diet.rawValue).tag(diet)
+                            Button(action: {
+                                dietType = diet
+                            }) {
+                                VStack(spacing: 6) {
+                                    Text(dietTypeIcon(diet))
+                                        .font(.title2)
+                                    
+                                    Text(diet.rawValue)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .multilineTextAlignment(.center)
+                                        .lineLimit(1)
+                                }
+                                .foregroundColor(
+                                    dietType == diet ? .white : .primary
+                                )
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    dietType == diet ?
+                                    Color.green : Color(.systemGray5)
+                                )
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(
+                                            dietType == diet ? Color.green.opacity(0.3) : Color.clear,
+                                            lineWidth: 1
+                                        )
+                                )
+                            }
                         }
                     }
-                    .pickerStyle(.menu)
+                    
+                    Text(dietTypeDescription(dietType))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
                 }
                 
                 Divider()
@@ -510,11 +736,21 @@ struct MealPlanningView: View {
         
         Task {
             do {
+                // Create adjusted macro goals for generation
+                let adjustedMacroGoals = MacroGoals(
+                    calories: adjustedCalories,
+                    protein: adjustedProtein,
+                    carbs: adjustedCarbs,
+                    fat: adjustedFat
+                )
+                
                 let _ = try await mealPlanManager.generateAIMealPlan(
                     startDate: startDate,
                     numberOfDays: numberOfDays,
-                    macroGoals: macroGoalsManager.goals,
-                    configuration: configuration
+                    macroGoals: adjustedMacroGoals,
+                    configuration: configuration,
+                    measurementUnit: settingsManager.measurementUnit,
+                    temperatureUnit: settingsManager.temperatureUnit
                 )
                 
                 await MainActor.run {
@@ -526,6 +762,28 @@ struct MealPlanningView: View {
                     showingAlert = true
                 }
             }
+        }
+    }
+    
+    private func dietTypeIcon(_ diet: DietType) -> String {
+        switch diet {
+        case .omnivore: return "🍽️"
+        case .vegetarian: return "🥗"
+        case .vegan: return "🌱"
+        case .keto: return "🥑"
+        case .mediterranean: return "🫒"
+        case .paleo: return "🥩"
+        }
+    }
+    
+    private func dietTypeDescription(_ diet: DietType) -> String {
+        switch diet {
+        case .omnivore: return "Includes all food groups - meat, dairy, vegetables, grains"
+        case .vegetarian: return "No meat or fish, but includes dairy and eggs"
+        case .vegan: return "Plant-based only - no animal products"
+        case .keto: return "High fat, very low carb for ketosis"
+        case .mediterranean: return "Focus on olive oil, fish, vegetables, and whole grains"
+        case .paleo: return "Whole foods only - no processed foods, grains, or legumes"
         }
     }
 }

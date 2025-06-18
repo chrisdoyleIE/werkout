@@ -20,7 +20,7 @@ struct AuthView: View {
                         .fontWeight(.black)
                         .foregroundColor(.blue)
                     
-                    Text("Track your strength journey")
+                    Text("Track your fitness journey")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
