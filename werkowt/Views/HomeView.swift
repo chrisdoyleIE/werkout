@@ -57,12 +57,13 @@ struct HomeView: View {
                 // Date Navigation
                 DateNavigationView(
                     selectedDate: $selectedDate,
-                    onPreviousDay: previousDay,
-                    onNextDay: nextDay
+                    onPrevious: previousMonth,
+                    onNext: nextMonth
                 )
                 
             }
             .padding()
+            .padding(.bottom, 8)
             
             // Calendar
             CalendarView(
@@ -71,33 +72,65 @@ struct HomeView: View {
             ) { session in
                 selectedSession = session
             }
+            .padding(.bottom, 16)
             
-            
-            // Macro Progress Pie Charts
-            HorizontalMacroCharts(
-                calories: 0,
-                protein: 0,
-                carbs: 0,
-                fat: 0,
-                goals: macroGoalsManager.goals
+            // Integrated Progress & Actions Card
+            VStack(spacing: 0) {
+                // Card header with subtle border integration
+                HStack {
+                    Spacer()
+                    Text("TRACK")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.blue)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                
+                // Macro Progress Section
+                HorizontalMacroCharts(
+                    calories: 0,
+                    protein: 0,
+                    carbs: 0,
+                    fat: 0,
+                    goals: macroGoalsManager.goals
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+                
+                // Subtle divider
+                Divider()
+                    .padding(.horizontal, 16)
+                
+                // Compact Action Buttons
+                UnifiedActionWidget(
+                    onWorkoutTap: {
+                        showingWorkoutCreator = true
+                    },
+                    onFoodTap: {
+                        showingFoodLogger = true
+                    },
+                    onWeightTap: {
+                        showingAddWeight = true
+                    },
+                    compactStyle: true
+                )
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+            }
+            .background(Color(.systemBackground))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
             )
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 32)
             
             Spacer()
-            
-            // Unified Action Widget
-            UnifiedActionWidget(
-                onWorkoutTap: {
-                    showingWorkoutCreator = true
-                },
-                onFoodTap: {
-                    showingFoodLogger = true
-                },
-                onWeightTap: {
-                    showingAddWeight = true
-                }
-            )
-            .padding(.horizontal)
-            .padding(.bottom, 32)
         }
         .onAppear {
             Task {
@@ -187,12 +220,12 @@ struct HomeView: View {
     }
     
     
-    private func previousDay() {
-        selectedDate = calendar.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+    private func previousMonth() {
+        selectedDate = calendar.date(byAdding: .month, value: -1, to: selectedDate) ?? selectedDate
     }
     
-    private func nextDay() {
-        selectedDate = calendar.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+    private func nextMonth() {
+        selectedDate = calendar.date(byAdding: .month, value: 1, to: selectedDate) ?? selectedDate
     }
     
     private func addWeight(weight: Double, notes: String?) async {
@@ -290,19 +323,37 @@ struct CalendarDayView: View {
     
     var body: some View {
         Button(action: { onTap(workoutSession) }) {
-            VStack(spacing: 2) {
+            VStack(spacing: 0) {
                 Text("\(calendar.component(.day, from: date))")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(workoutSession != nil ? .white : (isCurrentMonth ? .primary : .secondary))
                 
                 Spacer()
+                
+                // Macro achievement dots positioned at bottom
+                HStack(spacing: 2) {
+                    Circle()
+                        .fill(macroData.caloriesAchieved ? Color.red : Color.gray.opacity(0.3))
+                        .frame(width: 6, height: 6)
+                    Circle()
+                        .fill(macroData.proteinAchieved ? Color.green : Color.gray.opacity(0.3))
+                        .frame(width: 6, height: 6)
+                    Circle()
+                        .fill(macroData.carbsAchieved ? Color.orange : Color.gray.opacity(0.3))
+                        .frame(width: 6, height: 6)
+                    Circle()
+                        .fill(macroData.fatAchieved ? Color.purple : Color.gray.opacity(0.3))
+                        .frame(width: 6, height: 6)
+                }
+                .opacity(isCurrentMonth ? 1.0 : 0.5)
+                .padding(.bottom, 4)
             }
             .frame(width: 45, height: 45)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(
                         workoutSession != nil ? 
-                        Color.green :
+                        Color.blue :
                         Color.clear
                     )
                     .overlay(
@@ -310,26 +361,9 @@ struct CalendarDayView: View {
                             .stroke(calendar.isDateInToday(date) ? Color.blue : Color.clear, lineWidth: 2)
                     )
             )
-            .overlay(
-                // Macro achievement border segments
-                ZStack {
-                    if macroData.caloriesAchieved {
-                        MacroBorderSegment(position: .topLeft)
-                    }
-                    if macroData.proteinAchieved {
-                        MacroBorderSegment(position: .topRight)
-                    }
-                    if macroData.carbsAchieved {
-                        MacroBorderSegment(position: .bottomLeft)
-                    }
-                    if macroData.fatAchieved {
-                        MacroBorderSegment(position: .bottomRight)
-                    }
-                }
-            )
             .scaleEffect(workoutSession != nil ? 1.05 : 1.0)
             .shadow(color: workoutSession != nil ? 
-                    Color.green.opacity(0.3) : 
+                    Color.blue.opacity(0.3) : 
                     .clear, radius: 4, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
@@ -575,87 +609,4 @@ struct WeekCalendarView: View {
     }
 }
 
-enum BorderPosition {
-    case topLeft, topRight, bottomLeft, bottomRight
-}
-
-struct MacroBorderSegment: View {
-    let position: BorderPosition
-    let cornerRadius: CGFloat = 8
-    let borderWidth: CGFloat = 2.5
-    
-    var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
-            .strokeBorder(Color.clear, lineWidth: 0)
-            .overlay(
-                borderPath
-                    .stroke(Color.green, lineWidth: borderWidth)
-            )
-    }
-    
-    private var borderPath: Path {
-        Path { path in
-            let rect = CGRect(x: 0, y: 0, width: 45, height: 45)
-            let radius = cornerRadius
-            
-            switch position {
-            case .topLeft:
-                // Top edge
-                path.move(to: CGPoint(x: radius, y: 0))
-                path.addLine(to: CGPoint(x: rect.midX, y: 0))
-                // Left edge
-                path.move(to: CGPoint(x: 0, y: radius))
-                path.addLine(to: CGPoint(x: 0, y: rect.midY))
-                // Top-left corner
-                path.addArc(center: CGPoint(x: radius, y: radius), 
-                           radius: radius, 
-                           startAngle: Angle(degrees: 180), 
-                           endAngle: Angle(degrees: 270), 
-                           clockwise: false)
-                
-            case .topRight:
-                // Top edge
-                path.move(to: CGPoint(x: rect.midX, y: 0))
-                path.addLine(to: CGPoint(x: rect.width - radius, y: 0))
-                // Right edge
-                path.move(to: CGPoint(x: rect.width, y: radius))
-                path.addLine(to: CGPoint(x: rect.width, y: rect.midY))
-                // Top-right corner
-                path.addArc(center: CGPoint(x: rect.width - radius, y: radius), 
-                           radius: radius, 
-                           startAngle: Angle(degrees: 270), 
-                           endAngle: Angle(degrees: 0), 
-                           clockwise: false)
-                
-            case .bottomLeft:
-                // Bottom edge
-                path.move(to: CGPoint(x: radius, y: rect.height))
-                path.addLine(to: CGPoint(x: rect.midX, y: rect.height))
-                // Left edge
-                path.move(to: CGPoint(x: 0, y: rect.midY))
-                path.addLine(to: CGPoint(x: 0, y: rect.height - radius))
-                // Bottom-left corner
-                path.addArc(center: CGPoint(x: radius, y: rect.height - radius), 
-                           radius: radius, 
-                           startAngle: Angle(degrees: 90), 
-                           endAngle: Angle(degrees: 180), 
-                           clockwise: false)
-                
-            case .bottomRight:
-                // Bottom edge
-                path.move(to: CGPoint(x: rect.midX, y: rect.height))
-                path.addLine(to: CGPoint(x: rect.width - radius, y: rect.height))
-                // Right edge
-                path.move(to: CGPoint(x: rect.width, y: rect.midY))
-                path.addLine(to: CGPoint(x: rect.width, y: rect.height - radius))
-                // Bottom-right corner
-                path.addArc(center: CGPoint(x: rect.width - radius, y: rect.height - radius), 
-                           radius: radius, 
-                           startAngle: Angle(degrees: 0), 
-                           endAngle: Angle(degrees: 90), 
-                           clockwise: false)
-            }
-        }
-    }
-}
 

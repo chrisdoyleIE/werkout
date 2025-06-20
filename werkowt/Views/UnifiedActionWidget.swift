@@ -4,8 +4,48 @@ struct UnifiedActionWidget: View {
     let onWorkoutTap: () -> Void
     let onFoodTap: (() -> Void)?
     let onWeightTap: () -> Void
+    let compactStyle: Bool
+    
+    init(onWorkoutTap: @escaping () -> Void, onFoodTap: (() -> Void)? = nil, onWeightTap: @escaping () -> Void, compactStyle: Bool = false) {
+        self.onWorkoutTap = onWorkoutTap
+        self.onFoodTap = onFoodTap
+        self.onWeightTap = onWeightTap
+        self.compactStyle = compactStyle
+    }
     
     var body: some View {
+        if compactStyle {
+            compactActionView
+        } else {
+            originalActionView
+        }
+    }
+    
+    private var compactActionView: some View {
+        HStack(spacing: 8) {
+            CompactActionButton(
+                icon: "figure.strengthtraining.functional",
+                title: "Training",
+                action: onWorkoutTap
+            )
+            
+            if let foodAction = onFoodTap {
+                CompactActionButton(
+                    icon: "fork.knife",
+                    title: "Food",
+                    action: foodAction
+                )
+            }
+            
+            CompactActionButton(
+                icon: "figure.stand",
+                title: "Weight",
+                action: onWeightTap
+            )
+        }
+    }
+    
+    private var originalActionView: some View {
         VStack(spacing: 8) {
             // Header label
             Text("Track Your")
@@ -98,8 +138,53 @@ struct ActionSegment: View {
     }
 }
 
+struct CompactActionButton: View {
+    let icon: String
+    let title: String
+    let action: () -> Void
+    
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    isPressed = false
+                }
+                action()
+            }
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(.white)
+                
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isPressed ? Color.blue.opacity(0.8) : Color.blue)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .scaleEffect(isPressed ? 0.96 : 1.0)
+    }
+}
+
 #Preview {
     VStack(spacing: 20) {
+        // Original style
         UnifiedActionWidget(
             onWorkoutTap: { print("Workout tapped") },
             onFoodTap: { print("Food tapped") },
@@ -107,15 +192,22 @@ struct ActionSegment: View {
         )
         .padding()
         
-        // Show individual segment for testing
-        ActionSegment(
-            icon: "figure.strengthtraining.functional",
-            title: "WORKOUT",
-            action: { print("Individual segment") }
+        // Compact style
+        UnifiedActionWidget(
+            onWorkoutTap: { print("Workout tapped") },
+            onFoodTap: { print("Food tapped") },
+            onWeightTap: { print("Weight tapped") },
+            compactStyle: true
         )
-        .frame(width: 120, height: 80)
-        .background(Color.blue)
-        .cornerRadius(12)
+        .padding()
+        
+        // Individual compact button for testing
+        CompactActionButton(
+            icon: "figure.strengthtraining.functional",
+            title: "Training",
+            action: { print("Compact button") }
+        )
+        .padding()
     }
     .padding()
 }

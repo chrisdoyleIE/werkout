@@ -358,48 +358,111 @@ struct AddWeightView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Weight (kg)")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    TextField("70.5", text: $weightText)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .font(.title2)
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Notes (Optional)")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    TextField("How are you feeling today?", text: $notes, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .lineLimit(3...6)
-                }
-                
-                Spacer()
-                
-                Button(action: saveWeight) {
-                    if isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Text("Save Weight")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+            ScrollView {
+                VStack(spacing: 32) {
+                    // Header Icon and Title
+                    VStack(spacing: 16) {
+                        Image(systemName: "figure.stand")
+                            .font(.system(size: 48, weight: .light))
+                            .foregroundColor(.blue)
+                        
+                        VStack(spacing: 8) {
+                            Text("Track Weight")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            
+                            Text("Record your weight and notes")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    .padding(.top, 20)
+                    
+                    // Weight Input Card
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Weight")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Enter weight", text: $weightText)
+                                .keyboardType(.decimalPad)
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.blue)
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(12)
+                            
+                            Text("kg")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 4)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    
+                    // Notes Input Card
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Notes")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("How are you feeling today?", text: $notes, axis: .vertical)
+                                .font(.body)
+                                .lineLimit(3...6)
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(12)
+                            
+                            Text("Optional")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 4)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    
+                    Spacer(minLength: 40)
+                    
+                    // Save Button
+                    Button(action: saveWeight) {
+                        HStack(spacing: 12) {
+                            if isLoading {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.title3)
+                                
+                                Text("Save Weight Entry")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(isValidWeight ? Color.blue : Color(.systemGray4))
+                    .foregroundColor(isValidWeight ? .white : .secondary)
+                    .cornerRadius(16)
+                    .disabled(!isValidWeight || isLoading)
+                    .animation(.easeInOut(duration: 0.2), value: isValidWeight)
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(isValidWeight ? Color.blue : Color.gray)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-                .disabled(!isValidWeight || isLoading)
+                .padding(.horizontal)
+                .padding(.bottom, 50)
             }
-            .padding()
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Add Weight")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -407,6 +470,8 @@ struct AddWeightView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .font(.body)
+                    .fontWeight(.medium)
                 }
             }
         }

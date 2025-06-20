@@ -177,8 +177,8 @@ struct UnifiedNutritionView: View {
     private var dateNavigationSection: some View {
         DateNavigationView(
             selectedDate: $selectedDate,
-            onPreviousDay: previousDay,
-            onNextDay: nextDay,
+            onPrevious: previousDay,
+            onNext: nextDay,
             showEditButton: false,
             onEditTap: {}
         )

@@ -2,34 +2,34 @@ import SwiftUI
 
 struct DateNavigationView: View {
     @Binding var selectedDate: Date
-    let onPreviousDay: () -> Void
-    let onNextDay: () -> Void
+    let onPrevious: () -> Void
+    let onNext: () -> Void
     let showEditButton: Bool
     let onEditTap: (() -> Void)?
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEE - MMMM d"
+        formatter.dateFormat = "MMMM yyyy"
         return formatter
     }()
     
     init(
         selectedDate: Binding<Date>,
-        onPreviousDay: @escaping () -> Void,
-        onNextDay: @escaping () -> Void,
+        onPrevious: @escaping () -> Void,
+        onNext: @escaping () -> Void,
         showEditButton: Bool = false,
         onEditTap: (() -> Void)? = nil
     ) {
         self._selectedDate = selectedDate
-        self.onPreviousDay = onPreviousDay
-        self.onNextDay = onNextDay
+        self.onPrevious = onPrevious
+        self.onNext = onNext
         self.showEditButton = showEditButton
         self.onEditTap = onEditTap
     }
     
     var body: some View {
         HStack {
-            Button(action: onPreviousDay) {
+            Button(action: onPrevious) {
                 Image(systemName: "chevron.left")
                     .font(.title2)
                     .padding()
@@ -43,7 +43,7 @@ struct DateNavigationView: View {
             
             Spacer()
             
-            Button(action: onNextDay) {
+            Button(action: onNext) {
                 Image(systemName: "chevron.right")
                     .font(.title2)
                     .padding()
@@ -72,8 +72,8 @@ struct DateNavigationView: View {
 #Preview {
     DateNavigationView(
         selectedDate: .constant(Date()),
-        onPreviousDay: {},
-        onNextDay: {},
+        onPrevious: {},
+        onNext: {},
         showEditButton: true,
         onEditTap: {}
     )

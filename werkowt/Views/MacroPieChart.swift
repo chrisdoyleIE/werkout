@@ -9,27 +9,41 @@ struct MacroPieChart: View {
     
     private var progress: Double {
         guard target > 0 else { return 0 }
-        return min(current / target, 1.0)
+        return current / target
     }
     
     private var percentage: Int {
-        Int(progress * 100)
+        Int(min(progress, 1.0) * 100)
+    }
+    
+    private var isGoalAchieved: Bool {
+        progress >= 1.0
     }
     
     var body: some View {
         VStack(spacing: 4) {
-            // Pie chart circle
+            // Goal achievement indicator - show checkmark if achieved, pie chart if in progress
             ZStack {
-                Circle()
-                    .stroke(color.opacity(0.2), lineWidth: 3)
-                    .frame(width: 32, height: 32)
-                
-                Circle()
-                    .trim(from: 0, to: progress)
-                    .stroke(color, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                    .frame(width: 32, height: 32)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.5), value: progress)
+                if isGoalAchieved {
+                    // Show checkmark for completed goals
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(color)
+                        .scaleEffect(1.1)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isGoalAchieved)
+                } else {
+                    // Show pie chart for goals in progress
+                    Circle()
+                        .stroke(color.opacity(0.2), lineWidth: 3)
+                        .frame(width: 32, height: 32)
+                    
+                    Circle()
+                        .trim(from: 0, to: min(progress, 1.0))
+                        .stroke(color, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .frame(width: 32, height: 32)
+                        .rotationEffect(.degrees(-90))
+                        .animation(.easeInOut(duration: 0.5), value: progress)
+                }
             }
             
             // Label
@@ -75,7 +89,7 @@ struct HorizontalMacroCharts: View {
                 current: protein,
                 target: goals.protein,
                 unit: "g",
-                color: .blue
+                color: .green
             )
             
             MacroPieChart(
@@ -107,7 +121,7 @@ struct HorizontalMacroCharts: View {
             current: 90,
             target: 150,
             unit: "g",
-            color: .blue
+            color: .green
         )
         .frame(width: 80)
         

@@ -548,9 +548,9 @@ struct ExerciseTab: View {
         case "chest": return "figure.strengthtraining.traditional"
         case "back": return "figure.climbing"
         case "legs": return "figure.walk"
-        case "core": return "scope"
+        case "core": return "figure.core.training"
         case "arms": return "dumbbell.fill"
-        case "shoulders": return "arrow.up.and.down.and.arrow.left.and.right"
+        case "shoulders": return "figure.mixed.cardio"
         default: return "dumbbell.fill"
         }
     }

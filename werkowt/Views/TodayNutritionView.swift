@@ -51,8 +51,8 @@ struct TodayNutritionView: View {
     private var dateNavigationSection: some View {
         DateNavigationView(
             selectedDate: $selectedDate,
-            onPreviousDay: previousDay,
-            onNextDay: nextDay,
+            onPrevious: previousDay,
+            onNext: nextDay,
             showEditButton: true,
             onEditTap: {
                 showingGoalSettings = true
