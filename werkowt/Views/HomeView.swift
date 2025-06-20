@@ -149,53 +149,7 @@ struct HomeView: View {
             WorkoutDetailView(session: session)
         }
         .sheet(isPresented: $showingFoodLogger) {
-            // Food logging - Coming Soon placeholder
-            NavigationView {
-                VStack(spacing: 32) {
-                    Image(systemName: "fork.knife.circle")
-                        .font(.system(size: 80))
-                        .foregroundColor(.blue)
-                    
-                    VStack(spacing: 16) {
-                        Text("Food Tracking")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                        
-                        Text("Coming Soon")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Food logging will integrate with your meal plans and nutrition goals.")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
-                    
-                    Spacer()
-                    
-                    Button("Close") {
-                        showingFoodLogger = false
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-                }
-                .padding()
-                .navigationTitle("Track Food")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            showingFoodLogger = false
-                        }
-                    }
-                }
-            }
+            FoodTrackingView()
         }
         .onChange(of: activeWorkout.isActive) { isActive in
             if isActive {

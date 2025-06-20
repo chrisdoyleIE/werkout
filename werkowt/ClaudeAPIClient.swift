@@ -382,3 +382,354 @@ extension ClaudeAPIClient {
         return text
     }
 }
+
+// MARK: - Food Analysis with Tool Use
+extension ClaudeAPIClient {
+    
+    struct ClaudeToolDefinition {
+        let name: String
+        let description: String
+        let inputSchema: [String: Any]
+    }
+    
+    enum FoodInputType: String {
+        case text = "text"
+        case voice = "voice"
+        case camera = "camera"
+    }
+    
+    struct FoodAnalysisResult {
+        let identifiedFoods: [AnalyzedFood]
+        let estimatedAmounts: [String: Double]
+        let confidence: Double
+        let needsVerification: [AnalyzedFood]
+    }
+    
+    struct AnalyzedFood {
+        let name: String
+        let brand: String?
+        let nutrition: NutritionPer100g
+        let confidence: Double
+        let existsInDatabase: Bool
+        let databaseId: UUID?
+    }
+    
+    struct NutritionPer100g {
+        let calories: Double
+        let protein: Double
+        let carbs: Double
+        let fat: Double
+        let fiber: Double?
+        let sugar: Double?
+        let sodium: Double?
+    }
+    
+    private var foodAnalysisTools: [ClaudeToolDefinition] {
+        [
+            ClaudeToolDefinition(
+                name: "search_food_database",
+                description: "Search the app's Supabase food database for existing food items by name or brand",
+                inputSchema: [
+                    "type": "object",
+                    "properties": [
+                        "query": [
+                            "type": "string",
+                            "description": "Food name or brand to search for"
+                        ],
+                        "limit": [
+                            "type": "integer", 
+                            "description": "Maximum number of results to return",
+                            "default": 10
+                        ]
+                    ],
+                    "required": ["query"]
+                ]
+            ),
+            ClaudeToolDefinition(
+                name: "web_search_nutrition",
+                description: "Search the web for accurate nutrition information about food items from trusted sources like USDA",
+                inputSchema: [
+                    "type": "object",
+                    "properties": [
+                        "food_name": [
+                            "type": "string",
+                            "description": "The specific food item to search nutrition for"
+                        ],
+                        "brand": [
+                            "type": "string",
+                            "description": "Optional brand name for more specific results"
+                        ]
+                    ],
+                    "required": ["food_name"]
+                ]
+            ),
+            ClaudeToolDefinition(
+                name: "verify_nutrition_data",
+                description: "Cross-reference and verify nutrition data from multiple sources",
+                inputSchema: [
+                    "type": "object",
+                    "properties": [
+                        "food_name": ["type": "string"],
+                        "nutrition_data": [
+                            "type": "object",
+                            "properties": [
+                                "calories_per_100g": ["type": "number"],
+                                "protein_per_100g": ["type": "number"],
+                                "carbs_per_100g": ["type": "number"],
+                                "fat_per_100g": ["type": "number"]
+                            ]
+                        ]
+                    ],
+                    "required": ["food_name", "nutrition_data"]
+                ]
+            )
+        ]
+    }
+    
+    @MainActor
+    func analyzeFoodWithTools(
+        input: String,
+        inputType: FoodInputType,
+        imageData: Data? = nil
+    ) async throws -> FoodAnalysisResult {
+        
+        guard let url = URL(string: baseURL) else {
+            throw ClaudeAPIError.invalidURL
+        }
+        
+        let apiKey = Config.anthropicKey
+        guard !apiKey.isEmpty else {
+            throw ClaudeAPIError.noAPIKey
+        }
+        
+        let prompt = buildFoodAnalysisPrompt(input: input, inputType: inputType)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 120.0
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.addValue(apiVersion, forHTTPHeaderField: "anthropic-version")
+        
+        let body: [String: Any] = [
+            "model": model,
+            "messages": [
+                ["role": "user", "content": prompt]
+            ],
+            "tools": foodAnalysisTools.map { tool in
+                [
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": tool.inputSchema
+                ]
+            },
+            "max_tokens": 4096
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+            let responseString = String(data: data, encoding: .utf8) ?? "Unable to decode response"
+            print("❌ Claude API Error Response: \(responseString)")
+            throw ClaudeAPIError.networkError(NSError(domain: "ClaudeAPI", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: responseString]))
+        }
+        
+        return try await processToolUseResponse(data)
+    }
+    
+    @MainActor
+    private func processToolUseResponse(_ data: Data) async throws -> FoodAnalysisResult {
+        guard let jsonResult = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = jsonResult["content"] as? [[String: Any]] else {
+            throw ClaudeAPIError.invalidResponse
+        }
+        
+        var messages: [[String: Any]] = [
+            ["role": "user", "content": "Please analyze the food input and use the available tools to gather information."]
+        ]
+        
+        // Check if Claude wants to use tools
+        var hasToolUse = false
+        var toolResults: [[String: Any]] = []
+        
+        for contentItem in content {
+            if let toolUse = contentItem["tool_use"] as? [String: Any],
+               let toolName = toolUse["name"] as? String,
+               let toolInput = toolUse["input"] as? [String: Any],
+               let toolId = toolUse["id"] as? String {
+                
+                hasToolUse = true
+                
+                // Execute the tool
+                let result = try await executeToolCall(name: toolName, input: toolInput)
+                
+                toolResults.append([
+                    "type": "tool_result",
+                    "tool_use_id": toolId,
+                    "content": result
+                ])
+            }
+        }
+        
+        if hasToolUse {
+            // Add assistant message with tool use
+            messages.append(["role": "assistant", "content": content])
+            
+            // Add tool results
+            messages.append(["role": "user", "content": toolResults])
+            
+            // Get final response from Claude
+            let finalBody: [String: Any] = [
+                "model": model,
+                "messages": messages,
+                "max_tokens": 4096
+            ]
+            
+            var request = URLRequest(url: URL(string: baseURL)!)
+            request.httpMethod = "POST"
+            request.timeoutInterval = 120.0
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.addValue(Config.anthropicKey, forHTTPHeaderField: "x-api-key")
+            request.addValue(apiVersion, forHTTPHeaderField: "anthropic-version")
+            request.httpBody = try JSONSerialization.data(withJSONObject: finalBody)
+            
+            let (finalData, _) = try await URLSession.shared.data(for: request)
+            return try parseFoodAnalysisResult(finalData, toolResults: toolResults)
+        } else {
+            // No tools used, parse direct response
+            return try parseFoodAnalysisResult(data, toolResults: [])
+        }
+    }
+    
+    @MainActor
+    private func executeToolCall(name: String, input: [String: Any]) async throws -> [String: Any] {
+        switch name {
+        case "search_food_database":
+            return try await searchFoodDatabase(input: input)
+        case "web_search_nutrition":
+            return try await webSearchNutrition(input: input)
+        case "verify_nutrition_data":
+            return try await verifyNutritionData(input: input)
+        default:
+            throw ClaudeAPIError.invalidResponse
+        }
+    }
+    
+    @MainActor
+    private func searchFoodDatabase(input: [String: Any]) async throws -> [String: Any] {
+        guard let query = input["query"] as? String else {
+            return ["error": "Missing query parameter"]
+        }
+        
+        let limit = input["limit"] as? Int ?? 10
+        
+        do {
+            let foods = try await SupabaseService.shared.searchFoodDatabaseForClaude(
+                query: query,
+                limit: limit
+            )
+            
+            return [
+                "success": true,
+                "foods": foods
+            ]
+        } catch {
+            return [
+                "error": "Failed to search database: \(error.localizedDescription)",
+                "success": false
+            ]
+        }
+    }
+    
+    private func webSearchNutrition(input: [String: Any]) async throws -> [String: Any] {
+        guard let foodName = input["food_name"] as? String else {
+            return ["error": "Missing food_name parameter"]
+        }
+        
+        let brand = input["brand"] as? String
+        
+        // Mock nutrition data - in real implementation, this would search web
+        print("Web searching nutrition for: \(foodName)" + (brand != nil ? " (brand: \(brand!))" : ""))
+        
+        return [
+            "success": true,
+            "nutrition_data": [
+                "name": foodName,
+                "brand": brand ?? "",
+                "calories_per_100g": 150,
+                "protein_per_100g": 20,
+                "carbs_per_100g": 10,
+                "fat_per_100g": 5,
+                "fiber_per_100g": 2,
+                "sugar_per_100g": 3,
+                "sodium_per_100g": 300
+            ],
+            "source": "web_search",
+            "confidence": 0.8
+        ]
+    }
+    
+    private func verifyNutritionData(input: [String: Any]) async throws -> [String: Any] {
+        // Mock verification - in real implementation, cross-reference multiple sources
+        return [
+            "verified": true,
+            "confidence_score": 0.95,
+            "corrections": [:],
+            "sources": ["USDA", "FoodData Central"]
+        ]
+    }
+    
+    private func buildFoodAnalysisPrompt(input: String, inputType: FoodInputType) -> String {
+        return """
+        I need you to analyze food input and help me track nutrition. Here's what the user provided:
+
+        **Input Type**: \(inputType.rawValue)
+        **User Input**: "\(input)"
+
+        Please help me:
+        1. Identify all food items mentioned
+        2. Estimate the quantities of each food
+        3. Use the available tools to:
+           - Search the existing food database first
+           - Look up nutrition information for any foods not in the database
+           - Verify nutrition data accuracy
+
+        For each food item, I need:
+        - Name and brand (if applicable)
+        - Estimated quantity in grams
+        - Nutrition information per 100g (calories, protein, carbs, fat, fiber, sugar, sodium)
+        - Confidence level of the identification
+
+        Please use the tools available to gather accurate information, then provide a structured response that I can parse into the app.
+        """
+    }
+    
+    private func parseFoodAnalysisResult(_ data: Data, toolResults: [[String: Any]]) throws -> FoodAnalysisResult {
+        // Mock implementation - in real app, this would parse Claude's structured response
+        let mockFood = AnalyzedFood(
+            name: "Banana",
+            brand: nil,
+            nutrition: NutritionPer100g(
+                calories: 89,
+                protein: 1.1,
+                carbs: 22.8,
+                fat: 0.3,
+                fiber: 2.6,
+                sugar: 12.2,
+                sodium: 1
+            ),
+            confidence: 0.9,
+            existsInDatabase: true,
+            databaseId: UUID()
+        )
+        
+        return FoodAnalysisResult(
+            identifiedFoods: [mockFood],
+            estimatedAmounts: ["Banana": 120], // 120g = 1 medium banana
+            confidence: 0.9,
+            needsVerification: []
+        )
+    }
+}

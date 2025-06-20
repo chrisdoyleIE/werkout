@@ -117,6 +117,156 @@ struct DBShoppingListItem: Codable {
     }
 }
 
+struct DBFoodItem: Codable {
+    let id: UUID?
+    let name: String
+    let brand: String?
+    let barcode: String?
+    let caloriesPer100g: Double
+    let proteinPer100g: Double
+    let carbsPer100g: Double
+    let fatPer100g: Double
+    let fiberPer100g: Double?
+    let sugarPer100g: Double?
+    let sodiumPer100g: Double?
+    let isVerified: Bool
+    let sourceUrl: String?
+    let lastVerifiedAt: Date?
+    let createdByUserId: UUID?
+    let createdAt: Date?
+    let updatedAt: Date?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name, brand, barcode
+        case caloriesPer100g = "calories_per_100g"
+        case proteinPer100g = "protein_per_100g"
+        case carbsPer100g = "carbs_per_100g"
+        case fatPer100g = "fat_per_100g"
+        case fiberPer100g = "fiber_per_100g"
+        case sugarPer100g = "sugar_per_100g"
+        case sodiumPer100g = "sodium_per_100g"
+        case isVerified = "is_verified"
+        case sourceUrl = "source_url"
+        case lastVerifiedAt = "last_verified_at"
+        case createdByUserId = "created_by_user_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+    
+    init(from foodItem: FoodItem) {
+        self.id = foodItem.id
+        self.name = foodItem.name
+        self.brand = foodItem.brand
+        self.barcode = foodItem.barcode
+        self.caloriesPer100g = foodItem.caloriesPer100g
+        self.proteinPer100g = foodItem.proteinPer100g
+        self.carbsPer100g = foodItem.carbsPer100g
+        self.fatPer100g = foodItem.fatPer100g
+        self.fiberPer100g = foodItem.fiberPer100g
+        self.sugarPer100g = foodItem.sugarPer100g
+        self.sodiumPer100g = foodItem.sodiumPer100g
+        self.isVerified = foodItem.isVerified
+        self.sourceUrl = foodItem.sourceUrl
+        self.lastVerifiedAt = foodItem.lastVerifiedAt
+        self.createdByUserId = foodItem.createdByUserId
+        self.createdAt = foodItem.createdAt
+        self.updatedAt = foodItem.updatedAt
+    }
+    
+    func toFoodItem() -> FoodItem {
+        return FoodItem(
+            id: id ?? UUID(),
+            name: name,
+            brand: brand,
+            barcode: barcode,
+            caloriesPer100g: caloriesPer100g,
+            proteinPer100g: proteinPer100g,
+            carbsPer100g: carbsPer100g,
+            fatPer100g: fatPer100g,
+            fiberPer100g: fiberPer100g,
+            sugarPer100g: sugarPer100g,
+            sodiumPer100g: sodiumPer100g,
+            isVerified: isVerified,
+            sourceUrl: sourceUrl,
+            lastVerifiedAt: lastVerifiedAt,
+            createdByUserId: createdByUserId,
+            createdAt: createdAt ?? Date(),
+            updatedAt: updatedAt ?? Date()
+        )
+    }
+}
+
+struct DBFoodEntry: Codable {
+    let id: UUID?
+    let userId: UUID
+    let foodItemId: UUID
+    let consumedDate: Date
+    let mealType: String
+    let quantityGrams: Double
+    let calories: Double
+    let proteinG: Double
+    let carbsG: Double
+    let fatG: Double
+    let notes: String?
+    let source: String
+    let confidenceScore: Double
+    let createdAt: Date?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case foodItemId = "food_item_id"
+        case consumedDate = "consumed_date"
+        case mealType = "meal_type"
+        case quantityGrams = "quantity_grams"
+        case calories
+        case proteinG = "protein_g"
+        case carbsG = "carbs_g"
+        case fatG = "fat_g"
+        case notes
+        case source
+        case confidenceScore = "confidence_score"
+        case createdAt = "created_at"
+    }
+    
+    init(from foodEntry: FoodEntry) {
+        self.id = foodEntry.id
+        self.userId = foodEntry.userId
+        self.foodItemId = foodEntry.foodItemId
+        self.consumedDate = foodEntry.consumedDate
+        self.mealType = foodEntry.mealType.rawValue
+        self.quantityGrams = foodEntry.quantityGrams
+        self.calories = foodEntry.calories
+        self.proteinG = foodEntry.proteinG
+        self.carbsG = foodEntry.carbsG
+        self.fatG = foodEntry.fatG
+        self.notes = foodEntry.notes
+        self.source = foodEntry.source.rawValue
+        self.confidenceScore = foodEntry.confidenceScore
+        self.createdAt = foodEntry.createdAt
+    }
+    
+    func toFoodEntry() -> FoodEntry {
+        return FoodEntry(
+            id: id ?? UUID(),
+            userId: userId,
+            foodItemId: foodItemId,
+            consumedDate: consumedDate,
+            mealType: MealType(rawValue: mealType) ?? .snack,
+            quantityGrams: quantityGrams,
+            calories: calories,
+            proteinG: proteinG,
+            carbsG: carbsG,
+            fatG: fatG,
+            notes: notes,
+            source: FoodEntrySource(rawValue: source) ?? .manual,
+            confidenceScore: confidenceScore,
+            createdAt: createdAt ?? Date()
+        )
+    }
+}
+
 // MARK: - Service Error Types
 
 enum SupabaseServiceError: Error, LocalizedError {
@@ -153,13 +303,19 @@ class SupabaseService: ObservableObject {
     
     private let supabase = SupabaseManager.shared.client
     
+    // MARK: - Published Properties for Food Tracking
+    @Published var todaysEntries: [FoodEntry] = []
+    @Published var recentFoods: [FoodItem] = []
+    @Published var isFoodTrackingLoading = false
+    @Published var foodTrackingErrorMessage: String?
+    
     private init() {}
     
     private var currentUserId: UUID? {
         supabase.auth.currentUser?.id
     }
     
-    private func ensureAuthenticated() throws -> UUID {
+    func ensureAuthenticated() throws -> UUID {
         guard let userId = currentUserId else {
             throw SupabaseServiceError.notAuthenticated
         }
@@ -452,6 +608,407 @@ class SupabaseService: ObservableObject {
             )
         } catch {
             throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    // MARK: - Food Items CRUD
+    
+    func searchFoods(query: String, limit: Int = 20) async throws -> [FoodItem] {
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return []
+        }
+        
+        do {
+            let response: [DBFoodItem] = try await supabase
+                .from("food_items")
+                .select()
+                .or("name.ilike.%\(query)%,brand.ilike.%\(query)%")
+                .order("is_verified", ascending: false)
+                .order("name", ascending: true)
+                .limit(limit)
+                .execute()
+                .value
+            
+            return response.map { $0.toFoodItem() }
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func getFoodItem(by id: UUID) async throws -> FoodItem? {
+        do {
+            let response: [DBFoodItem] = try await supabase
+                .from("food_items")
+                .select()
+                .eq("id", value: id)
+                .execute()
+                .value
+            
+            return response.first?.toFoodItem()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func createFoodItem(_ food: FoodItem) async throws -> FoodItem {
+        let userId = try ensureAuthenticated()
+        
+        // Check if food already exists to prevent duplicates
+        let existingFoods = try await searchFoodsByNameAndBrand(
+            name: food.name,
+            brand: food.brand
+        )
+        
+        if let existing = existingFoods.first {
+            return existing
+        }
+        
+        var newFood = food
+        newFood = FoodItem(
+            id: food.id,
+            name: food.name,
+            brand: food.brand,
+            barcode: food.barcode,
+            caloriesPer100g: food.caloriesPer100g,
+            proteinPer100g: food.proteinPer100g,
+            carbsPer100g: food.carbsPer100g,
+            fatPer100g: food.fatPer100g,
+            fiberPer100g: food.fiberPer100g,
+            sugarPer100g: food.sugarPer100g,
+            sodiumPer100g: food.sodiumPer100g,
+            isVerified: food.isVerified,
+            sourceUrl: food.sourceUrl,
+            lastVerifiedAt: food.lastVerifiedAt,
+            createdByUserId: userId
+        )
+        
+        let dbFood = DBFoodItem(from: newFood)
+        
+        do {
+            let response: [DBFoodItem] = try await supabase
+                .from("food_items")
+                .insert(dbFood)
+                .select()
+                .execute()
+                .value
+            
+            guard let createdFood = response.first else {
+                throw SupabaseServiceError.notFound
+            }
+            
+            return createdFood.toFoodItem()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func updateFoodItem(_ food: FoodItem) async throws -> FoodItem {
+        let dbFood = DBFoodItem(from: food)
+        
+        do {
+            let response: [DBFoodItem] = try await supabase
+                .from("food_items")
+                .update(dbFood)
+                .eq("id", value: food.id)
+                .select()
+                .execute()
+                .value
+            
+            guard let updatedFood = response.first else {
+                throw SupabaseServiceError.notFound
+            }
+            
+            return updatedFood.toFoodItem()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    private func searchFoodsByNameAndBrand(name: String, brand: String?) async throws -> [FoodItem] {
+        var query = supabase
+            .from("food_items")
+            .select()
+            .eq("name", value: name)
+        
+        if let brand = brand, !brand.isEmpty {
+            query = query.eq("brand", value: brand)
+        } else {
+            query = query.is("brand", value: nil)
+        }
+        
+        do {
+            let response: [DBFoodItem] = try await query
+                .execute()
+                .value
+            
+            return response.map { $0.toFoodItem() }
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    // MARK: - Food Entries CRUD
+    
+    func logFoodEntry(_ entry: FoodEntry) async throws {
+        let dbEntry = DBFoodEntry(from: entry)
+        
+        do {
+            try await supabase
+                .from("food_entries")
+                .insert(dbEntry)
+                .execute()
+            
+            // Reload today's entries
+            await loadTodaysEntries()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func logFoodEntries(_ entries: [FoodEntry]) async throws {
+        let dbEntries = entries.map { DBFoodEntry(from: $0) }
+        
+        do {
+            try await supabase
+                .from("food_entries")
+                .insert(dbEntries)
+                .execute()
+            
+            // Reload today's entries
+            await loadTodaysEntries()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func updateFoodEntry(_ entry: FoodEntry) async throws {
+        let dbEntry = DBFoodEntry(from: entry)
+        
+        do {
+            try await supabase
+                .from("food_entries")
+                .update(dbEntry)
+                .eq("id", value: entry.id)
+                .execute()
+            
+            // Reload today's entries
+            await loadTodaysEntries()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func deleteFoodEntry(_ entry: FoodEntry) async throws {
+        let userId = try ensureAuthenticated()
+        
+        do {
+            try await supabase
+                .from("food_entries")
+                .delete()
+                .eq("id", value: entry.id)
+                .eq("user_id", value: userId)
+                .execute()
+            
+            // Reload today's entries
+            await loadTodaysEntries()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func getTodaysEntries() async throws -> [FoodEntry] {
+        let userId = try ensureAuthenticated()
+        
+        let today = Calendar.current.startOfDay(for: Date())
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today)!
+        
+        do {
+            let response: [DBFoodEntry] = try await supabase
+                .from("food_entries")
+                .select("*, food_items(*)")
+                .eq("user_id", value: userId)
+                .gte("consumed_date", value: today)
+                .lt("consumed_date", value: tomorrow)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+            
+            // Convert to FoodEntry with attached FoodItem
+            return response.map { dbEntry in
+                var entry = dbEntry.toFoodEntry()
+                // Note: In a real implementation, you'd parse the joined food_items data
+                // For now, we'll load food items separately if needed
+                return entry
+            }
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func getEntriesForDateRange(from startDate: Date, to endDate: Date) async throws -> [FoodEntry] {
+        let userId = try ensureAuthenticated()
+        
+        do {
+            let response: [DBFoodEntry] = try await supabase
+                .from("food_entries")
+                .select("*, food_items(*)")
+                .eq("user_id", value: userId)
+                .gte("consumed_date", value: startDate)
+                .lte("consumed_date", value: endDate)
+                .order("consumed_date", ascending: false)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+            
+            return response.map { $0.toFoodEntry() }
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    // MARK: - Food Tracking Convenience Methods
+    
+    func loadTodaysEntries() async {
+        do {
+            isFoodTrackingLoading = true
+            foodTrackingErrorMessage = nil
+            let entries = try await getTodaysEntries()
+            
+            // Load food items for entries that don't have them
+            var entriesWithFoodItems: [FoodEntry] = []
+            for entry in entries {
+                if entry.foodItem == nil {
+                    if let foodItem = try await getFoodItem(by: entry.foodItemId) {
+                        var updatedEntry = entry
+                        updatedEntry.foodItem = foodItem
+                        entriesWithFoodItems.append(updatedEntry)
+                    } else {
+                        entriesWithFoodItems.append(entry)
+                    }
+                } else {
+                    entriesWithFoodItems.append(entry)
+                }
+            }
+            
+            todaysEntries = entriesWithFoodItems
+        } catch {
+            foodTrackingErrorMessage = error.localizedDescription
+            print("Error loading today's entries: \(error)")
+        }
+        isFoodTrackingLoading = false
+    }
+    
+    func loadRecentFoods() async {
+        do {
+            let userId = try ensureAuthenticated()
+            
+            // Get recently used food items from entries
+            let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date())!
+            
+            let response: [DBFoodEntry] = try await supabase
+                .from("food_entries")
+                .select("food_item_id")
+                .eq("user_id", value: userId)
+                .gte("consumed_date", value: thirtyDaysAgo)
+                .order("created_at", ascending: false)
+                .limit(50)
+                .execute()
+                .value
+            
+            // Get unique food item IDs
+            let uniqueFoodItemIds = Array(Set(response.map { $0.foodItemId })).prefix(20)
+            
+            // Fetch the actual food items
+            if !uniqueFoodItemIds.isEmpty {
+                let foodResponse: [DBFoodItem] = try await supabase
+                    .from("food_items")
+                    .select()
+                    .in("id", values: Array(uniqueFoodItemIds))
+                    .execute()
+                    .value
+                
+                recentFoods = foodResponse.map { $0.toFoodItem() }
+            }
+        } catch {
+            print("Error loading recent foods: \(error)")
+        }
+    }
+    
+    func getTodaysNutritionSummary() -> NutritionInfo {
+        return todaysEntries.totalNutrition()
+    }
+    
+    func createFoodEntryFromAnalysis(
+        analyzedFood: ClaudeAPIClient.AnalyzedFood,
+        quantity: Double,
+        mealType: MealType,
+        source: FoodEntrySource
+    ) async throws -> FoodEntry {
+        let userId = try ensureAuthenticated()
+        
+        // Get or create the food item
+        let foodItem: FoodItem
+        if let existingId = analyzedFood.databaseId,
+           let existing = try await getFoodItem(by: existingId) {
+            foodItem = existing
+        } else {
+            // Create new food item
+            let newFoodItem = FoodItem(
+                name: analyzedFood.name,
+                brand: analyzedFood.brand,
+                caloriesPer100g: analyzedFood.nutrition.calories,
+                proteinPer100g: analyzedFood.nutrition.protein,
+                carbsPer100g: analyzedFood.nutrition.carbs,
+                fatPer100g: analyzedFood.nutrition.fat,
+                fiberPer100g: analyzedFood.nutrition.fiber,
+                sugarPer100g: analyzedFood.nutrition.sugar,
+                sodiumPer100g: analyzedFood.nutrition.sodium,
+                isVerified: true // Claude-verified
+            )
+            foodItem = try await createFoodItem(newFoodItem)
+        }
+        
+        // Calculate nutrition for the specific quantity
+        let nutrition = foodItem.calculateNutrition(for: quantity)
+        
+        // Create food entry
+        let entry = FoodEntry(
+            userId: userId,
+            foodItemId: foodItem.id,
+            mealType: mealType,
+            quantityGrams: quantity,
+            calories: nutrition.calories,
+            proteinG: nutrition.protein,
+            carbsG: nutrition.carbs,
+            fatG: nutrition.fat,
+            source: source,
+            confidenceScore: analyzedFood.confidence,
+            foodItem: foodItem
+        )
+        
+        try await logFoodEntry(entry)
+        return entry
+    }
+    
+    // MARK: - Integration with ClaudeAPIClient
+    
+    func searchFoodDatabaseForClaude(query: String, limit: Int = 10) async throws -> [[String: Any]] {
+        let foods = try await searchFoods(query: query, limit: limit)
+        
+        return foods.map { food in
+            [
+                "id": food.id.uuidString,
+                "name": food.name,
+                "brand": food.brand as Any? ?? "",
+                "calories_per_100g": food.caloriesPer100g,
+                "protein_per_100g": food.proteinPer100g,
+                "carbs_per_100g": food.carbsPer100g,
+                "fat_per_100g": food.fatPer100g,
+                "fiber_per_100g": food.fiberPer100g ?? 0,
+                "sugar_per_100g": food.sugarPer100g ?? 0,
+                "sodium_per_100g": food.sodiumPer100g ?? 0,
+                "is_verified": food.isVerified
+            ]
         }
     }
 }

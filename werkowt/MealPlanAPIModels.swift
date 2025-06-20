@@ -47,6 +47,39 @@ struct NutritionInfo: Codable {
     let fat: Double
     let fiber: Double?
     let sugar: Double?
+    let sodium: Double?
+    
+    init(calories: Double, protein: Double, carbs: Double, fat: Double, fiber: Double? = nil, sugar: Double? = nil, sodium: Double? = nil) {
+        self.calories = calories
+        self.protein = protein
+        self.carbs = carbs
+        self.fat = fat
+        self.fiber = fiber
+        self.sugar = sugar
+        self.sodium = sodium
+    }
+    
+    static let zero = NutritionInfo(
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        fiber: 0,
+        sugar: 0,
+        sodium: 0
+    )
+    
+    static func + (lhs: NutritionInfo, rhs: NutritionInfo) -> NutritionInfo {
+        return NutritionInfo(
+            calories: lhs.calories + rhs.calories,
+            protein: lhs.protein + rhs.protein,
+            carbs: lhs.carbs + rhs.carbs,
+            fat: lhs.fat + rhs.fat,
+            fiber: (lhs.fiber ?? 0) + (rhs.fiber ?? 0),
+            sugar: (lhs.sugar ?? 0) + (rhs.sugar ?? 0),
+            sodium: (lhs.sodium ?? 0) + (rhs.sodium ?? 0)
+        )
+    }
 }
 
 struct NutritionSummary: Codable {
@@ -75,8 +108,8 @@ enum MealType: String, Codable, CaseIterable {
         switch self {
         case .breakfast: return "sunrise.fill"
         case .lunch: return "sun.max.fill"
-        case .dinner: return "moon.fill"
-        case .snack: return "leaf.fill"
+        case .dinner: return "sunset.fill"
+        case .snack: return "star.fill"
         }
     }
 }
