@@ -6,6 +6,7 @@ struct HomeView: View {
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
     @StateObject private var macroGoalsManager = MacroGoalsManager()
     @StateObject private var mealPlanManager = MealPlanManager()
+    @StateObject private var supabaseService = SupabaseService.shared
     
     @State private var showingWorkoutCreator = false
     @State private var showingLiveWorkout = false
@@ -15,6 +16,9 @@ struct HomeView: View {
     @State private var selectedDate = Date()
     @State private var selectedSession: WorkoutSession?
     
+    private var todaysNutrition: NutritionInfo {
+        supabaseService.getTodaysNutritionSummary()
+    }
     
     private let calendar = Calendar.current
     private let dateFormatter: DateFormatter = {
@@ -91,10 +95,10 @@ struct HomeView: View {
                 
                 // Macro Progress Section
                 HorizontalMacroCharts(
-                    calories: 0,
-                    protein: 0,
-                    carbs: 0,
-                    fat: 0,
+                    calories: todaysNutrition.calories,
+                    protein: todaysNutrition.protein,
+                    carbs: todaysNutrition.carbs,
+                    fat: todaysNutrition.fat,
                     goals: macroGoalsManager.goals
                 )
                 .padding(.horizontal, 16)
@@ -135,6 +139,7 @@ struct HomeView: View {
         .onAppear {
             Task {
                 await workoutDataManager.loadWorkoutSessions()
+                await supabaseService.loadTodaysEntries()
             }
         }
         .sheet(isPresented: $showingWorkoutCreator) {
@@ -150,6 +155,16 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingFoodLogger) {
             FoodTrackingView()
+        }
+        .onChange(of: showingFoodLogger) { isShowing in
+            if !isShowing {
+                // Refresh nutrition data when returning from food tracking
+                Task {
+                    // Add small delay to ensure database transaction completes
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                    await supabaseService.loadTodaysEntries()
+                }
+            }
         }
         .onChange(of: activeWorkout.isActive) { isActive in
             if isActive {

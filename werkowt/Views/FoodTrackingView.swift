@@ -69,10 +69,6 @@ struct FoodTrackingView: View {
             VStack(spacing: 16) {
                 // Meal type selector card
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Select meal type")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
                     HStack(spacing: 8) {
                         ForEach(MealType.allCases, id: \.self) { mealType in
                             Button(action: {
@@ -107,10 +103,6 @@ struct FoodTrackingView: View {
                 
                 // Food input card
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Add food")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
                     // Enhanced text input with embedded options
                     ZStack(alignment: .bottomTrailing) {
                         ZStack(alignment: .topLeading) {
@@ -132,26 +124,36 @@ struct FoodTrackingView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(12)
                         
-                        // Embedded camera and mic options
-                        HStack(spacing: 8) {
+                        // Embedded floating icons
+                        HStack(spacing: 12) {
+                            // Manual search (magnifying glass)
+                            Button(action: { showingManualSearch = true }) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.blue)
+                            }
+                            
+                            // Camera
                             Button(action: {
                                 // TODO: Camera functionality
                             }) {
                                 Image(systemName: "camera")
-                                    .font(.system(size: 16))
+                                    .font(.system(size: 20))
                                     .foregroundColor(.blue)
                             }
                             .disabled(true)
                             
+                            // Microphone
                             Button(action: {
                                 // TODO: Mic functionality
                             }) {
                                 Image(systemName: "mic")
-                                    .font(.system(size: 16))
+                                    .font(.system(size: 20))
                                     .foregroundColor(.blue)
                             }
                             .disabled(true)
                             
+                            // AI Analysis (appears when text is entered)
                             if !inputText.isEmpty {
                                 Button(action: analyzeFood) {
                                     if isAnalyzing {
@@ -159,7 +161,7 @@ struct FoodTrackingView: View {
                                             .scaleEffect(0.8)
                                     } else {
                                         Image(systemName: "wand.and.stars")
-                                            .font(.system(size: 16))
+                                            .font(.system(size: 20))
                                             .foregroundColor(.blue)
                                     }
                                 }
@@ -175,20 +177,6 @@ struct FoodTrackingView: View {
                         Text(errorMessage)
                             .font(.caption)
                             .foregroundColor(.red)
-                    }
-                    
-                    // Manual search option
-                    Button(action: { showingManualSearch = true }) {
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 14))
-                                .foregroundColor(.blue)
-                            Text("Search food database")
-                                .font(.subheadline)
-                                .foregroundColor(.blue)
-                            Spacer()
-                        }
-                        .padding(.vertical, 8)
                     }
                 }
                 .padding()
@@ -258,12 +246,40 @@ struct FoodTrackingView: View {
             .sheet(isPresented: $showingManualSearch) {
                 ManualFoodSearchView(selectedMealType: selectedMealType)
             }
+            .onChange(of: showingManualSearch) { isShowing in
+                print("🔄 showingManualSearch changed to: \(isShowing)")  // <- BREAKPOINT HERE
+                if !isShowing {
+                    print("🔄 Manual search dismissed, starting refresh...")
+                    // Refresh data when returning from manual search
+                    Task {
+                        // Add small delay to ensure database transaction completes
+                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        print("🔄 About to call loadTodaysEntries")  // <- BREAKPOINT HERE
+                        await supabaseService.loadTodaysEntries()
+                        print("🔄 loadTodaysEntries completed")
+                    }
+                }
+            }
             .sheet(isPresented: $showingResults) {
                 if let result = analysisResult {
                     FoodVerificationView(
                         analysisResult: result,
                         selectedMealType: selectedMealType
                     )
+                }
+            }
+            .onChange(of: showingResults) { isShowing in
+                if !isShowing {
+                    // Refresh data when returning from food verification
+                    Task {
+                        // Add small delay to ensure database transaction completes
+                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        await supabaseService.loadTodaysEntries()
+                    }
+                    // Clear input after successful addition
+                    inputText = ""
+                    analysisResult = nil
+                    errorMessage = nil
                 }
             }
         }

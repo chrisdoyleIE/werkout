@@ -230,6 +230,47 @@ struct DBFoodEntry: Codable {
         case createdAt = "created_at"
     }
     
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decodeIfPresent(UUID.self, forKey: .id)
+        userId = try container.decode(UUID.self, forKey: .userId)
+        foodItemId = try container.decode(UUID.self, forKey: .foodItemId)
+        mealType = try container.decode(String.self, forKey: .mealType)
+        quantityGrams = try container.decode(Double.self, forKey: .quantityGrams)
+        calories = try container.decode(Double.self, forKey: .calories)
+        proteinG = try container.decode(Double.self, forKey: .proteinG)
+        carbsG = try container.decode(Double.self, forKey: .carbsG)
+        fatG = try container.decode(Double.self, forKey: .fatG)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        source = try container.decode(String.self, forKey: .source)
+        confidenceScore = try container.decode(Double.self, forKey: .confidenceScore)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        
+        // Special handling for consumed_date which may come as "yyyy-MM-dd"
+        if let dateString = try? container.decode(String.self, forKey: .consumedDate) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(identifier: "UTC")
+            
+            if let date = formatter.date(from: dateString) {
+                self.consumedDate = date
+            } else {
+                // Try ISO8601 format
+                let isoFormatter = ISO8601DateFormatter()
+                isoFormatter.formatOptions = [.withInternetDateTime]
+                if let date = isoFormatter.date(from: dateString) {
+                    self.consumedDate = date
+                } else {
+                    throw DecodingError.dataCorruptedError(forKey: .consumedDate, in: container, debugDescription: "Unable to decode consumed_date: \(dateString)")
+                }
+            }
+        } else {
+            // Try to decode as Date directly
+            self.consumedDate = try container.decode(Date.self, forKey: .consumedDate)
+        }
+    }
+    
     init(from foodEntry: FoodEntry) {
         self.id = foodEntry.id
         self.userId = foodEntry.userId
@@ -245,6 +286,38 @@ struct DBFoodEntry: Codable {
         self.source = foodEntry.source.rawValue
         self.confidenceScore = foodEntry.confidenceScore
         self.createdAt = foodEntry.createdAt
+    }
+    
+    init(
+        id: UUID?,
+        userId: UUID,
+        foodItemId: UUID,
+        consumedDate: Date,
+        mealType: String,
+        quantityGrams: Double,
+        calories: Double,
+        proteinG: Double,
+        carbsG: Double,
+        fatG: Double,
+        notes: String?,
+        source: String,
+        confidenceScore: Double,
+        createdAt: Date?
+    ) {
+        self.id = id
+        self.userId = userId
+        self.foodItemId = foodItemId
+        self.consumedDate = consumedDate
+        self.mealType = mealType
+        self.quantityGrams = quantityGrams
+        self.calories = calories
+        self.proteinG = proteinG
+        self.carbsG = carbsG
+        self.fatG = fatG
+        self.notes = notes
+        self.source = source
+        self.confidenceScore = confidenceScore
+        self.createdAt = createdAt
     }
     
     func toFoodEntry() -> FoodEntry {
@@ -817,30 +890,63 @@ class SupabaseService: ObservableObject {
     }
     
     func getTodaysEntries() async throws -> [FoodEntry] {
+        print("🔄 getTodaysEntries called")  // <- BREAKPOINT HERE
         let userId = try ensureAuthenticated()
         
-        let today = Calendar.current.startOfDay(for: Date())
-        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today)!
+        // Use a more lenient date range to account for timezone differences
+        let now = Date()
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: now)
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        
+        // Add some buffer to account for timezone differences
+        let startOfYesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let endOfTomorrow = calendar.date(byAdding: .day, value: 2, to: today)!
+        
+        print("🔄 Querying for entries between \(startOfYesterday) and \(endOfTomorrow)")
+        print("🔄 Today is: \(today)")
         
         do {
             let response: [DBFoodEntry] = try await supabase
                 .from("food_entries")
-                .select("*, food_items(*)")
+                .select()
                 .eq("user_id", value: userId)
-                .gte("consumed_date", value: today)
-                .lt("consumed_date", value: tomorrow)
+                .gte("consumed_date", value: startOfYesterday)
+                .lt("consumed_date", value: endOfTomorrow)
                 .order("created_at", ascending: false)
                 .execute()
                 .value
             
-            // Convert to FoodEntry with attached FoodItem
-            return response.map { dbEntry in
+            print("🔄 Raw database response count: \(response.count)")
+            
+            // Convert to FoodEntry with attached FoodItem and filter locally for today
+            let allEntries = response.map { dbEntry in
                 var entry = dbEntry.toFoodEntry()
                 // Note: In a real implementation, you'd parse the joined food_items data
                 // For now, we'll load food items separately if needed
                 return entry
             }
+            
+            print("🔄 All entries count after conversion: \(allEntries.count)")
+            for entry in allEntries {
+                print("🔄 Entry consumed_date: \(entry.consumedDate)")
+            }
+            
+            // Filter for today's entries locally to handle timezone differences
+            let todaysEntries = allEntries.filter { entry in
+                let entryDay = calendar.startOfDay(for: entry.consumedDate)
+                let isToday = entryDay == today
+                print("🔄 Entry \(entry.id): entryDay=\(entryDay), today=\(today), isToday=\(isToday)")
+                return isToday
+            }
+            
+            print("🔄 Filtered today's entries count: \(todaysEntries.count)")
+            return todaysEntries
         } catch {
+            print("❌ Error in getTodaysEntries: \(error)")
+            if let decodingError = error as? DecodingError {
+                print("❌ Decoding error details: \(decodingError)")
+            }
             throw SupabaseServiceError.networkError(error)
         }
     }
@@ -851,7 +957,7 @@ class SupabaseService: ObservableObject {
         do {
             let response: [DBFoodEntry] = try await supabase
                 .from("food_entries")
-                .select("*, food_items(*)")
+                .select()
                 .eq("user_id", value: userId)
                 .gte("consumed_date", value: startDate)
                 .lte("consumed_date", value: endDate)
@@ -869,10 +975,13 @@ class SupabaseService: ObservableObject {
     // MARK: - Food Tracking Convenience Methods
     
     func loadTodaysEntries() async {
+        print("🔄 loadTodaysEntries called")  // <- BREAKPOINT HERE
         do {
             isFoodTrackingLoading = true
             foodTrackingErrorMessage = nil
+            print("🔄 About to call getTodaysEntries")
             let entries = try await getTodaysEntries()
+            print("🔄 getTodaysEntries returned \(entries.count) entries")
             
             // Load food items for entries that don't have them
             var entriesWithFoodItems: [FoodEntry] = []
