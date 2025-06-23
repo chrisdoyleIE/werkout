@@ -28,7 +28,7 @@ struct MacroPieChart: View {
                     // Show checkmark for completed goals
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundColor(color)
+                        .foregroundColor(color.opacity(0.3))
                         .scaleEffect(1.1)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isGoalAchieved)
                 } else {

@@ -972,6 +972,81 @@ class SupabaseService: ObservableObject {
         }
     }
     
+    func getEntriesForDate(_ date: Date) async throws -> [FoodEntry] {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        print("🗓️ Getting entries for date: \(date)")
+        print("🗓️ Start of day: \(startOfDay), End of day: \(endOfDay)")
+        
+        let entries = try await getEntriesForDateRange(from: startOfDay, to: endOfDay)
+        
+        print("🗓️ Found \(entries.count) entries before filtering")
+        
+        // Filter to ensure we only get entries for this specific day
+        let filteredEntries = entries.filter { entry in
+            calendar.isDate(entry.consumedDate, inSameDayAs: date)
+        }
+        
+        print("🗓️ Found \(filteredEntries.count) entries after filtering for same day")
+        
+        // Load food items for entries
+        var entriesWithFoodItems: [FoodEntry] = []
+        for entry in filteredEntries {
+            if entry.foodItem == nil {
+                if let foodItem = try await getFoodItem(by: entry.foodItemId) {
+                    var updatedEntry = entry
+                    updatedEntry.foodItem = foodItem
+                    entriesWithFoodItems.append(updatedEntry)
+                } else {
+                    entriesWithFoodItems.append(entry)
+                }
+            } else {
+                entriesWithFoodItems.append(entry)
+            }
+        }
+        
+        return entriesWithFoodItems
+    }
+    
+    func calculateMacroAchievements(for date: Date) async throws -> MacroData {
+        let entries = try await getEntriesForDate(date)
+        
+        print("📊 Calculating macros for \(date)")
+        print("📊 Found \(entries.count) food entries")
+        
+        // Get macro goals
+        guard let goals = try await getMacroGoals() else {
+            print("📊 No macro goals found")
+            return MacroData.empty
+        }
+        
+        print("📊 Macro goals - Calories: \(goals.calories), Protein: \(goals.protein), Carbs: \(goals.carbs), Fat: \(goals.fat)")
+        
+        // Calculate totals
+        let totals = entries.reduce((calories: 0.0, protein: 0.0, carbs: 0.0, fat: 0.0)) { result, entry in
+            (result.calories + entry.calories,
+             result.protein + entry.proteinG,
+             result.carbs + entry.carbsG,
+             result.fat + entry.fatG)
+        }
+        
+        print("📊 Totals - Calories: \(totals.calories), Protein: \(totals.protein), Carbs: \(totals.carbs), Fat: \(totals.fat)")
+        
+        // Check achievements (consider achieved if >= 100% of goal)
+        let achievements = MacroData(
+            caloriesAchieved: totals.calories >= goals.calories,
+            proteinAchieved: totals.protein >= goals.protein,
+            carbsAchieved: totals.carbs >= goals.carbs,
+            fatAchieved: totals.fat >= goals.fat
+        )
+        
+        print("📊 Achievements - Calories: \(achievements.caloriesAchieved), Protein: \(achievements.proteinAchieved), Carbs: \(achievements.carbsAchieved), Fat: \(achievements.fatAchieved)")
+        
+        return achievements
+    }
+    
     // MARK: - Food Tracking Convenience Methods
     
     func loadTodaysEntries() async {

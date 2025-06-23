@@ -66,169 +66,177 @@ struct FoodTrackingView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 16) {
-                // Meal type selector card
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 8) {
-                        ForEach(MealType.allCases, id: \.self) { mealType in
-                            Button(action: {
-                                selectedMealType = mealType
-                            }) {
-                                VStack(spacing: 4) {
-                                    Image(systemName: mealType.icon)
-                                        .font(.system(size: 14, weight: .medium))
-                                    Text(mealType.displayName)
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                }
-                                .foregroundColor(
-                                    selectedMealType == mealType ? .white : .primary
-                                )
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .background(
-                                    selectedMealType == mealType ?
-                                    Color.blue : Color(.systemGray5)
-                                )
-                                .cornerRadius(8)
+            VStack(spacing: 0) {
+                // Simplified meal type selector
+                HStack(spacing: 12) {
+                    ForEach(MealType.allCases, id: \.self) { mealType in
+                        Button(action: {
+                            selectedMealType = mealType
+                        }) {
+                            VStack(spacing: 6) {
+                                Image(systemName: mealType.icon)
+                                    .font(.system(size: 18))
+                                Text(mealType.displayName)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
                             }
+                            .foregroundColor(selectedMealType == mealType ? .blue : .secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                selectedMealType == mealType ?
+                                Color.blue.opacity(0.1) : Color.clear
+                            )
+                            .cornerRadius(10)
                         }
                     }
                 }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(12)
-                .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
                 .padding(.horizontal)
+                .padding(.vertical, 8)
                 
-                // Food input card
-                VStack(alignment: .leading, spacing: 12) {
-                    // Enhanced text input with embedded options
-                    ZStack(alignment: .bottomTrailing) {
-                        ZStack(alignment: .topLeading) {
-                            TextEditor(text: $inputText)
-                                .frame(minHeight: 80)
-                                .padding(.horizontal, 8)
-                                .padding(.top, 8)
-                                .padding(.bottom, 40) // Space for buttons
-                            
-                            // Placeholder text
-                            if inputText.isEmpty {
-                                Text("Describe what you ate...")
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal, 12)
-                                    .padding(.top, 16)
-                                    .allowsHitTesting(false)
-                            }
-                        }
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
+                // Simplified input section
+                VStack(spacing: 12) {
+                    // Input area
+                    HStack(alignment: .top, spacing: 12) {
+                        TextField("What did you eat?", text: $inputText, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .lineLimit(1...3)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
                         
-                        // Embedded floating icons
-                        HStack(spacing: 12) {
-                            // Manual search (magnifying glass)
-                            Button(action: { showingManualSearch = true }) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.blue)
-                            }
-                            
-                            // Camera
-                            Button(action: {
-                                // TODO: Camera functionality
-                            }) {
-                                Image(systemName: "camera")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.blue)
-                            }
-                            .disabled(true)
-                            
-                            // Microphone
-                            Button(action: {
-                                // TODO: Mic functionality
-                            }) {
-                                Image(systemName: "mic")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.blue)
-                            }
-                            .disabled(true)
-                            
-                            // AI Analysis (appears when text is entered)
-                            if !inputText.isEmpty {
-                                Button(action: analyzeFood) {
-                                    if isAnalyzing {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                    } else {
-                                        Image(systemName: "wand.and.stars")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.blue)
-                                    }
+                        if !inputText.isEmpty {
+                            Button(action: analyzeFood) {
+                                if isAnalyzing {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: "arrow.up.circle.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.blue)
                                 }
-                                .disabled(isAnalyzing)
                             }
+                            .disabled(isAnalyzing)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.bottom, 8)
                     }
                     
-                    // Error message
+                    // Quick action buttons
+                    HStack(spacing: 16) {
+                        Button(action: { showingManualSearch = true }) {
+                            Label("Search", systemImage: "magnifyingglass")
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: {}) {
+                            Label("Camera", systemImage: "camera")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .disabled(true)
+                        
+                        Button(action: {}) {
+                            Label("Voice", systemImage: "mic")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .disabled(true)
+                    }
+                    
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
                             .font(.caption)
                             .foregroundColor(.red)
                     }
                 }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(12)
-                .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
                 .padding(.horizontal)
+                .padding(.bottom, 16)
                 
-                // Today's entries card
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Today's Entries")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    if supabaseService.isFoodTrackingLoading {
-                        ProgressView()
+                // Today's meals section
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        if supabaseService.isFoodTrackingLoading {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 40)
+                        } else if supabaseService.todaysEntries.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "fork.knife")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.secondary.opacity(0.5))
+                                
+                                Text("No meals logged today")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                Text("Start tracking your meals to see nutrition insights")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
                             .frame(maxWidth: .infinity)
-                            .padding()
-                    } else if supabaseService.todaysEntries.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "fork.knife.circle")
-                                .font(.system(size: 40))
-                                .foregroundColor(.secondary)
-                            
-                            Text("No food logged today")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 32)
-                    } else {
-                        ScrollView {
-                            LazyVStack(spacing: 8) {
-                                ForEach(supabaseService.todaysEntries) { entry in
-                                    FoodEntryRowView(entry: entry)
+                            .padding(.vertical, 60)
+                        } else {
+                            // Group entries by meal type
+                            ForEach(MealType.allCases, id: \.self) { mealType in
+                                let mealEntries = supabaseService.todaysEntries.filter { $0.mealType == mealType }
+                                if !mealEntries.isEmpty {
+                                    MealSectionView(
+                                        mealType: mealType,
+                                        entries: mealEntries
+                                    )
                                 }
                             }
-                            .padding(.horizontal)
+                            
+                            // Daily totals
+                            VStack(spacing: 16) {
+                                HStack {
+                                    Text("Daily Total")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                    
+                                    Spacer()
+                                }
+                                
+                                HStack(spacing: 20) {
+                                    MacroView(
+                                        value: String(format: "%.0f", todaysNutrition.calories),
+                                        label: "cal",
+                                        color: .red
+                                    )
+                                    MacroView(
+                                        value: String(format: "%.1f", todaysNutrition.protein),
+                                        label: "protein",
+                                        color: .green
+                                    )
+                                    MacroView(
+                                        value: String(format: "%.1f", todaysNutrition.carbs),
+                                        label: "carbs",
+                                        color: .orange
+                                    )
+                                    MacroView(
+                                        value: String(format: "%.1f", todaysNutrition.fat),
+                                        label: "fat",
+                                        color: .purple
+                                    )
+                                }
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(12)
+                            }
+                            .padding(.top, 8)
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(12)
-                .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-                .padding(.horizontal)
                 
-                Spacer()
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Track Food")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
@@ -246,7 +254,7 @@ struct FoodTrackingView: View {
             .sheet(isPresented: $showingManualSearch) {
                 ManualFoodSearchView(selectedMealType: selectedMealType)
             }
-            .onChange(of: showingManualSearch) { isShowing in
+            .onChange(of: showingManualSearch) { _, isShowing in
                 print("🔄 showingManualSearch changed to: \(isShowing)")  // <- BREAKPOINT HERE
                 if !isShowing {
                     print("🔄 Manual search dismissed, starting refresh...")
@@ -268,7 +276,7 @@ struct FoodTrackingView: View {
                     )
                 }
             }
-            .onChange(of: showingResults) { isShowing in
+            .onChange(of: showingResults) { _, isShowing in
                 if !isShowing {
                     // Refresh data when returning from food verification
                     Task {
@@ -478,6 +486,138 @@ struct FoodEntryRowView: View {
         case .snack:
             return .gray
         }
+    }
+}
+
+// MARK: - New Components
+
+struct MealSectionView: View {
+    let mealType: MealType
+    let entries: [FoodEntry]
+    @State private var isExpanded = false
+    
+    private var mealTotals: (calories: Double, protein: Double, carbs: Double, fat: Double) {
+        entries.reduce((0, 0, 0, 0)) { totals, entry in
+            (totals.0 + entry.calories, 
+             totals.1 + entry.proteinG, 
+             totals.2 + entry.carbsG, 
+             totals.3 + entry.fatG)
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Meal header
+            Button(action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }) {
+                HStack(spacing: 16) {
+                    // Meal icon
+                    Image(systemName: mealType.icon)
+                        .font(.system(size: 24))
+                        .foregroundColor(mealTypeColor(for: mealType))
+                        .frame(width: 44, height: 44)
+                        .background(mealTypeColor(for: mealType).opacity(0.1))
+                        .cornerRadius(10)
+                    
+                    // Meal info
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(mealType.displayName)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text("\(entries.count) item\(entries.count == 1 ? "" : "s")")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    // Meal macros
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("\(String(format: "%.0f", mealTotals.calories)) cal")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        
+                        HStack(spacing: 8) {
+                            Text("P: \(String(format: "%.0f", mealTotals.protein))g")
+                            Text("C: \(String(format: "%.0f", mealTotals.carbs))g")
+                            Text("F: \(String(format: "%.0f", mealTotals.fat))g")
+                        }
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    }
+                    
+                    // Expand indicator
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Expanded food items
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(entries) { entry in
+                        HStack {
+                            Text(entry.foodItem?.displayName ?? "Unknown Food")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                            
+                            Spacer()
+                            
+                            Text("\(String(format: "%.0f", entry.quantityGrams))g")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("•")
+                                .foregroundColor(.secondary)
+                            
+                            Text("\(String(format: "%.0f", entry.calories)) cal")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.leading, 60)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+    
+    private func mealTypeColor(for mealType: MealType) -> Color {
+        switch mealType {
+        case .breakfast:
+            return .orange
+        case .lunch:
+            return .blue
+        case .dinner:
+            return .purple
+        case .snack:
+            return .pink
+        }
+    }
+}
+
+struct MacroView: View {
+    let value: String
+    let label: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+            
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

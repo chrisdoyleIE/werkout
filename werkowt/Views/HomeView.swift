@@ -15,6 +15,8 @@ struct HomeView: View {
     @State private var showingSettings = false
     @State private var selectedDate = Date()
     @State private var selectedSession: WorkoutSession?
+    @State private var selectedDayForDetail: Date?
+    @State private var calendarRefreshTrigger = false
     
     private var todaysNutrition: NutritionInfo {
         supabaseService.getTodaysNutritionSummary()
@@ -72,9 +74,12 @@ struct HomeView: View {
             // Calendar
             CalendarView(
                 selectedDate: $selectedDate,
-                workoutSessions: workoutDataManager.workoutSessions
+                workoutSessions: workoutDataManager.workoutSessions,
+                refreshTrigger: calendarRefreshTrigger
             ) { session in
                 selectedSession = session
+            } onDateTap: { date in
+                selectedDayForDetail = date
             }
             .padding(.bottom, 16)
             
@@ -83,7 +88,7 @@ struct HomeView: View {
                 // Card header with subtle border integration
                 HStack {
                     Spacer()
-                    Text("TRACK")
+                    Text("Track")
                         .font(.headline)
                         .fontWeight(.bold)
                         .foregroundColor(.blue)
@@ -153,20 +158,33 @@ struct HomeView: View {
         .sheet(item: $selectedSession) { session in
             WorkoutDetailView(session: session)
         }
+        .sheet(isPresented: Binding(
+            get: { selectedDayForDetail != nil },
+            set: { if !$0 { selectedDayForDetail = nil } }
+        )) {
+            if let selectedDay = selectedDayForDetail {
+                DayDetailView(selectedDate: selectedDay)
+            }
+        }
         .sheet(isPresented: $showingFoodLogger) {
             FoodTrackingView()
         }
-        .onChange(of: showingFoodLogger) { isShowing in
+        .onChange(of: showingFoodLogger) { _, isShowing in
             if !isShowing {
                 // Refresh nutrition data when returning from food tracking
                 Task {
                     // Add small delay to ensure database transaction completes
                     try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
                     await supabaseService.loadTodaysEntries()
+                    
+                    // Trigger calendar refresh
+                    await MainActor.run {
+                        calendarRefreshTrigger.toggle()
+                    }
                 }
             }
         }
-        .onChange(of: activeWorkout.isActive) { isActive in
+        .onChange(of: activeWorkout.isActive) { _, isActive in
             if isActive {
                 showingWorkoutCreator = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -185,6 +203,10 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
+        }
+        .onAppear {
+            // Refresh calendar when view appears
+            calendarRefreshTrigger.toggle()
         }
     }
     
@@ -212,10 +234,12 @@ struct HomeView: View {
 struct CalendarView: View {
     @Binding var selectedDate: Date
     let workoutSessions: [WorkoutSession]
+    let refreshTrigger: Bool
     let onSessionTap: (WorkoutSession) -> Void
+    let onDateTap: (Date) -> Void
     
     private let calendar = Calendar.current
-    private let columns = Array(repeating: GridItem(.flexible()), count: 7)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: 7)
     
     var body: some View {
         VStack(spacing: 0) {
@@ -229,24 +253,23 @@ struct CalendarView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.horizontal)
-            .padding(.bottom, 4)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
             
             // Calendar grid
-            LazyVGrid(columns: columns, spacing: 4) {
+            LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(calendarDays, id: \.self) { date in
                     CalendarDayView(
                         date: date,
                         isCurrentMonth: calendar.isDate(date, equalTo: selectedDate, toGranularity: .month),
-                        workoutSession: sessionForDate(date)
-                    ) { session in
-                        if let session = session {
-                            onSessionTap(session)
-                        }
+                        workoutSession: sessionForDate(date),
+                        refreshTrigger: refreshTrigger
+                    ) { _ in
+                        onDateTap(date)
                     }
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 16)
         }
     }
     
@@ -282,81 +305,107 @@ struct CalendarDayView: View {
     let date: Date
     let isCurrentMonth: Bool
     let workoutSession: WorkoutSession?
+    let refreshTrigger: Bool
     let onTap: (WorkoutSession?) -> Void
     
     @EnvironmentObject var workoutDataManager: WorkoutDataManager
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
     @State private var macroData: MacroData = MacroData.empty
+    @State private var isLoadingMacros = false
     
     private let calendar = Calendar.current
     
     var body: some View {
         Button(action: { onTap(workoutSession) }) {
-            VStack(spacing: 0) {
-                Text("\(calendar.component(.day, from: date))")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(workoutSession != nil ? .white : (isCurrentMonth ? .primary : .secondary))
-                
-                Spacer()
-                
-                // Macro achievement dots positioned at bottom
-                HStack(spacing: 2) {
-                    Circle()
-                        .fill(macroData.caloriesAchieved ? Color.red : Color.gray.opacity(0.3))
-                        .frame(width: 6, height: 6)
-                    Circle()
-                        .fill(macroData.proteinAchieved ? Color.green : Color.gray.opacity(0.3))
-                        .frame(width: 6, height: 6)
-                    Circle()
-                        .fill(macroData.carbsAchieved ? Color.orange : Color.gray.opacity(0.3))
-                        .frame(width: 6, height: 6)
-                    Circle()
-                        .fill(macroData.fatAchieved ? Color.purple : Color.gray.opacity(0.3))
-                        .frame(width: 6, height: 6)
-                }
-                .opacity(isCurrentMonth ? 1.0 : 0.5)
-                .padding(.bottom, 4)
-            }
-            .frame(width: 45, height: 45)
-            .background(
+            ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(
-                        workoutSession != nil ? 
-                        Color.blue :
-                        Color.clear
-                    )
+                    .fill(Color.clear)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(calendar.isDateInToday(date) ? Color.blue : Color.clear, lineWidth: 2)
                     )
-            )
-            .scaleEffect(workoutSession != nil ? 1.05 : 1.0)
-            .shadow(color: workoutSession != nil ? 
-                    Color.blue.opacity(0.3) : 
-                    .clear, radius: 4, x: 0, y: 2)
+                
+                VStack(spacing: 2) {
+                    Text("\(calendar.component(.day, from: date))")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(workoutSession != nil ? .blue : (isCurrentMonth ? .primary : .secondary))
+                    
+                    // Dumbbell icon for workout days
+                    if workoutSession != nil {
+                        Image(systemName: "dumbbell.fill")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.blue)
+                    } else {
+                        Spacer()
+                            .frame(height: 12)
+                    }
+                    
+                    Spacer(minLength: 2)
+                    
+                    // Macro achievement dots positioned at bottom - only show achieved macros
+                    HStack(spacing: 2) {
+                        if macroData.caloriesAchieved {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 6, height: 6)
+                        }
+                        if macroData.proteinAchieved {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 6, height: 6)
+                        }
+                        if macroData.carbsAchieved {
+                            Circle()
+                                .fill(Color.orange)
+                                .frame(width: 6, height: 6)
+                        }
+                        if macroData.fatAchieved {
+                            Circle()
+                                .fill(Color.purple)
+                                .frame(width: 6, height: 6)
+                        }
+                    }
+                    .opacity(isCurrentMonth ? 1 : 0.5)
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 2)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .aspectRatio(1, contentMode: .fit)
+            .padding(1)
         }
         .buttonStyle(PlainButtonStyle())
-        .disabled(workoutSession == nil)
         .task {
-            if let session = workoutSession {
-                await loadMacroData(for: session)
+            await loadMacroData(for: date)
+        }
+        .onChange(of: refreshTrigger) { _, _ in
+            Task {
+                await loadMacroData(for: date)
             }
         }
     }
     
-    private func loadMacroData(for session: WorkoutSession) async {
-        // For now, use sample data - this will be replaced with actual macro data loading
+    private func loadMacroData(for date: Date) async {
+        // Prevent duplicate loading
+        guard !isLoadingMacros else { return }
+        
         await MainActor.run {
-            let day = calendar.component(.day, from: session.startedAt)
-            switch day % 4 {
-            case 0:
-                macroData = MacroData.allAchieved
-            case 1:
-                macroData = MacroData.caloriesOnly
-            case 2:
-                macroData = MacroData.sample
-            default:
+            isLoadingMacros = true
+        }
+        
+        do {
+            print("📅 Loading macro data for calendar date: \(date)")
+            let achievements = try await SupabaseService.shared.calculateMacroAchievements(for: date)
+            await MainActor.run {
+                macroData = achievements
+                isLoadingMacros = false
+                print("📅 Set macro data for \(date): protein=\(achievements.proteinAchieved)")
+            }
+        } catch {
+            print("❌ Error loading macro data for \(date): \(error)")
+            await MainActor.run {
                 macroData = MacroData.empty
+                isLoadingMacros = false
             }
         }
     }
@@ -577,5 +626,302 @@ struct WeekCalendarView: View {
         }
     }
 }
+
+struct DayDetailView: View {
+    let selectedDate: Date
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var workoutDataManager: WorkoutDataManager
+    @EnvironmentObject var exerciseDataManager: ExerciseDataManager
+    
+    @State private var workoutSets: [WorkoutSet] = []
+    @State private var foodEntries: [FoodEntry] = []
+    @State private var isLoading = true
+    
+    private let calendar = Calendar.current
+    
+    var workoutSession: WorkoutSession? {
+        workoutDataManager.workoutSessions.first { session in
+            calendar.isDate(session.startedAt, inSameDayAs: selectedDate)
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header with date
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(DateFormatter.dayDetailHeader.string(from: selectedDate))
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        
+                        if calendar.isDateInToday(selectedDate) {
+                            Text("Today")
+                                .font(.subheadline)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    // Workout Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "dumbbell.fill")
+                                .foregroundColor(.blue)
+                            Text("Workout")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                        }
+                        .padding(.horizontal)
+                        
+                        if let session = workoutSession {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(session.name)
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .padding(.horizontal)
+                                
+                                if !workoutSets.isEmpty {
+                                    LazyVStack(alignment: .leading, spacing: 8) {
+                                        ForEach(groupedSets, id: \.key) { exerciseName, sets in
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(exerciseName)
+                                                    .font(.subheadline)
+                                                    .fontWeight(.medium)
+                                                    .padding(.horizontal)
+                                                
+                                                ForEach(sets) { set in
+                                                    HStack {
+                                                        Text("Set \(set.setNumber)")
+                                                            .font(.caption)
+                                                            .foregroundColor(.secondary)
+                                                        
+                                                        Spacer()
+                                                        
+                                                        if let reps = set.reps, let weight = set.weightKg {
+                                                            Text("\(reps) reps × \(weight, specifier: "%.1f") kg")
+                                                                .font(.caption)
+                                                        } else if let reps = set.reps {
+                                                            Text("\(reps) reps")
+                                                                .font(.caption)
+                                                        } else if let duration = set.durationSeconds {
+                                                            Text("\(duration)s")
+                                                                .font(.caption)
+                                                        }
+                                                    }
+                                                    .padding(.horizontal, 20)
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text("No exercise details available")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .padding(.horizontal)
+                                }
+                            }
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(12)
+                            .padding(.horizontal)
+                        } else {
+                            Text("No workout recorded")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal)
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(12)
+                                .padding(.horizontal)
+                        }
+                    }
+                    
+                    // Food Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "fork.knife")
+                                .foregroundColor(.green)
+                            Text("Food")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                        }
+                        .padding(.horizontal)
+                        
+                        if !foodEntries.isEmpty {
+                            ForEach(MealType.allCases, id: \.self) { mealType in
+                                let mealEntries = foodEntries.filter { $0.mealType == mealType }
+                                if !mealEntries.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(mealType.displayName)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .padding(.horizontal)
+                                        
+                                        ForEach(mealEntries) { entry in
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(entry.foodItem?.displayName ?? "Unknown Food")
+                                                        .font(.caption)
+                                                        .fontWeight(.medium)
+                                                    
+                                                    Text("\(entry.quantityGrams, specifier: "%.0f")g")
+                                                        .font(.caption2)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                VStack(alignment: .trailing, spacing: 2) {
+                                                    Text("\(entry.calories, specifier: "%.0f") cal")
+                                                        .font(.caption)
+                                                        .fontWeight(.medium)
+                                                    
+                                                    Text("P: \(entry.proteinG, specifier: "%.1f")g")
+                                                        .font(.caption2)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                            }
+                                            .padding(.horizontal, 20)
+                                        }
+                                        
+                                        // Meal totals
+                                        let mealTotals = calculateMealTotals(mealEntries)
+                                        HStack {
+                                            Text("Total")
+                                                .font(.caption)
+                                                .fontWeight(.semibold)
+                                            
+                                            Spacer()
+                                            
+                                            Text("\(mealTotals.calories, specifier: "%.0f") cal")
+                                                .font(.caption)
+                                                .fontWeight(.semibold)
+                                        }
+                                        .padding(.horizontal, 20)
+                                        .padding(.top, 4)
+                                    }
+                                    .padding()
+                                    .background(Color.green.opacity(0.1))
+                                    .cornerRadius(12)
+                                    .padding(.horizontal)
+                                }
+                            }
+                            
+                            // Daily totals
+                            let dailyTotals = calculateDailyTotals()
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Daily Totals")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .padding(.horizontal)
+                                
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text("Calories: \(dailyTotals.calories, specifier: "%.0f")")
+                                        Text("Protein: \(dailyTotals.protein, specifier: "%.1f")g")
+                                    }
+                                    .font(.caption)
+                                    
+                                    Spacer()
+                                    
+                                    VStack(alignment: .trailing) {
+                                        Text("Carbs: \(dailyTotals.carbs, specifier: "%.1f")g")
+                                        Text("Fat: \(dailyTotals.fat, specifier: "%.1f")g")
+                                    }
+                                    .font(.caption)
+                                }
+                                .padding(.horizontal, 20)
+                            }
+                            .padding()
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(12)
+                            .padding(.horizontal)
+                        } else {
+                            Text("No food logged")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal)
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(12)
+                                .padding(.horizontal)
+                        }
+                    }
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .task {
+            await loadData()
+        }
+    }
+    
+    private var groupedSets: [(key: String, value: [WorkoutSet])] {
+        let grouped = Dictionary(grouping: workoutSets) { set in
+            let exercise = exerciseDataManager.getExercise(by: set.exerciseId)
+            return exercise?.name ?? "Unknown Exercise"
+        }
+        return grouped.sorted { $0.key < $1.key }
+    }
+    
+    private func calculateMealTotals(_ entries: [FoodEntry]) -> (calories: Double, protein: Double, carbs: Double, fat: Double) {
+        entries.reduce((0, 0, 0, 0)) { totals, entry in
+            (totals.0 + entry.calories, totals.1 + entry.proteinG, totals.2 + entry.carbsG, totals.3 + entry.fatG)
+        }
+    }
+    
+    private func calculateDailyTotals() -> (calories: Double, protein: Double, carbs: Double, fat: Double) {
+        foodEntries.reduce((0, 0, 0, 0)) { totals, entry in
+            (totals.0 + entry.calories, totals.1 + entry.proteinG, totals.2 + entry.carbsG, totals.3 + entry.fatG)
+        }
+    }
+    
+    private func loadData() async {
+        isLoading = true
+        
+        // Load workout sets if workout exists
+        if let session = workoutSession {
+            do {
+                let sets = try await workoutDataManager.getSets(for: session.id)
+                await MainActor.run {
+                    self.workoutSets = sets
+                }
+            } catch {
+                print("Error loading workout sets: \(error)")
+            }
+        }
+        
+        // Load food entries for the date
+        do {
+            let entries = try await SupabaseService.shared.getEntriesForDate(selectedDate)
+            await MainActor.run {
+                self.foodEntries = entries
+            }
+        } catch {
+            print("Error loading food entries: \(error)")
+        }
+        
+        await MainActor.run {
+            self.isLoading = false
+        }
+    }
+}
+
+extension DateFormatter {
+    static let dayDetailHeader: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d"
+        return formatter
+    }()
+}
+
 
 
