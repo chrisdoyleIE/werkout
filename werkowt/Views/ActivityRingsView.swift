@@ -41,7 +41,7 @@ struct ActivityRingsView: View {
     let goals: MacroGoals
     
     @State private var animateRings = false
-    
+        
     private var caloriesProgress: Double {
         guard goals.calories > 0 else { return 0 }
         return min(calories / goals.calories, 1.0)

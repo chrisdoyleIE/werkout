@@ -3,6 +3,12 @@ import Supabase
 import Auth
 import os
 
+enum AuthError: Error {
+    case timeout
+    case invalidCredentials
+    case networkError
+}
+
 @MainActor
 class AuthManager: ObservableObject {
     @Published var isAuthenticated = false
@@ -19,20 +25,52 @@ class AuthManager: ObservableObject {
     
     func checkAuthStatus() {
         Task {
+            print("🔐 AuthManager: Starting auth status check...")
+            
             do {
-                let session = try await supabase.auth.session
+                // Add timeout protection to prevent infinite loading
+                let session = try await withTaskTimeout(seconds: 10) { [self] in
+                    try await supabase.auth.session
+                }
+                
+                print("🔐 AuthManager: Successfully retrieved session")
                 await MainActor.run {
                     self.currentUser = session.user
                     self.isAuthenticated = true
                     self.isLoading = false
                 }
+                print("🔐 AuthManager: User authenticated successfully")
+                
             } catch {
+                print("🔐 AuthManager: Auth check failed with error: \(error)")
                 await MainActor.run {
                     self.isAuthenticated = false
                     self.currentUser = nil
                     self.isLoading = false
                 }
+                print("🔐 AuthManager: Set to unauthenticated state")
             }
+        }
+    }
+    
+    // Helper function to add timeout to async operations
+    private func withTaskTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        return try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+            
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw AuthError.timeout
+            }
+            
+            guard let result = try await group.next() else {
+                throw AuthError.timeout
+            }
+            
+            group.cancelAll()
+            return result
         }
     }
     

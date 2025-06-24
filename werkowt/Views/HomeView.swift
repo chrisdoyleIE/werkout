@@ -13,7 +13,6 @@ struct HomeView: View {
     @State private var showingAddWeight = false
     @State private var showingFoodLogger = false
     @State private var showingSettings = false
-    @State private var selectedDate = Date()
     @State private var selectedSession: WorkoutSession?
     @State private var selectedDayForDetail: Date?
     @State private var calendarRefreshTrigger = false
@@ -67,18 +66,8 @@ struct HomeView: View {
             .padding(.top, 8)
             .padding(.bottom, 20)
             
-            // Date Navigation - aligned with calendar
-            DateNavigationView(
-                selectedDate: $selectedDate,
-                onPrevious: previousMonth,
-                onNext: nextMonth
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
-            
-            // Calendar
-            CalendarView(
-                selectedDate: $selectedDate,
+            // Calendar with horizontal scrolling
+            HorizontalCalendarView(
                 workoutSessions: workoutDataManager.workoutSessions,
                 refreshTrigger: calendarRefreshTrigger
             ) { session in
@@ -177,13 +166,6 @@ struct HomeView: View {
     }
     
     
-    private func previousMonth() {
-        selectedDate = calendar.date(byAdding: .month, value: -1, to: selectedDate) ?? selectedDate
-    }
-    
-    private func nextMonth() {
-        selectedDate = calendar.date(byAdding: .month, value: 1, to: selectedDate) ?? selectedDate
-    }
     
     private func addWeight(weight: Double, notes: String?) async {
         do {
@@ -197,66 +179,118 @@ struct HomeView: View {
     }
 }
 
-struct CalendarView: View {
-    @Binding var selectedDate: Date
+struct HorizontalCalendarView: View {
     let workoutSessions: [WorkoutSession]
     let refreshTrigger: Bool
     let onSessionTap: (WorkoutSession) -> Void
     let onDateTap: (Date) -> Void
     
     private let calendar = Calendar.current
+    private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
+    
+    // Calculate optimal width to fit 12 weeks across screen
+    private var weekWidth: CGFloat {
+        // Screen width minus horizontal padding (16px each side + 30px left for day labels + 28px right margin)
+        let availableWidth = UIScreen.main.bounds.width - 90
+        return availableWidth / 12
+    }
+    
+    // Generate initial 12 weeks total with today on far right
+    private var initialWeeks: [Date] {
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday == 1) ? 6 : weekday - 2
+        let currentWeekMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
+        
+        // Start 11 weeks ago, show 12 weeks total (11 past + current) - today on far right
+        let startWeek = calendar.date(byAdding: .weekOfYear, value: -11, to: currentWeekMonday) ?? currentWeekMonday
+        
+        return (0..<12).compactMap { weekOffset in
+            calendar.date(byAdding: .weekOfYear, value: weekOffset, to: startWeek)
+        }
+    }
+    
+    // Use fixed 12 weeks - no dynamic loading
+    private var currentWeeks: [Date] {
+        return initialWeeks
+    }
     
     var body: some View {
-        VStack(spacing: 8) {
-            // Month labels across the top
-            HStack {
-                ForEach(monthHeaders, id: \.self) { monthName in
-                    Text(monthName)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            }
-            .padding(.horizontal, 16)
-            
-            // Week column headers (dates of Mondays)
-            HStack(spacing: 1) {
-                // Space for day labels
-                Text("")
-                    .frame(width: 15)
-                
-                ForEach(weekHeaders, id: \.self) { weekDate in
-                    Text("\(calendar.component(.day, from: weekDate))")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.horizontal, 16)
-            
-            // Calendar grid: 7 rows x 12 columns
+        HStack(spacing: 0) {
+            // Day labels on the left
             VStack(spacing: 1) {
-                ForEach(0..<7, id: \.self) { dayOfWeek in
-                    HStack(spacing: 1) {
-                        // Day label on left
-                        Text(dayLabels[dayOfWeek])
+                // Space for month headers
+                Text("")
+                    .frame(height: 20)
+                
+                // Space for week numbers
+                Text("")
+                    .frame(height: 20)
+                
+                // Day labels
+                ForEach(0..<7, id: \.self) { dayIndex in
+                    Text(dayLabels[dayIndex])
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                        .frame(height: 17)
+                }
+            }
+            .frame(width: 30)
+            .padding(.leading, 16)
+            .padding(.trailing, 4)
+            
+            // Calendar content
+            VStack(spacing: 1) {
+                // Month headers
+                HStack(spacing: 1) {
+                    ForEach(currentWeeks.indices, id: \.self) { index in
+                        let weekDate = currentWeeks[index]
+                        
+                        // Show month name when month changes
+                        if index == 0 || !calendar.isDate(weekDate, equalTo: currentWeeks[index-1], toGranularity: .month) {
+                            Text(DateFormatter.monthName.string(from: weekDate))
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                                .frame(width: weekWidth)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                        } else {
+                            Text("")
+                                .frame(width: weekWidth)
+                        }
+                    }
+                }
+                .frame(height: 20)
+                
+                // Week numbers
+                HStack(spacing: 1) {
+                    ForEach(currentWeeks, id: \.self) { weekDate in
+                        Text("\(calendar.component(.day, from: weekDate))")
                             .font(.caption2)
                             .fontWeight(.medium)
                             .foregroundColor(.secondary)
-                            .frame(width: 15)
-                        
-                        // 12 week columns for this day
-                        ForEach(0..<12, id: \.self) { weekIndex in
-                            let date = dateForWeek(weekIndex, dayOfWeek: dayOfWeek)
-                            CalendarDayView(
-                                date: date,
-                                isCurrentMonth: isDateInCurrentPeriod(date),
-                                workoutSession: sessionForDate(date),
-                                refreshTrigger: refreshTrigger
-                            ) { _ in
-                                onDateTap(date)
+                            .frame(width: weekWidth)
+                    }
+                }
+                .frame(height: 20)
+                
+                // Calendar grid
+                VStack(spacing: 1) {
+                    ForEach(0..<7, id: \.self) { dayOfWeek in
+                        HStack(spacing: 1) {
+                            ForEach(currentWeeks, id: \.self) { weekDate in
+                                let date = calendar.date(byAdding: .day, value: dayOfWeek, to: weekDate) ?? weekDate
+                                CalendarDayView(
+                                    date: date,
+                                    isCurrentMonth: true,
+                                    workoutSession: sessionForDate(date),
+                                    refreshTrigger: refreshTrigger
+                                ) { _ in
+                                    onDateTap(date)
+                                }
+                                .frame(width: weekWidth, height: 17)
                             }
                         }
                     }
@@ -266,48 +300,6 @@ struct CalendarView: View {
         }
     }
     
-    private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
-    
-    private var startMondayDate: Date {
-        let today = Date()
-        let weekday = calendar.component(.weekday, from: today)
-        let daysFromMonday = (weekday == 1) ? 6 : weekday - 2
-        let currentWeekMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
-        // Go back 11 weeks from current week to show past 12 weeks total
-        return calendar.date(byAdding: .weekOfYear, value: -11, to: currentWeekMonday) ?? currentWeekMonday
-    }
-    
-    private var weekHeaders: [Date] {
-        // Generate 12 Monday dates from 11 weeks ago to current week
-        return (0..<12).compactMap { weekOffset in
-            calendar.date(byAdding: .weekOfYear, value: weekOffset, to: startMondayDate)
-        }
-    }
-    
-    private var monthHeaders: [String] {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM"
-        
-        // Get unique months from our 12-week span
-        let uniqueMonths = Set(weekHeaders.map { formatter.string(from: $0) })
-        return Array(uniqueMonths).sorted()
-    }
-    
-    private func dateForWeek(_ weekIndex: Int, dayOfWeek: Int) -> Date {
-        guard let weekStart = calendar.date(byAdding: .weekOfYear, value: weekIndex, to: startMondayDate) else {
-            return Date()
-        }
-        return calendar.date(byAdding: .day, value: dayOfWeek, to: weekStart) ?? Date()
-    }
-    
-    private func isDateInCurrentPeriod(_ date: Date) -> Bool {
-        let now = Date()
-        let monthsRange = calendar.dateInterval(of: .month, for: now)
-        let extendedStart = calendar.date(byAdding: .month, value: -1, to: monthsRange?.start ?? now) ?? now
-        let extendedEnd = calendar.date(byAdding: .month, value: 2, to: monthsRange?.end ?? now) ?? now
-        return date >= extendedStart && date <= extendedEnd
-    }
-    
     private func sessionForDate(_ date: Date) -> WorkoutSession? {
         workoutSessions.first { session in
             calendar.isDate(session.startedAt, inSameDayAs: date)
@@ -315,6 +307,7 @@ struct CalendarView: View {
     }
     
 }
+
 
 struct CalendarDayView: View {
     let date: Date
@@ -327,6 +320,7 @@ struct CalendarDayView: View {
     @EnvironmentObject var exerciseDataManager: ExerciseDataManager
     @State private var macroData: MacroData = MacroData.empty
     @State private var isLoadingMacros = false
+    @State private var hasLoadedData = false
     
     private let calendar = Calendar.current
     
@@ -347,30 +341,41 @@ struct CalendarDayView: View {
         }
     }
     
+    
     var body: some View {
         Button(action: { onTap(workoutSession) }) {
-            VStack(spacing: 0) {
-                // Main calendar square - no text inside
-                ZStack {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(backgroundGradient)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 2)
-                                .stroke(calendar.isDateInToday(date) ? Color.blue : Color.clear, lineWidth: 1)
-                        )
-                }
-                .frame(height: 16)
+            // Main calendar square with dumbbell overlay
+            ZStack {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(backgroundGradient)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 2)
+                            .stroke(calendar.isDateInToday(date) ? Color.black : Color.clear, lineWidth: 1)
+                    )
                 
-                // Workout indicator bar at bottom
-                Rectangle()
-                    .fill(workoutSession != nil ? Color.orange : Color.clear)
-                    .frame(height: 3)
+                // Blue diagonal line for workout days
+                if workoutSession != nil {
+                    GeometryReader { geometry in
+                        Path { path in
+                            let width = geometry.size.width
+                            let height = geometry.size.height
+                            // Bottom-left to top-right diagonal
+                            path.move(to: CGPoint(x: 2, y: height - 2))
+                            path.addLine(to: CGPoint(x: width - 2, y: 2))
+                        }
+                        .stroke(Color.blue, lineWidth: 2)
+                    }
+                }
             }
+            .frame(height: 16)
             .frame(maxWidth: .infinity, minHeight: 18)
         }
         .buttonStyle(PlainButtonStyle())
-        .task {
-            await loadMacroData(for: date)
+        .onAppear {
+            // Load macro data on initial appearance (safe with static 12-week calendar)
+            Task {
+                await loadMacroData(for: date)
+            }
         }
         .onChange(of: refreshTrigger) { _, _ in
             Task {
@@ -381,25 +386,40 @@ struct CalendarDayView: View {
     
     private func loadMacroData(for date: Date) async {
         // Prevent duplicate loading
-        guard !isLoadingMacros else { return }
+        guard !isLoadingMacros else { 
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "MMM dd"
+            print("📅 CalendarDayView: Skipping duplicate load for \(dateFormatter.string(from: date))")
+            return 
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM dd"
+        print("📅 CalendarDayView: Starting macro data load for \(dateFormatter.string(from: date))")
         
         await MainActor.run {
             isLoadingMacros = true
         }
         
+        let startTime = Date()
         do {
-            print("📅 Loading macro data for calendar date: \(date)")
+            print("📅 CalendarDayView: Calling SupabaseService for \(dateFormatter.string(from: date))")
             let achievements = try await SupabaseService.shared.calculateMacroAchievements(for: date)
+            let duration = Date().timeIntervalSince(startTime)
+            
             await MainActor.run {
                 macroData = achievements
                 isLoadingMacros = false
-                print("📅 Set macro data for \(date): protein=\(achievements.proteinAchieved)")
+                hasLoadedData = true
+                print("📅 CalendarDayView: ✅ Completed macro data load for \(dateFormatter.string(from: date)) in \(String(format: "%.2f", duration))s - protein: \(achievements.proteinAchieved), calories: \(achievements.caloriesAchieved)")
             }
         } catch {
-            print("❌ Error loading macro data for \(date): \(error)")
+            let duration = Date().timeIntervalSince(startTime)
+            print("❌ CalendarDayView: Failed to load macro data for \(dateFormatter.string(from: date)) after \(String(format: "%.2f", duration))s - Error: \(error)")
             await MainActor.run {
                 macroData = MacroData.empty
                 isLoadingMacros = false
+                hasLoadedData = true // Mark as loaded even on error to prevent retries
             }
         }
     }
@@ -913,6 +933,12 @@ extension DateFormatter {
     static let dayDetailHeader: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMMM d"
+        return formatter
+    }()
+    
+    static let monthName: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
         return formatter
     }()
 }

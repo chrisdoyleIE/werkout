@@ -1011,18 +1011,29 @@ class SupabaseService: ObservableObject {
     }
     
     func calculateMacroAchievements(for date: Date) async throws -> MacroData {
-        let entries = try await getEntriesForDate(date)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM dd"
+        let dateString = dateFormatter.string(from: date)
+        let startTime = Date()
         
-        print("📊 Calculating macros for \(date)")
-        print("📊 Found \(entries.count) food entries")
+        print("🔍 SupabaseService: Starting macro calculation for \(dateString)")
+        
+        print("🔍 SupabaseService: Fetching food entries for \(dateString)...")
+        let entriesStartTime = Date()
+        let entries = try await getEntriesForDate(date)
+        let entriesDuration = Date().timeIntervalSince(entriesStartTime)
+        
+        print("🔍 SupabaseService: Found \(entries.count) food entries for \(dateString) in \(String(format: "%.2f", entriesDuration))s")
         
         // Get macro goals
+        print("🔍 SupabaseService: Fetching macro goals for \(dateString)...")
+        let goalsStartTime = Date()
         guard let goals = try await getMacroGoals() else {
-            print("📊 No macro goals found")
+            print("❌ SupabaseService: No macro goals found for \(dateString)")
             return MacroData.empty
         }
-        
-        print("📊 Macro goals - Calories: \(goals.calories), Protein: \(goals.protein), Carbs: \(goals.carbs), Fat: \(goals.fat)")
+        let goalsDuration = Date().timeIntervalSince(goalsStartTime)
+        print("🔍 SupabaseService: Retrieved macro goals for \(dateString) in \(String(format: "%.2f", goalsDuration))s")
         
         // Calculate totals
         let totals = entries.reduce((calories: 0.0, protein: 0.0, carbs: 0.0, fat: 0.0)) { result, entry in
@@ -1032,8 +1043,6 @@ class SupabaseService: ObservableObject {
              result.fat + entry.fatG)
         }
         
-        print("📊 Totals - Calories: \(totals.calories), Protein: \(totals.protein), Carbs: \(totals.carbs), Fat: \(totals.fat)")
-        
         // Check achievements (consider achieved if >= 100% of goal)
         let achievements = MacroData(
             caloriesAchieved: totals.calories >= goals.calories,
@@ -1042,7 +1051,8 @@ class SupabaseService: ObservableObject {
             fatAchieved: totals.fat >= goals.fat
         )
         
-        print("📊 Achievements - Calories: \(achievements.caloriesAchieved), Protein: \(achievements.proteinAchieved), Carbs: \(achievements.carbsAchieved), Fat: \(achievements.fatAchieved)")
+        let totalDuration = Date().timeIntervalSince(startTime)
+        print("🔍 SupabaseService: ✅ Completed macro calculation for \(dateString) in \(String(format: "%.2f", totalDuration))s - Achievements: C:\(achievements.caloriesAchieved) P:\(achievements.proteinAchieved) R:\(achievements.carbsAchieved) F:\(achievements.fatAchieved)")
         
         return achievements
     }
