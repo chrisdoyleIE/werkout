@@ -90,32 +90,14 @@ struct HomeView: View {
             
             // Activity Rings Section
             VStack(spacing: 16) {
-                Text("Today's Progress")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                HStack(spacing: 40) {
-                    // Activity Rings
-                    ActivityRingsView(
-                        calories: todaysNutrition.calories,
-                        protein: todaysNutrition.protein,
-                        carbs: todaysNutrition.carbs,
-                        fat: todaysNutrition.fat,
-                        goals: macroGoalsManager.goals
-                    )
-                    
-                    // Macro Legend
-                    MacroLegend(
-                        goals: macroGoalsManager.goals,
-                        current: (
-                            calories: todaysNutrition.calories,
-                            protein: todaysNutrition.protein,
-                            carbs: todaysNutrition.carbs,
-                            fat: todaysNutrition.fat
-                        )
-                    )
-                }
+                // Activity Rings
+                ActivityRingsView(
+                    calories: todaysNutrition.calories,
+                    protein: todaysNutrition.protein,
+                    carbs: todaysNutrition.carbs,
+                    fat: todaysNutrition.fat,
+                    goals: macroGoalsManager.goals
+                )
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 20)
@@ -223,33 +205,60 @@ struct CalendarView: View {
     let onDateTap: (Date) -> Void
     
     private let calendar = Calendar.current
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Day headers (Monday to Sunday)
+        VStack(spacing: 8) {
+            // Month labels across the top
             HStack {
-                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
-                    Text(day)
+                ForEach(monthHeaders, id: \.self) { monthName in
+                    Text(monthName)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+            .padding(.horizontal, 16)
+            
+            // Week column headers (dates of Mondays)
+            HStack(spacing: 1) {
+                // Space for day labels
+                Text("")
+                    .frame(width: 15)
+                
+                ForEach(weekHeaders, id: \.self) { weekDate in
+                    Text("\(calendar.component(.day, from: weekDate))")
                         .font(.caption)
-                        .fontWeight(.bold)
+                        .fontWeight(.medium)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 4)
             
-            // Calendar grid
-            LazyVGrid(columns: columns, spacing: 0) {
-                ForEach(calendarDays, id: \.self) { date in
-                    CalendarDayView(
-                        date: date,
-                        isCurrentMonth: calendar.isDate(date, equalTo: selectedDate, toGranularity: .month),
-                        workoutSession: sessionForDate(date),
-                        refreshTrigger: refreshTrigger
-                    ) { _ in
-                        onDateTap(date)
+            // Calendar grid: 7 rows x 12 columns
+            VStack(spacing: 1) {
+                ForEach(0..<7, id: \.self) { dayOfWeek in
+                    HStack(spacing: 1) {
+                        // Day label on left
+                        Text(dayLabels[dayOfWeek])
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .frame(width: 15)
+                        
+                        // 12 week columns for this day
+                        ForEach(0..<12, id: \.self) { weekIndex in
+                            let date = dateForWeek(weekIndex, dayOfWeek: dayOfWeek)
+                            CalendarDayView(
+                                date: date,
+                                isCurrentMonth: isDateInCurrentPeriod(date),
+                                workoutSession: sessionForDate(date),
+                                refreshTrigger: refreshTrigger
+                            ) { _ in
+                                onDateTap(date)
+                            }
+                        }
                     }
                 }
             }
@@ -257,24 +266,46 @@ struct CalendarView: View {
         }
     }
     
-    private var calendarDays: [Date] {
-        guard let monthInterval = calendar.dateInterval(of: .month, for: selectedDate) else {
-            return []
+    private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
+    
+    private var startMondayDate: Date {
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday == 1) ? 6 : weekday - 2
+        let currentWeekMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
+        // Go back 11 weeks from current week to show past 12 weeks total
+        return calendar.date(byAdding: .weekOfYear, value: -11, to: currentWeekMonday) ?? currentWeekMonday
+    }
+    
+    private var weekHeaders: [Date] {
+        // Generate 12 Monday dates from 11 weeks ago to current week
+        return (0..<12).compactMap { weekOffset in
+            calendar.date(byAdding: .weekOfYear, value: weekOffset, to: startMondayDate)
         }
+    }
+    
+    private var monthHeaders: [String] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
         
-        // Get first Monday of the month view
-        let firstOfMonth = monthInterval.start
-        let weekday = calendar.component(.weekday, from: firstOfMonth)
-        let daysFromMonday = (weekday == 1) ? 6 : weekday - 2 // Convert Sunday=1 to Monday=0 based
-        
-        guard let startDate = calendar.date(byAdding: .day, value: -daysFromMonday, to: firstOfMonth) else {
-            return []
+        // Get unique months from our 12-week span
+        let uniqueMonths = Set(weekHeaders.map { formatter.string(from: $0) })
+        return Array(uniqueMonths).sorted()
+    }
+    
+    private func dateForWeek(_ weekIndex: Int, dayOfWeek: Int) -> Date {
+        guard let weekStart = calendar.date(byAdding: .weekOfYear, value: weekIndex, to: startMondayDate) else {
+            return Date()
         }
-        
-        // Generate 42 days (6 weeks)
-        return (0..<42).compactMap { dayOffset in
-            calendar.date(byAdding: .day, value: dayOffset, to: startDate)
-        }
+        return calendar.date(byAdding: .day, value: dayOfWeek, to: weekStart) ?? Date()
+    }
+    
+    private func isDateInCurrentPeriod(_ date: Date) -> Bool {
+        let now = Date()
+        let monthsRange = calendar.dateInterval(of: .month, for: now)
+        let extendedStart = calendar.date(byAdding: .month, value: -1, to: monthsRange?.start ?? now) ?? now
+        let extendedEnd = calendar.date(byAdding: .month, value: 2, to: monthsRange?.end ?? now) ?? now
+        return date >= extendedStart && date <= extendedEnd
     }
     
     private func sessionForDate(_ date: Date) -> WorkoutSession? {
@@ -299,39 +330,43 @@ struct CalendarDayView: View {
     
     private let calendar = Calendar.current
     
+    private var backgroundGradient: Color {
+        if !isCurrentMonth {
+            return Color.gray.opacity(0.1)
+        }
+        
+        let caloriesHit = macroData.caloriesAchieved
+        let proteinHit = macroData.proteinAchieved
+        
+        if caloriesHit && proteinHit {
+            return Color.green.opacity(0.8) // Dark green
+        } else if caloriesHit || proteinHit {
+            return Color.green.opacity(0.4) // Light green
+        } else {
+            return Color.gray.opacity(0.15) // Light gray
+        }
+    }
+    
     var body: some View {
         Button(action: { onTap(workoutSession) }) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(calendar.isDateInToday(date) ? Color.blue : Color.clear, lineWidth: 2)
-                    )
-                
-                // Background tint if calories goal achieved
-                if macroData.caloriesAchieved && isCurrentMonth {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.blue.opacity(0.15))
-                        .padding(2)
+            VStack(spacing: 0) {
+                // Main calendar square - no text inside
+                ZStack {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(backgroundGradient)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 2)
+                                .stroke(calendar.isDateInToday(date) ? Color.blue : Color.clear, lineWidth: 1)
+                        )
                 }
+                .frame(height: 16)
                 
-                VStack(spacing: 2) {
-                    Text("\(calendar.component(.day, from: date))")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(workoutSession != nil ? .blue : (isCurrentMonth ? .primary : .secondary))
-                    
-                    // Larger dumbbell icon for workout days
-                    if workoutSession != nil {
-                        Image(systemName: "dumbbell.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.blue)
-                    }
-                }
-                .padding(.vertical, 2)
-                .padding(.horizontal, 2)
+                // Workout indicator bar at bottom
+                Rectangle()
+                    .fill(workoutSession != nil ? Color.orange : Color.clear)
+                    .frame(height: 3)
             }
-            .frame(maxWidth: .infinity, minHeight: 28)
+            .frame(maxWidth: .infinity, minHeight: 18)
         }
         .buttonStyle(PlainButtonStyle())
         .task {
