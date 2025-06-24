@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct HomeView: View {
     @EnvironmentObject var activeWorkout: ActiveWorkout
@@ -18,6 +19,7 @@ struct HomeView: View {
     @State private var calendarRefreshTrigger = false
     @State private var macroDataByDate: [Date: MacroData] = [:]
     @State private var showingStreakInfo = false
+    @State private var weightDataByWeek: [Date: Double] = [:]
     
     private var todaysNutrition: NutritionInfo {
         supabaseService.getTodaysNutritionSummary()
@@ -59,7 +61,7 @@ struct HomeView: View {
         ZStack {
             VStack(spacing: 0) {
                 // Header with inline counter
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 ZStack{
                     HStack {
                         Spacer()
@@ -73,21 +75,29 @@ struct HomeView: View {
                         Button(action: {
                             showingStreakInfo = true
                         }) {
-                            VStack(spacing: 2) {
+                            HStack(spacing: 6) {
                                 // Dark gold flame icon
                                 Image(systemName: "flame.fill")
-                                    .font(.title2)
+                                    .font(.title3)
                                     .foregroundColor(Color(red: 0.8, green: 0.6, blue: 0.0))
                                     .shadow(color: Color.yellow.opacity(0.3), radius: 2, x: 0, y: 0)
                                 
-                                // Streak number below
+                                // Streak number to the right
                                 Text("\(calorieStreak)")
-                                    .font(.caption)
+                                    .font(.subheadline)
                                     .fontWeight(.bold)
                                     .foregroundColor(.black)
                             }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                            )
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .padding(.trailing, 16)
                     }
                 }
 
@@ -95,14 +105,15 @@ struct HomeView: View {
                 
             }
             .padding(.horizontal)
-            .padding(.top, 8)
+            .padding(.top, 4)
             .padding(.bottom, 20)
             
             // Calendar with horizontal scrolling
             HorizontalCalendarView(
                 workoutSessions: workoutDataManager.workoutSessions,
                 refreshTrigger: calendarRefreshTrigger,
-                macroDataByDate: $macroDataByDate
+                macroDataByDate: $macroDataByDate,
+                weightDataByWeek: $weightDataByWeek
             ) { session in
                 selectedSession = session
             } onDateTap: { date in
@@ -110,6 +121,7 @@ struct HomeView: View {
             }
             .environmentObject(workoutDataManager)
             .padding(.bottom, 24)
+            
             
             // Activity Rings Section
             VStack(spacing: 16) {
@@ -220,45 +232,45 @@ struct HorizontalCalendarView: View {
     let workoutSessions: [WorkoutSession]
     let refreshTrigger: Bool
     @Binding var macroDataByDate: [Date: MacroData]
+    @Binding var weightDataByWeek: [Date: Double]
     let onSessionTap: (WorkoutSession) -> Void
     let onDateTap: (Date) -> Void
     
     @State private var isLoadingMacroData = false
-    @State private var weightDataByWeek: [Date: Double] = [:]
     @State private var isLoadingWeightData = false
     @EnvironmentObject var workoutDataManager: WorkoutDataManager
     
     private let calendar = Calendar.current
     private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
     
-    // Calculate optimal width to fit 10 weeks across screen
+    // Calculate optimal width to fit 12 weeks across screen
     private var weekWidth: CGFloat {
-        // Screen width minus horizontal padding (16px each side + 30px left for day labels + 90px right for weight axis)
-        let availableWidth = UIScreen.main.bounds.width - 140
-        return availableWidth / 10
+        // Screen width minus horizontal padding (8px each side + 30px left for day labels + 16px right margin)
+        let availableWidth = UIScreen.main.bounds.width - 62
+        return availableWidth / 12
     }
     
-    // Generate initial 10 weeks total with today on far right
+    // Generate initial 12 weeks total with today on far right
     private var initialWeeks: [Date] {
         let today = Date()
         let weekday = calendar.component(.weekday, from: today)
         let daysFromMonday = (weekday == 1) ? 6 : weekday - 2
         let currentWeekMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
         
-        // Start 9 weeks ago, show 10 weeks total (9 past + current) - today on far right
-        let startWeek = calendar.date(byAdding: .weekOfYear, value: -9, to: currentWeekMonday) ?? currentWeekMonday
+        // Start 11 weeks ago, show 12 weeks total (11 past + current) - today on far right
+        let startWeek = calendar.date(byAdding: .weekOfYear, value: -11, to: currentWeekMonday) ?? currentWeekMonday
         
-        return (0..<10).compactMap { weekOffset in
+        return (0..<12).compactMap { weekOffset in
             calendar.date(byAdding: .weekOfYear, value: weekOffset, to: startWeek)
         }
     }
     
-    // Use fixed 10 weeks - no dynamic loading
+    // Use fixed 12 weeks - no dynamic loading
     private var currentWeeks: [Date] {
         return initialWeeks
     }
     
-    // Generate all 70 calendar dates for bulk loading
+    // Generate all 84 calendar dates for bulk loading
     private var allCalendarDates: [Date] {
         var dates: [Date] = []
         for weekDate in currentWeeks {
@@ -272,7 +284,7 @@ struct HorizontalCalendarView: View {
     }
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             // Day labels on the left
             VStack(spacing: 1) {
                 // Space for month headers
@@ -289,17 +301,17 @@ struct HorizontalCalendarView: View {
                         .font(.caption2)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
-                        .frame(height: 17)
+                        .frame(height: 22)
                 }
             }
             .frame(width: 30)
-            .padding(.leading, 12)
-            .padding(.trailing, 4)
+            .padding(.leading, 8)
+            .padding(.trailing, 2)
             
             // Calendar content
             VStack(spacing: 1) {
                 // Month headers
-                HStack(spacing: 1) {
+                HStack(spacing: 0) {
                     ForEach(currentWeeks.indices, id: \.self) { index in
                         let weekDate = currentWeeks[index]
                         
@@ -321,7 +333,7 @@ struct HorizontalCalendarView: View {
                 .frame(height: 20)
                 
                 // Week numbers
-                HStack(spacing: 1) {
+                HStack(spacing: 0) {
                     ForEach(currentWeeks, id: \.self) { weekDate in
                         Text("\(calendar.component(.day, from: weekDate))")
                             .font(.caption2)
@@ -335,7 +347,7 @@ struct HorizontalCalendarView: View {
                 // Calendar grid
                 VStack(spacing: 1) {
                     ForEach(0..<7, id: \.self) { dayOfWeek in
-                        HStack(spacing: 1) {
+                        HStack(spacing: 0) {
                             ForEach(currentWeeks, id: \.self) { weekDate in
                                 let date = calendar.date(byAdding: .day, value: dayOfWeek, to: weekDate) ?? weekDate
                                 CalendarDayView(
@@ -346,20 +358,14 @@ struct HorizontalCalendarView: View {
                                 ) { _ in
                                     onDateTap(date)
                                 }
-                                .frame(width: weekWidth, height: 17)
+                                .frame(width: weekWidth, height: 22)
                             }
                         }
                     }
                 }
+                
             }
-            .padding(.horizontal, 12)
-            
-            // Weight axis on the right
-            WeightAxisView(
-                weightDataByWeek: weightDataByWeek,
-                weeks: currentWeeks,
-                weekWidth: weekWidth
-            )
+            .padding(.horizontal, 8)
             .padding(.trailing, 8)
         }
         .onAppear {
@@ -503,7 +509,7 @@ struct CalendarDayView: View {
     
     private var backgroundGradient: Color {
         if !isCurrentMonth {
-            return Color.gray.opacity(0.1)
+            return Color(red: 0.95, green: 0.95, blue: 0.95).opacity(0.3)
         }
         
         let caloriesHit = macroData.caloriesAchieved
@@ -518,19 +524,32 @@ struct CalendarDayView: View {
         
         if caloriesHit && proteinHit {
             if Calendar.current.isDateInToday(date) {
-                print("🌟 TODAY should be DARK GOLDEN!")
+                print("🌟 TODAY should be DARK GREEN!")
             }
-            return Color(red: 0.8, green: 0.6, blue: 0.0) // Dark golden - matching streak color
+            return Color(red: 0.16, green: 0.66, blue: 0.27) // GitHub dark green
         } else if caloriesHit || proteinHit {
             if Calendar.current.isDateInToday(date) {
-                print("🌟 TODAY should be LIGHT GOLDEN!")
+                print("🌟 TODAY should be LIGHT GREEN!")
             }
-            return Color(red: 0.8, green: 0.6, blue: 0.0).opacity(0.6) // Light golden
+            return Color(red: 0.40, green: 0.83, blue: 0.52) // GitHub light green
         } else {
             if Calendar.current.isDateInToday(date) {
                 print("❌ TODAY is showing GRAY - no macro achievements detected")
             }
-            return Color.gray.opacity(0.15) // Light gray
+            return Color.clear // Transparent background for empty cells
+        }
+    }
+    
+    private var dumbbellColor: Color {
+        let caloriesHit = macroData.caloriesAchieved
+        let proteinHit = macroData.proteinAchieved
+        
+        if caloriesHit && proteinHit {
+            return .white // White dumbbell on dark green
+        } else if caloriesHit || proteinHit {
+            return .white // White dumbbell on light green
+        } else {
+            return .blue // Blue dumbbell on gray
         }
     }
     
@@ -543,117 +562,29 @@ struct CalendarDayView: View {
                     .fill(backgroundGradient)
                     .overlay(
                         RoundedRectangle(cornerRadius: 2)
-                            .stroke(calendar.isDateInToday(date) ? Color.black : Color.clear, lineWidth: 1)
+                            .stroke(
+                                calendar.isDateInToday(date) ? Color.black : 
+                                (macroData.caloriesAchieved || macroData.proteinAchieved ? Color.clear : Color.gray.opacity(0.3)), 
+                                lineWidth: calendar.isDateInToday(date) ? 1.5 : 0.5
+                            )
                     )
                 
-                // Black X pattern for workout days
+                // Dumbbell icon for workout days
                 if workoutSession != nil {
-                    GeometryReader { geometry in
-                        Path { path in
-                            let width = geometry.size.width
-                            let height = geometry.size.height
-                            // Bottom-left to top-right diagonal
-                            path.move(to: CGPoint(x: 2, y: height - 2))
-                            path.addLine(to: CGPoint(x: width - 2, y: 2))
-                            // Bottom-right to top-left diagonal
-                            path.move(to: CGPoint(x: width - 2, y: height - 2))
-                            path.addLine(to: CGPoint(x: 2, y: 2))
-                        }
-                        .stroke(Color.black, lineWidth: 1)
-                    }
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(dumbbellColor)
+                        .shadow(color: .black.opacity(0.2), radius: 0.5, x: 0, y: 0.5)
                 }
             }
-            .frame(height: 16)
-            .frame(maxWidth: .infinity, minHeight: 18)
+            .frame(height: 22)
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(PlainButtonStyle())
     }
     
 }
 
-struct WeightAxisView: View {
-    let weightDataByWeek: [Date: Double]
-    let weeks: [Date]
-    let weekWidth: CGFloat
-    
-    private var weightRange: (min: Double, max: Double) {
-        let weights = weightDataByWeek.values
-        guard !weights.isEmpty else { return (70, 80) } // Default range if no data
-        
-        let minWeight = weights.min() ?? 70
-        let maxWeight = weights.max() ?? 80
-        
-        // Use ±5kg range as requested
-        let center = (minWeight + maxWeight) / 2
-        let range = max(10, maxWeight - minWeight) // At least 10kg range
-        let expandedRange = range + 10 // Add 5kg on each side
-        
-        return (center - expandedRange/2, center + expandedRange/2)
-    }
-    
-    private func weightPosition(for weight: Double, in height: CGFloat) -> CGFloat {
-        let range = weightRange
-        let normalizedPosition = (weight - range.min) / (range.max - range.min)
-        return height * (1 - normalizedPosition) // Flip Y-axis (higher weight = top)
-    }
-    
-    var body: some View {
-        VStack(spacing: 1) {
-            // Weight label header
-            Text("Weight")
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(.primary)
-                .frame(height: 20)
-            
-            // Weight range labels
-            HStack {
-                Text("\(Int(weightRange.max))")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text("\(Int(weightRange.min))")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-            .frame(height: 20)
-            
-            // Weight visualization area
-            GeometryReader { geometry in
-                let totalHeight = geometry.size.height
-                
-                ZStack {
-                    // Background weight range line
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 2)
-                        .position(x: geometry.size.width / 2, y: totalHeight / 2)
-                    
-                    // Weight dots positioned by actual weight value
-                    ForEach(weeks, id: \.self) { weekDate in
-                        if let weight = weightDataByWeek[weekDate] {
-                            let position = weightPosition(for: weight, in: totalHeight)
-                            
-                            Circle()
-                                .fill(Color.black)
-                                .frame(width: 8, height: 8)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white, lineWidth: 1)
-                                )
-                                .position(x: geometry.size.width / 2, y: position)
-                            
-                            // Debug weight dot
-                            let _ = print("⭕ Weight dot: \(String(format: "%.1f", weight))kg at y=\(position) for \(weekDate)")
-                        }
-                    }
-                }
-            }
-            .frame(height: 7 * 17 + 6) // Match calendar height (7 rows * 17px + spacing)
-        }
-        .frame(width: 85)
-    }
-}
 
 
 struct WorkoutDetailView: View {
