@@ -3,7 +3,7 @@ import SwiftUI
 struct CustomTabView: View {
     @EnvironmentObject var activeWorkout: ActiveWorkout
     @EnvironmentObject var authManager: AuthManager
-    @State private var selectedTab = 1
+    @State private var selectedTab = 0 // Start with Home
     @State private var showingActionMenu = false
     @State private var showingWorkoutCreator = false
     @State private var showingFoodLogger = false
@@ -15,11 +15,13 @@ struct CustomTabView: View {
             Group {
                 switch selectedTab {
                 case 0:
-                    NutritionTabView()
-                case 1:
                     HomeView()
+                case 1:
+                    NutritionTabView() // Shopping
                 case 2:
-                    WorkoutProgressView()
+                    WorkoutProgressView() // Progress
+                case 3:
+                    SettingsView() // Profile
                 default:
                     HomeView()
                 }
@@ -30,10 +32,10 @@ struct CustomTabView: View {
                 Spacer()
                 
                 HStack(spacing: 0) {
-                    // Nutrition tab
+                    // Home tab
                     TabBarButton(
-                        icon: "carrot",
-                        title: "Nutrition",
+                        icon: "house",
+                        title: "Home",
                         isSelected: selectedTab == 0,
                         action: {
                             selectedTab = 0
@@ -41,35 +43,16 @@ struct CustomTabView: View {
                         }
                     )
                     
-                    Spacer()
-                    
-                    // Plus button (center)
-                    Button(action: {
-                        if selectedTab != 1 {
+                    // Shopping tab (renamed from Nutrition)
+                    TabBarButton(
+                        icon: "carrot",
+                        title: "Shopping",
+                        isSelected: selectedTab == 1,
+                        action: {
                             selectedTab = 1
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                showingActionMenu = true
-                            }
-                        } else {
-                            showingActionMenu.toggle()
+                            showingActionMenu = false
                         }
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue)
-                                .frame(width: 56, height: 56)
-                                .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                            
-                            Image(systemName: showingActionMenu ? "xmark" : "plus")
-                                .font(.system(size: 24, weight: .medium))
-                                .foregroundColor(.white)
-                                .rotationEffect(.degrees(showingActionMenu ? 45 : 0))
-                                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showingActionMenu)
-                        }
-                    }
-                    .offset(y: -10)
-                    
-                    Spacer()
+                    )
                     
                     // Training tab
                     TabBarButton(
@@ -81,9 +64,42 @@ struct CustomTabView: View {
                             showingActionMenu = false
                         }
                     )
+                    
+                    // Profile tab
+                    TabBarButton(
+                        icon: "person.circle",
+                        title: "Profile",
+                        isSelected: selectedTab == 3,
+                        action: {
+                            selectedTab = 3
+                            showingActionMenu = false
+                        }
+                    )
+                    
+                    Spacer(minLength: 20)
+                    
+                    // Plus button (far right)
+                    Button(action: {
+                        showingActionMenu.toggle()
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.black)
+                                .frame(width: 56, height: 56)
+                                .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                            
+                            Image(systemName: showingActionMenu ? "xmark" : "plus")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(.white)
+                                .rotationEffect(.degrees(showingActionMenu ? 45 : 0))
+                                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showingActionMenu)
+                        }
+                    }
+                    .offset(y: -55) // Adjust for taller bar
                 }
-                .padding(.horizontal, 40)
-                .frame(height: 49)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 25) // Add more bottom padding to avoid control panel
+                .frame(height: 120) // 50% taller than 80px
                 .background(
                     Color(.systemBackground)
                         .shadow(color: Color.black.opacity(0.1), radius: 1, x: 0, y: -1)
@@ -172,11 +188,11 @@ struct TabBarButton: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
+                    .font(.system(size: 22))
                 Text(title)
-                    .font(.caption2)
+                    .font(.caption)
             }
-            .foregroundColor(isSelected ? .blue : .gray)
+            .foregroundColor(isSelected ? .black : .gray)
             .frame(maxWidth: .infinity)
         }
     }
