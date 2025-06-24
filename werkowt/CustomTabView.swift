@@ -1,5 +1,6 @@
 import SwiftUI
 
+
 struct CustomTabView: View {
     @EnvironmentObject var activeWorkout: ActiveWorkout
     @EnvironmentObject var authManager: AuthManager
@@ -11,6 +12,10 @@ struct CustomTabView: View {
     
     var body: some View {
         ZStack {
+            // Subtle background to make tab bar stand out
+            Color(.systemGray6)
+                .ignoresSafeArea()
+            
             // Main content
             Group {
                 switch selectedTab {
@@ -31,54 +36,65 @@ struct CustomTabView: View {
             VStack {
                 Spacer()
                 
-                HStack(spacing: 0) {
-                    // Home tab
-                    TabBarButton(
-                        icon: "house",
-                        title: "Home",
-                        isSelected: selectedTab == 0,
-                        action: {
-                            selectedTab = 0
-                            showingActionMenu = false
+                ZStack {
+                    // Split tab buttons with center space for plus button
+                    HStack {
+                        // Left group: Home and Shopping
+                        HStack {
+                            TabBarButton(
+                                icon: "house",
+                                title: "Home",
+                                isSelected: selectedTab == 0,
+                                action: {
+                                    selectedTab = 0
+                                    showingActionMenu = false
+                                }
+                            )
+                            
+                            TabBarButton(
+                                icon: "carrot",
+                                title: "Shopping",
+                                isSelected: selectedTab == 1,
+                                action: {
+                                    selectedTab = 1
+                                    showingActionMenu = false
+                                }
+                            )
                         }
-                    )
-                    
-                    // Shopping tab (renamed from Nutrition)
-                    TabBarButton(
-                        icon: "carrot",
-                        title: "Shopping",
-                        isSelected: selectedTab == 1,
-                        action: {
-                            selectedTab = 1
-                            showingActionMenu = false
+                        
+                        Spacer()
+                        
+                        // Space for center plus button
+                        Color.clear
+                            .frame(width: 80) // Space for plus button
+                        
+                        Spacer()
+                        
+                        // Right group: Training and Profile
+                        HStack {
+                            TabBarButton(
+                                icon: "dumbbell.fill",
+                                title: "Training",
+                                isSelected: selectedTab == 2,
+                                action: {
+                                    selectedTab = 2
+                                    showingActionMenu = false
+                                }
+                            )
+                            
+                            TabBarButton(
+                                icon: "person.circle",
+                                title: "Profile",
+                                isSelected: selectedTab == 3,
+                                action: {
+                                    selectedTab = 3
+                                    showingActionMenu = false
+                                }
+                            )
                         }
-                    )
+                    }
                     
-                    // Training tab
-                    TabBarButton(
-                        icon: "dumbbell.fill",
-                        title: "Training",
-                        isSelected: selectedTab == 2,
-                        action: {
-                            selectedTab = 2
-                            showingActionMenu = false
-                        }
-                    )
-                    
-                    // Profile tab
-                    TabBarButton(
-                        icon: "person.circle",
-                        title: "Profile",
-                        isSelected: selectedTab == 3,
-                        action: {
-                            selectedTab = 3
-                            showingActionMenu = false
-                        }
-                    )
-                    
-                    Spacer(minLength: 20)
-                    
-                    // Plus button (far right)
+                    // Plus button (centered and floating)
                     Button(action: {
                         showingActionMenu.toggle()
                     }) {
@@ -95,7 +111,7 @@ struct CustomTabView: View {
                                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showingActionMenu)
                         }
                     }
-                    .offset(y: -55) // Adjust for taller bar
+                    .offset(y: -40) // Floating above the tab bar
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 25) // Add more bottom padding to avoid control panel
@@ -194,6 +210,7 @@ struct TabBarButton: View {
             }
             .foregroundColor(isSelected ? .black : .gray)
             .frame(maxWidth: .infinity)
+            .padding(.top, 12)
         }
     }
 }

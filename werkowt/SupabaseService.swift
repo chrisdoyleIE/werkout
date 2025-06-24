@@ -1074,10 +1074,12 @@ class SupabaseService: ObservableObject {
             return [:]
         }
         
-        // Get date range for bulk query
+        // Get date range for bulk query with buffer for timezone handling
         let sortedDates = dates.sorted()
-        let startDate = Calendar.current.startOfDay(for: sortedDates.first!)
-        let endDate = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: sortedDates.last!))!
+        let calendar = Calendar.current
+        // Add buffer like getTodaysEntries() to handle timezone differences
+        let startDate = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: sortedDates.first!))!
+        let endDate = calendar.date(byAdding: .day, value: 2, to: calendar.startOfDay(for: sortedDates.last!))!
         
         // Single bulk query for all food entries in date range
         print("🔍 SupabaseService: Fetching food entries for date range \(startDate) to \(endDate)")
@@ -1098,18 +1100,29 @@ class SupabaseService: ObservableObject {
         let goalsDuration = Date().timeIntervalSince(goalsStartTime)
         print("🔍 SupabaseService: Retrieved macro goals in \(String(format: "%.2f", goalsDuration))s")
         
-        // Group entries by date
-        let calendar = Calendar.current
-        let entriesByDate = Dictionary(grouping: allEntries) { entry in
-            calendar.startOfDay(for: entry.consumedDate)
-        }
+        // Use local filtering like getTodaysEntries() instead of grouping
+        let today = Date()
         
-        // Calculate achievements for each date
+        print("🐛 ✅ Total entries fetched: \(allEntries.count) (using buffer range like getTodaysEntries)")
+        
+        // Check today's entries with local filtering approach.
+        let todayStart = calendar.startOfDay(for: today)
+        let todayEntriesTest = allEntries.filter { entry in
+            let entryDay = calendar.startOfDay(for: entry.consumedDate)
+            return entryDay == todayStart
+        }
+        print("🐛 ✅ Found \(todayEntriesTest.count) entries for today using local filtering (\(todayStart))")
+        
+        // Calculate achievements for each date using local filtering
         var results: [Date: MacroData] = [:]
         
         for date in dates {
             let dayStart = calendar.startOfDay(for: date)
-            let entriesForDate = entriesByDate[dayStart] ?? []
+            // Filter entries for this specific date to handle timezone differences like getTodaysEntries()
+            let entriesForDate = allEntries.filter { entry in
+                let entryDay = calendar.startOfDay(for: entry.consumedDate)
+                return entryDay == dayStart
+            }
             
             // Calculate totals for this date
             let totals = entriesForDate.reduce((calories: 0.0, protein: 0.0, carbs: 0.0, fat: 0.0)) { result, entry in
@@ -1117,6 +1130,21 @@ class SupabaseService: ObservableObject {
                  result.protein + entry.proteinG,
                  result.carbs + entry.carbsG,
                  result.fat + entry.fatG)
+            }
+            
+            // Debug logging for today
+            if calendar.isDateInToday(date) {
+                print("🐛 ✅ BULK CALC TODAY (\(date) -> storing with key: \(dayStart)):")
+                print("🐛   Found \(entriesForDate.count) entries using local filtering")
+                print("🐛   Totals: Cal=\(String(format: "%.1f", totals.calories)), Protein=\(String(format: "%.1f", totals.protein))")
+                print("🐛   Goals: Cal=\(goals.calories), Protein=\(goals.protein)")
+                print("🐛   Achievements: Cal=\(totals.calories >= goals.calories), Protein=\(totals.protein >= goals.protein)")
+                print("🐛   ✅ STORING DATA WITH KEY: \(dayStart)")
+                
+                // Log the actual entries
+                for (index, entry) in entriesForDate.enumerated() {
+                    print("🐛   Entry \(index): \(entry.foodItem?.displayName ?? "Unknown") - \(entry.calories) cal, \(entry.proteinG)g protein (consumedDate: \(entry.consumedDate))")
+                }
             }
             
             // Check achievements
@@ -1127,11 +1155,13 @@ class SupabaseService: ObservableObject {
                 fatAchieved: totals.fat >= goals.fat
             )
             
-            results[date] = achievements
+            // Store with startOfDay key to match calendar lookup
+            results[dayStart] = achievements
         }
         
         let totalDuration = Date().timeIntervalSince(startTime)
         print("🔍 SupabaseService: ✅ Completed bulk macro calculation for \(dates.count) dates in \(String(format: "%.2f", totalDuration))s")
+        print("🐛 ✅ FIXED: Now storing data with startOfDay keys to match calendar lookup")
         
         return results
     }
