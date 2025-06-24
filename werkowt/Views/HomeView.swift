@@ -30,8 +30,9 @@ struct HomeView: View {
     }()
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header with inline counter
+        ZStack {
+            VStack(spacing: 0) {
+                // Header with inline counter
             VStack(spacing: 16) {
                 ZStack{
                     HStack {
@@ -60,15 +61,19 @@ struct HomeView: View {
                 }
 
                 
-                // Date Navigation
-                DateNavigationView(
-                    selectedDate: $selectedDate,
-                    onPrevious: previousMonth,
-                    onNext: nextMonth
-                )
                 
             }
-            .padding()
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+            
+            // Date Navigation - aligned with calendar
+            DateNavigationView(
+                selectedDate: $selectedDate,
+                onPrevious: previousMonth,
+                onNext: nextMonth
+            )
+            .padding(.horizontal, 16)
             .padding(.bottom, 8)
             
             // Calendar
@@ -81,65 +86,44 @@ struct HomeView: View {
             } onDateTap: { date in
                 selectedDayForDetail = date
             }
-            .padding(.bottom, 16)
+            .padding(.bottom, 24)
             
-            // Integrated Progress & Actions Card
-            VStack(spacing: 0) {
-                // Card header with subtle border integration
-                HStack {
-                    Spacer()
-                    Text("Track")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.blue)
-                    Spacer()
+            // Activity Rings Section
+            VStack(spacing: 16) {
+                Text("Today's Progress")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                HStack(spacing: 40) {
+                    // Activity Rings
+                    ActivityRingsView(
+                        calories: todaysNutrition.calories,
+                        protein: todaysNutrition.protein,
+                        carbs: todaysNutrition.carbs,
+                        fat: todaysNutrition.fat,
+                        goals: macroGoalsManager.goals
+                    )
+                    
+                    // Macro Legend
+                    MacroLegend(
+                        goals: macroGoalsManager.goals,
+                        current: (
+                            calories: todaysNutrition.calories,
+                            protein: todaysNutrition.protein,
+                            carbs: todaysNutrition.carbs,
+                            fat: todaysNutrition.fat
+                        )
+                    )
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-                
-                // Macro Progress Section
-                HorizontalMacroCharts(
-                    calories: todaysNutrition.calories,
-                    protein: todaysNutrition.protein,
-                    carbs: todaysNutrition.carbs,
-                    fat: todaysNutrition.fat,
-                    goals: macroGoalsManager.goals
-                )
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-                
-                // Subtle divider
-                Divider()
-                    .padding(.horizontal, 16)
-                
-                // Compact Action Buttons
-                UnifiedActionWidget(
-                    onWorkoutTap: {
-                        showingWorkoutCreator = true
-                    },
-                    onFoodTap: {
-                        showingFoodLogger = true
-                    },
-                    onWeightTap: {
-                        showingAddWeight = true
-                    },
-                    compactStyle: true
-                )
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
             }
-            .background(Color(.systemBackground))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-            )
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 32)
+            .padding(.horizontal, 32)
+            .padding(.bottom, 20)
             
-            Spacer()
+                Spacer()
+            }
+            
+            // Action button removed - now in tab bar
         }
         .onAppear {
             Task {
@@ -239,7 +223,7 @@ struct CalendarView: View {
     let onDateTap: (Date) -> Void
     
     private let calendar = Calendar.current
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 1), count: 7)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
     
     var body: some View {
         VStack(spacing: 0) {
@@ -254,10 +238,10 @@ struct CalendarView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 8)
+            .padding(.bottom, 4)
             
             // Calendar grid
-            LazyVGrid(columns: columns, spacing: 1) {
+            LazyVGrid(columns: columns, spacing: 0) {
                 ForEach(calendarDays, id: \.self) { date in
                     CalendarDayView(
                         date: date,
@@ -325,54 +309,29 @@ struct CalendarDayView: View {
                             .stroke(calendar.isDateInToday(date) ? Color.blue : Color.clear, lineWidth: 2)
                     )
                 
+                // Background tint if calories goal achieved
+                if macroData.caloriesAchieved && isCurrentMonth {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.blue.opacity(0.15))
+                        .padding(2)
+                }
+                
                 VStack(spacing: 2) {
                     Text("\(calendar.component(.day, from: date))")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(workoutSession != nil ? .blue : (isCurrentMonth ? .primary : .secondary))
                     
-                    // Dumbbell icon for workout days
+                    // Larger dumbbell icon for workout days
                     if workoutSession != nil {
                         Image(systemName: "dumbbell.fill")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.blue)
-                    } else {
-                        Spacer()
-                            .frame(height: 12)
                     }
-                    
-                    Spacer(minLength: 2)
-                    
-                    // Macro achievement dots positioned at bottom - only show achieved macros
-                    HStack(spacing: 2) {
-                        if macroData.caloriesAchieved {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 6, height: 6)
-                        }
-                        if macroData.proteinAchieved {
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 6, height: 6)
-                        }
-                        if macroData.carbsAchieved {
-                            Circle()
-                                .fill(Color.orange)
-                                .frame(width: 6, height: 6)
-                        }
-                        if macroData.fatAchieved {
-                            Circle()
-                                .fill(Color.purple)
-                                .frame(width: 6, height: 6)
-                        }
-                    }
-                    .opacity(isCurrentMonth ? 1 : 0.5)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
                 .padding(.horizontal, 2)
             }
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .aspectRatio(1, contentMode: .fit)
-            .padding(1)
+            .frame(maxWidth: .infinity, minHeight: 28)
         }
         .buttonStyle(PlainButtonStyle())
         .task {

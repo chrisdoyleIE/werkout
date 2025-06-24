@@ -28,26 +28,28 @@ struct DateNavigationView: View {
     }
     
     var body: some View {
-        HStack {
+        HStack(spacing: 20) {
             Button(action: onPrevious) {
                 Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .padding()
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
             }
+            .buttonStyle(.plain)
             
             Spacer()
             
             Text(dateFormatter.string(from: selectedDate))
-                .font(.headline)
+                .font(.title3)
                 .fontWeight(.semibold)
             
             Spacer()
             
             Button(action: onNext) {
                 Image(systemName: "chevron.right")
-                    .font(.title2)
-                    .padding()
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
             }
+            .buttonStyle(.plain)
             
             if showEditButton, let editAction = onEditTap {
                 Button(action: editAction) {
