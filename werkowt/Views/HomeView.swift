@@ -185,6 +185,9 @@ struct HorizontalCalendarView: View {
     let onSessionTap: (WorkoutSession) -> Void
     let onDateTap: (Date) -> Void
     
+    @State private var macroDataByDate: [Date: MacroData] = [:]
+    @State private var isLoadingMacroData = false
+    
     private let calendar = Calendar.current
     private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
     
@@ -213,6 +216,19 @@ struct HorizontalCalendarView: View {
     // Use fixed 12 weeks - no dynamic loading
     private var currentWeeks: [Date] {
         return initialWeeks
+    }
+    
+    // Generate all 84 calendar dates for bulk loading
+    private var allCalendarDates: [Date] {
+        var dates: [Date] = []
+        for weekDate in currentWeeks {
+            for dayOffset in 0..<7 {
+                if let date = calendar.date(byAdding: .day, value: dayOffset, to: weekDate) {
+                    dates.append(date)
+                }
+            }
+        }
+        return dates
     }
     
     var body: some View {
@@ -286,7 +302,7 @@ struct HorizontalCalendarView: View {
                                     date: date,
                                     isCurrentMonth: true,
                                     workoutSession: sessionForDate(date),
-                                    refreshTrigger: refreshTrigger
+                                    macroData: macroDataByDate[date] ?? MacroData.empty
                                 ) { _ in
                                     onDateTap(date)
                                 }
@@ -298,11 +314,52 @@ struct HorizontalCalendarView: View {
             }
             .padding(.horizontal, 16)
         }
+        .onAppear {
+            loadBulkMacroData()
+        }
+        .onChange(of: refreshTrigger) { _, _ in
+            loadBulkMacroData()
+        }
     }
     
     private func sessionForDate(_ date: Date) -> WorkoutSession? {
         workoutSessions.first { session in
             calendar.isDate(session.startedAt, inSameDayAs: date)
+        }
+    }
+    
+    private func loadBulkMacroData() {
+        guard !isLoadingMacroData else { return }
+        
+        Task {
+            await MainActor.run {
+                isLoadingMacroData = true
+            }
+            
+            let startTime = Date()
+            print("📅 HorizontalCalendarView: Starting bulk macro data load for \(allCalendarDates.count) dates")
+            
+            do {
+                let bulkData = try await SupabaseService.shared.getCachedMacroAchievements(for: allCalendarDates)
+                let duration = Date().timeIntervalSince(startTime)
+                
+                await MainActor.run {
+                    macroDataByDate = bulkData
+                    isLoadingMacroData = false
+                    print("📅 HorizontalCalendarView: ✅ Completed bulk macro data load in \(String(format: "%.2f", duration))s")
+                }
+            } catch {
+                let duration = Date().timeIntervalSince(startTime)
+                print("❌ HorizontalCalendarView: Failed bulk macro data load after \(String(format: "%.2f", duration))s - Error: \(error)")
+                
+                await MainActor.run {
+                    isLoadingMacroData = false
+                    // Set empty data for all dates on error
+                    macroDataByDate = allCalendarDates.reduce(into: [Date: MacroData]()) { result, date in
+                        result[date] = MacroData.empty
+                    }
+                }
+            }
         }
     }
     
@@ -313,14 +370,8 @@ struct CalendarDayView: View {
     let date: Date
     let isCurrentMonth: Bool
     let workoutSession: WorkoutSession?
-    let refreshTrigger: Bool
+    let macroData: MacroData
     let onTap: (WorkoutSession?) -> Void
-    
-    @EnvironmentObject var workoutDataManager: WorkoutDataManager
-    @EnvironmentObject var exerciseDataManager: ExerciseDataManager
-    @State private var macroData: MacroData = MacroData.empty
-    @State private var isLoadingMacros = false
-    @State private var hasLoadedData = false
     
     private let calendar = Calendar.current
     
@@ -371,57 +422,6 @@ struct CalendarDayView: View {
             .frame(maxWidth: .infinity, minHeight: 18)
         }
         .buttonStyle(PlainButtonStyle())
-        .onAppear {
-            // Load macro data on initial appearance (safe with static 12-week calendar)
-            Task {
-                await loadMacroData(for: date)
-            }
-        }
-        .onChange(of: refreshTrigger) { _, _ in
-            Task {
-                await loadMacroData(for: date)
-            }
-        }
-    }
-    
-    private func loadMacroData(for date: Date) async {
-        // Prevent duplicate loading
-        guard !isLoadingMacros else { 
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "MMM dd"
-            print("📅 CalendarDayView: Skipping duplicate load for \(dateFormatter.string(from: date))")
-            return 
-        }
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM dd"
-        print("📅 CalendarDayView: Starting macro data load for \(dateFormatter.string(from: date))")
-        
-        await MainActor.run {
-            isLoadingMacros = true
-        }
-        
-        let startTime = Date()
-        do {
-            print("📅 CalendarDayView: Calling SupabaseService for \(dateFormatter.string(from: date))")
-            let achievements = try await SupabaseService.shared.calculateMacroAchievements(for: date)
-            let duration = Date().timeIntervalSince(startTime)
-            
-            await MainActor.run {
-                macroData = achievements
-                isLoadingMacros = false
-                hasLoadedData = true
-                print("📅 CalendarDayView: ✅ Completed macro data load for \(dateFormatter.string(from: date)) in \(String(format: "%.2f", duration))s - protein: \(achievements.proteinAchieved), calories: \(achievements.caloriesAchieved)")
-            }
-        } catch {
-            let duration = Date().timeIntervalSince(startTime)
-            print("❌ CalendarDayView: Failed to load macro data for \(dateFormatter.string(from: date)) after \(String(format: "%.2f", duration))s - Error: \(error)")
-            await MainActor.run {
-                macroData = MacroData.empty
-                isLoadingMacros = false
-                hasLoadedData = true // Mark as loaded even on error to prevent retries
-            }
-        }
     }
     
 }

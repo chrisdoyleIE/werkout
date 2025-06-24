@@ -382,6 +382,11 @@ class SupabaseService: ObservableObject {
     @Published var isFoodTrackingLoading = false
     @Published var foodTrackingErrorMessage: String?
     
+    // MARK: - Cache Properties
+    private var macroAchievementsCache: [Date: MacroData] = [:]
+    private var cacheTimestamp: Date = Date.distantPast
+    private let cacheValidityDuration: TimeInterval = 300 // 5 minutes
+    
     private init() {}
     
     private var currentUserId: UUID? {
@@ -831,7 +836,8 @@ class SupabaseService: ObservableObject {
                 .insert(dbEntry)
                 .execute()
             
-            // Reload today's entries
+            // Invalidate cache and reload today's entries
+            invalidateCache()
             await loadTodaysEntries()
         } catch {
             throw SupabaseServiceError.networkError(error)
@@ -847,7 +853,8 @@ class SupabaseService: ObservableObject {
                 .insert(dbEntries)
                 .execute()
             
-            // Reload today's entries
+            // Invalidate cache and reload today's entries
+            invalidateCache()
             await loadTodaysEntries()
         } catch {
             throw SupabaseServiceError.networkError(error)
@@ -864,7 +871,8 @@ class SupabaseService: ObservableObject {
                 .eq("id", value: entry.id)
                 .execute()
             
-            // Reload today's entries
+            // Invalidate cache and reload today's entries
+            invalidateCache()
             await loadTodaysEntries()
         } catch {
             throw SupabaseServiceError.networkError(error)
@@ -882,7 +890,8 @@ class SupabaseService: ObservableObject {
                 .eq("user_id", value: userId)
                 .execute()
             
-            // Reload today's entries
+            // Invalidate cache and reload today's entries
+            invalidateCache()
             await loadTodaysEntries()
         } catch {
             throw SupabaseServiceError.networkError(error)
@@ -1055,6 +1064,121 @@ class SupabaseService: ObservableObject {
         print("🔍 SupabaseService: ✅ Completed macro calculation for \(dateString) in \(String(format: "%.2f", totalDuration))s - Achievements: C:\(achievements.caloriesAchieved) P:\(achievements.proteinAchieved) R:\(achievements.carbsAchieved) F:\(achievements.fatAchieved)")
         
         return achievements
+    }
+    
+    func calculateBulkMacroAchievements(for dates: [Date]) async throws -> [Date: MacroData] {
+        let startTime = Date()
+        print("🔍 SupabaseService: Starting bulk macro calculation for \(dates.count) dates")
+        
+        guard !dates.isEmpty else {
+            return [:]
+        }
+        
+        // Get date range for bulk query
+        let sortedDates = dates.sorted()
+        let startDate = Calendar.current.startOfDay(for: sortedDates.first!)
+        let endDate = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: sortedDates.last!))!
+        
+        // Single bulk query for all food entries in date range
+        print("🔍 SupabaseService: Fetching food entries for date range \(startDate) to \(endDate)")
+        let entriesStartTime = Date()
+        let allEntries = try await getEntriesForDateRange(from: startDate, to: endDate)
+        let entriesDuration = Date().timeIntervalSince(entriesStartTime)
+        print("🔍 SupabaseService: Found \(allEntries.count) total food entries in \(String(format: "%.2f", entriesDuration))s")
+        
+        // Single query for macro goals
+        print("🔍 SupabaseService: Fetching macro goals...")
+        let goalsStartTime = Date()
+        guard let goals = try await getMacroGoals() else {
+            print("❌ SupabaseService: No macro goals found")
+            return dates.reduce(into: [Date: MacroData]()) { result, date in
+                result[date] = MacroData.empty
+            }
+        }
+        let goalsDuration = Date().timeIntervalSince(goalsStartTime)
+        print("🔍 SupabaseService: Retrieved macro goals in \(String(format: "%.2f", goalsDuration))s")
+        
+        // Group entries by date
+        let calendar = Calendar.current
+        let entriesByDate = Dictionary(grouping: allEntries) { entry in
+            calendar.startOfDay(for: entry.consumedDate)
+        }
+        
+        // Calculate achievements for each date
+        var results: [Date: MacroData] = [:]
+        
+        for date in dates {
+            let dayStart = calendar.startOfDay(for: date)
+            let entriesForDate = entriesByDate[dayStart] ?? []
+            
+            // Calculate totals for this date
+            let totals = entriesForDate.reduce((calories: 0.0, protein: 0.0, carbs: 0.0, fat: 0.0)) { result, entry in
+                (result.calories + entry.calories,
+                 result.protein + entry.proteinG,
+                 result.carbs + entry.carbsG,
+                 result.fat + entry.fatG)
+            }
+            
+            // Check achievements
+            let achievements = MacroData(
+                caloriesAchieved: totals.calories >= goals.calories,
+                proteinAchieved: totals.protein >= goals.protein,
+                carbsAchieved: totals.carbs >= goals.carbs,
+                fatAchieved: totals.fat >= goals.fat
+            )
+            
+            results[date] = achievements
+        }
+        
+        let totalDuration = Date().timeIntervalSince(startTime)
+        print("🔍 SupabaseService: ✅ Completed bulk macro calculation for \(dates.count) dates in \(String(format: "%.2f", totalDuration))s")
+        
+        return results
+    }
+    
+    // MARK: - Cache Management
+    
+    private func isCacheValid() -> Bool {
+        Date().timeIntervalSince(cacheTimestamp) < cacheValidityDuration
+    }
+    
+    private func invalidateCache() {
+        macroAchievementsCache.removeAll()
+        cacheTimestamp = Date.distantPast
+        print("🗑️ SupabaseService: Cache invalidated")
+    }
+    
+    func getCachedMacroAchievements(for dates: [Date]) async throws -> [Date: MacroData] {
+        let startTime = Date()
+        
+        // Check if cache is valid and contains all requested dates
+        if isCacheValid() {
+            let cachedResults = dates.compactMap { date in
+                macroAchievementsCache[Calendar.current.startOfDay(for: date)].map { (date, $0) }
+            }
+            
+            if cachedResults.count == dates.count {
+                print("🎯 SupabaseService: Cache hit for all \(dates.count) dates in \(String(format: "%.3f", Date().timeIntervalSince(startTime)))s")
+                return Dictionary(uniqueKeysWithValues: cachedResults)
+            }
+        }
+        
+        // Cache miss or invalid - fetch new data
+        print("💾 SupabaseService: Cache miss or invalid, fetching new data")
+        let results = try await calculateBulkMacroAchievements(for: dates)
+        
+        // Update cache
+        let calendar = Calendar.current
+        for (date, macroData) in results {
+            let dayStart = calendar.startOfDay(for: date)
+            macroAchievementsCache[dayStart] = macroData
+        }
+        cacheTimestamp = Date()
+        
+        let totalTime = Date().timeIntervalSince(startTime)
+        print("💾 SupabaseService: Updated cache with \(results.count) entries in \(String(format: "%.2f", totalTime))s")
+        
+        return results
     }
     
     // MARK: - Food Tracking Convenience Methods
