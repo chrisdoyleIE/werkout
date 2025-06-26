@@ -35,7 +35,7 @@ struct HomeView: View {
         
         // Count consecutive days where calories were achieved
         for _ in 0..<365 { // Limit to 1 year to prevent infinite loops
-            let dayStart = calendar.startOfDay(for: currentDate)
+            let dayStart = Calendar.current.startOfDay(for: currentDate)
             
             if let macroData = macroDataByDate[dayStart], macroData.caloriesAchieved {
                 streak += 1
@@ -65,7 +65,7 @@ struct HomeView: View {
                 ZStack{
                     HStack {
                         Spacer()
-                        Text("hhumble")
+                        Text("Centad")
                             .font(.custom("Georgia", size: 40))
                             .fontWeight(.medium)
                         Spacer()
@@ -142,12 +142,6 @@ struct HomeView: View {
             
             // Action button removed - now in tab bar
         }
-        .onAppear {
-            Task {
-                await workoutDataManager.loadWorkoutSessions()
-                await supabaseService.loadTodaysEntries()
-            }
-        }
         .sheet(isPresented: $showingWorkoutCreator) {
             WorkoutCreatorView()
         }
@@ -209,8 +203,37 @@ struct HomeView: View {
             StreakInfoView(streak: calorieStreak)
         }
         .onAppear {
-            // Refresh calendar when view appears
-            calendarRefreshTrigger.toggle()
+            // Force data refresh when view appears
+            Task {
+                print("🏠 HomeView onAppear: Starting data load")
+                await workoutDataManager.loadWorkoutSessions()
+                await supabaseService.loadTodaysEntries()
+                
+                // Check what today's entries returned
+                let todaysNutrition = supabaseService.getTodaysNutritionSummary()
+                print("🏠 TODAY'S LOOKUP after loadTodaysEntries: \(todaysNutrition.calories) cal, \(todaysNutrition.protein)g protein")
+                
+                // Trigger calendar refresh after data loads
+                await MainActor.run {
+                    calendarRefreshTrigger.toggle()
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Refresh when app returns to foreground
+            Task {
+                print("🏠 HomeView foreground: Starting data refresh")
+                await workoutDataManager.loadWorkoutSessions()
+                await supabaseService.loadTodaysEntries()
+                
+                // Check what today's entries returned after foreground refresh
+                let todaysNutrition = supabaseService.getTodaysNutritionSummary()
+                print("🏠 TODAY'S LOOKUP after foreground refresh: \(todaysNutrition.calories) cal, \(todaysNutrition.protein)g protein")
+                
+                await MainActor.run {
+                    calendarRefreshTrigger.toggle()
+                }
+            }
         }
     }
     
@@ -368,10 +391,6 @@ struct HorizontalCalendarView: View {
             .padding(.horizontal, 8)
             .padding(.trailing, 8)
         }
-        .onAppear {
-            loadBulkMacroData()
-            loadWeightData()
-        }
         .onChange(of: refreshTrigger) { _, _ in
             loadBulkMacroData()
             loadWeightData()
@@ -413,11 +432,34 @@ struct HorizontalCalendarView: View {
                         print("❌ No macro data found for today: \(todayStart)")
                     }
                     
-                    // Debug: List all loaded dates
-                    print("📊 Loaded macro data for \(bulkData.count) dates")
-                    for (date, data) in bulkData.sorted(by: { $0.key < $1.key }) {
-                        if data.caloriesAchieved || data.proteinAchieved {
-                            print("📈 \(date): Cal=\(data.caloriesAchieved), Protein=\(data.proteinAchieved)")
+                    // Debug: Summary of loaded dates
+                    let achievementDates = bulkData.filter { $0.value.caloriesAchieved || $0.value.proteinAchieved }
+                    print("📊 Loaded macro data for \(bulkData.count) dates (\(achievementDates.count) with achievements)")
+                    
+                    // Only log dates with achievements
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "MMM dd"
+                    for (date, data) in achievementDates.sorted(by: { $0.key < $1.key }) {
+                        print("📈 \(formatter.string(from: date)): Cal=\(data.caloriesAchieved), Protein=\(data.proteinAchieved)")
+                    }
+                    
+                    // Specifically check June 24th, 2025 (the problematic date)
+                    let june24 = Calendar.current.date(from: DateComponents(year: 2025, month: 6, day: 24))!
+                    let june24Start = Calendar.current.startOfDay(for: june24)
+                    
+                    // Debug the exact keys being used
+                    print("🔍 June 24th lookup key: \(june24Start)")
+                    print("🔍 Available cache keys for June: \(bulkData.keys.filter { Calendar.current.component(.month, from: $0) == 6 }.sorted())")
+                    
+                    if let june24Data = bulkData[june24Start] {
+                        print("🎯 BULK LOAD June 24th: Cal=\(june24Data.caloriesAchieved), Protein=\(june24Data.proteinAchieved)")
+                    } else {
+                        print("❌ BULK LOAD: No data found for June 24th with key \(june24Start)")
+                        // Try to find any June 24th data with different key
+                        for (key, value) in bulkData {
+                            if Calendar.current.component(.day, from: key) == 24 && Calendar.current.component(.month, from: key) == 6 {
+                                print("🔍 Found June 24th data with different key: \(key) -> Cal=\(value.caloriesAchieved), Protein=\(value.proteinAchieved)")
+                            }
                         }
                     }
                 }
@@ -515,27 +557,16 @@ struct CalendarDayView: View {
         let caloriesHit = macroData.caloriesAchieved
         let proteinHit = macroData.proteinAchieved
         
-        // Debug: Log today's macro data
-        if Calendar.current.isDateInToday(date) {
-            let startOfDay = Calendar.current.startOfDay(for: date)
-            print("📅 TODAY (\(date)) startOfDay:(\(startOfDay)): CaloriesAchieved=\(caloriesHit), ProteinAchieved=\(proteinHit)")
-            print("📅 MacroData object: \(macroData)")
+        // Debug June 24th specifically
+        if Calendar.current.isDate(date, equalTo: Calendar.current.date(from: DateComponents(year: 2025, month: 6, day: 24))!, toGranularity: .day) {
+            print("🎯 CALENDAR CELL June 24th: Cal=\(caloriesHit), Protein=\(proteinHit), MacroData=\(macroData)")
         }
         
         if caloriesHit && proteinHit {
-            if Calendar.current.isDateInToday(date) {
-                print("🌟 TODAY should be DARK GREEN!")
-            }
             return Color(red: 0.16, green: 0.66, blue: 0.27) // GitHub dark green
         } else if caloriesHit || proteinHit {
-            if Calendar.current.isDateInToday(date) {
-                print("🌟 TODAY should be LIGHT GREEN!")
-            }
             return Color(red: 0.40, green: 0.83, blue: 0.52) // GitHub light green
         } else {
-            if Calendar.current.isDateInToday(date) {
-                print("❌ TODAY is showing GRAY - no macro achievements detected")
-            }
             return Color.clear // Transparent background for empty cells
         }
     }

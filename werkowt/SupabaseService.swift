@@ -383,9 +383,25 @@ class SupabaseService: ObservableObject {
     @Published var foodTrackingErrorMessage: String?
     
     // MARK: - Cache Properties
-    private var macroAchievementsCache: [Date: MacroData] = [:]
+    private var macroAchievementsCache: [String: MacroData] = [:]
     private var cacheTimestamp: Date = Date.distantPast
     private let cacheValidityDuration: TimeInterval = 300 // 5 minutes
+    
+    // Date formatter for consistent cache keys
+    private let dateKeyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }()
+    
+    // Simple date to cache key converter (no timezone bullshit)
+    func dateToKey(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current // Use local timezone
+        return formatter.string(from: date)
+    }
     
     private init() {}
     
@@ -905,7 +921,7 @@ class SupabaseService: ObservableObject {
         // Use a more lenient date range to account for timezone differences
         let now = Date()
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: now)
+        let today = Calendar.current.startOfDay(for: now)
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
         
         // Add some buffer to account for timezone differences
@@ -943,7 +959,7 @@ class SupabaseService: ObservableObject {
             
             // Filter for today's entries locally to handle timezone differences
             let todaysEntries = allEntries.filter { entry in
-                let entryDay = calendar.startOfDay(for: entry.consumedDate)
+                let entryDay = Calendar.current.startOfDay(for: entry.consumedDate)
                 let isToday = entryDay == today
                 print("🔄 Entry \(entry.id): entryDay=\(entryDay), today=\(today), isToday=\(isToday)")
                 return isToday
@@ -983,7 +999,7 @@ class SupabaseService: ObservableObject {
     
     func getEntriesForDate(_ date: Date) async throws -> [FoodEntry] {
         let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: date)
+        let startOfDay = Calendar.current.startOfDay(for: date)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
         
         print("🗓️ Getting entries for date: \(date)")
@@ -1078,8 +1094,8 @@ class SupabaseService: ObservableObject {
         let sortedDates = dates.sorted()
         let calendar = Calendar.current
         // Add buffer like getTodaysEntries() to handle timezone differences
-        let startDate = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: sortedDates.first!))!
-        let endDate = calendar.date(byAdding: .day, value: 2, to: calendar.startOfDay(for: sortedDates.last!))!
+        let startDate = calendar.date(byAdding: .day, value: -1, to: Calendar.current.startOfDay(for: sortedDates.first!))!
+        let endDate = calendar.date(byAdding: .day, value: 2, to: Calendar.current.startOfDay(for: sortedDates.last!))!
         
         // Single bulk query for all food entries in date range
         print("🔍 SupabaseService: Fetching food entries for date range \(startDate) to \(endDate)")
@@ -1106,9 +1122,9 @@ class SupabaseService: ObservableObject {
         print("🐛 ✅ Total entries fetched: \(allEntries.count) (using buffer range like getTodaysEntries)")
         
         // Check today's entries with local filtering approach.
-        let todayStart = calendar.startOfDay(for: today)
+        let todayStart = Calendar.current.startOfDay(for: today)
         let todayEntriesTest = allEntries.filter { entry in
-            let entryDay = calendar.startOfDay(for: entry.consumedDate)
+            let entryDay = Calendar.current.startOfDay(for: entry.consumedDate)
             return entryDay == todayStart
         }
         print("🐛 ✅ Found \(todayEntriesTest.count) entries for today using local filtering (\(todayStart))")
@@ -1117,10 +1133,10 @@ class SupabaseService: ObservableObject {
         var results: [Date: MacroData] = [:]
         
         for date in dates {
-            let dayStart = calendar.startOfDay(for: date)
+            let dayStart = Calendar.current.startOfDay(for: date)
             // Filter entries for this specific date to handle timezone differences like getTodaysEntries()
             let entriesForDate = allEntries.filter { entry in
-                let entryDay = calendar.startOfDay(for: entry.consumedDate)
+                let entryDay = Calendar.current.startOfDay(for: entry.consumedDate)
                 return entryDay == dayStart
             }
             
@@ -1134,12 +1150,13 @@ class SupabaseService: ObservableObject {
             
             // Debug logging for today
             if calendar.isDateInToday(date) {
-                print("🐛 ✅ BULK CALC TODAY (\(date) -> storing with key: \(dayStart)):")
+                let dateKey = dateToKey(date)
+                print("🐛 ✅ BULK CALC TODAY (\(date) -> storing with key: \(dateKey)):")
                 print("🐛   Found \(entriesForDate.count) entries using local filtering")
                 print("🐛   Totals: Cal=\(String(format: "%.1f", totals.calories)), Protein=\(String(format: "%.1f", totals.protein))")
                 print("🐛   Goals: Cal=\(goals.calories), Protein=\(goals.protein)")
                 print("🐛   Achievements: Cal=\(totals.calories >= goals.calories), Protein=\(totals.protein >= goals.protein)")
-                print("🐛   ✅ STORING DATA WITH KEY: \(dayStart)")
+                print("🐛   ✅ STORING DATA WITH KEY: \(dateKey)")
                 
                 // Log the actual entries
                 for (index, entry) in entriesForDate.enumerated() {
@@ -1155,8 +1172,8 @@ class SupabaseService: ObservableObject {
                 fatAchieved: totals.fat >= goals.fat
             )
             
-            // Store with startOfDay key to match calendar lookup
-            results[dayStart] = achievements
+            // Store in results with Date key for return
+            results[date] = achievements
         }
         
         let totalDuration = Date().timeIntervalSince(startTime)
@@ -1184,7 +1201,8 @@ class SupabaseService: ObservableObject {
         // Check if cache is valid and contains all requested dates
         if isCacheValid() {
             let cachedResults = dates.compactMap { date in
-                macroAchievementsCache[Calendar.current.startOfDay(for: date)].map { (date, $0) }
+                let dateKey = dateToKey(date)
+                return macroAchievementsCache[dateKey].map { (date, $0) }
             }
             
             if cachedResults.count == dates.count {
@@ -1197,11 +1215,10 @@ class SupabaseService: ObservableObject {
         print("💾 SupabaseService: Cache miss or invalid, fetching new data")
         let results = try await calculateBulkMacroAchievements(for: dates)
         
-        // Update cache
-        let calendar = Calendar.current
+        // Update cache with simple date string keys
         for (date, macroData) in results {
-            let dayStart = calendar.startOfDay(for: date)
-            macroAchievementsCache[dayStart] = macroData
+            let dateKey = dateToKey(date)
+            macroAchievementsCache[dateKey] = macroData
         }
         cacheTimestamp = Date()
         
