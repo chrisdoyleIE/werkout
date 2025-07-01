@@ -134,7 +134,7 @@ struct MealPlanningView: View {
                 .font(.largeTitle)
                 .fontWeight(.black)
             
-            Text("Centad analyzes your preferences, dietary needs, and lifestyle to create  meal plans with shopping lists tailored to you.")
+            Text("Hundred analyzes your preferences, dietary needs, and lifestyle to create  meal plans with shopping lists tailored to you.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

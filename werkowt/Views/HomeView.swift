@@ -1,6 +1,12 @@
 import SwiftUI
 import Charts
 
+// MARK: - Shared Colors
+extension Color {
+    static let lightGrayCalendar = Color(red: 0.94, green: 0.94, blue: 0.94)
+    static let progressBarBackground = Color.gray.opacity(0.2)
+}
+
 struct HomeView: View {
     @EnvironmentObject var activeWorkout: ActiveWorkout
     @EnvironmentObject var workoutDataManager: WorkoutDataManager
@@ -50,6 +56,16 @@ struct HomeView: View {
         return streak
     }
     
+    private var lastMilestone: Int {
+        let milestones = [25, 50, 75, 100]
+        return milestones.last { $0 <= calorieStreak } ?? 0
+    }
+    
+    private var nextMilestone: Int {
+        let milestones = [25, 50, 75, 100]
+        return milestones.first { $0 > calorieStreak } ?? 100
+    }
+    
     private let calendar = Calendar.current
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -60,83 +76,183 @@ struct HomeView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                // Header with inline counter
-            VStack(spacing: 12) {
-                ZStack{
+                // Header with milestones
+                VStack(spacing: 12) {
                     HStack {
+                        // Last milestone
+                        if lastMilestone > 0 {
+                            Text("\(lastMilestone) achieved")
+                                .font(.custom("Georgia", size: 11))
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("")
+                                .font(.custom("Georgia", size: 11))
+                        }
+                        
                         Spacer()
-                        Text("Centad")
-                            .font(.custom("Georgia", size: 40))
-                            .fontWeight(.medium)
-                        Spacer()
-                    }
-                    HStack{
-                        Spacer()
+                        
+                        // App title
                         Button(action: {
                             showingStreakInfo = true
                         }) {
-                            HStack(spacing: 6) {
-                                // Dark gold flame icon
-                                Image(systemName: "flame.fill")
-                                    .font(.title3)
-                                    .foregroundColor(Color(red: 0.8, green: 0.6, blue: 0.0))
-                                    .shadow(color: Color.yellow.opacity(0.3), radius: 2, x: 0, y: 0)
-                                
-                                // Streak number to the right
-                                Text("\(calorieStreak)")
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.black)
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                            )
+                            Text("Hundred")
+                                .font(.custom("Georgia", size: 40))
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .padding(.trailing, 16)
+                        
+                        Spacer()
+                        
+                        // Next milestone
+                        if calorieStreak < 100 {
+                            Text("\(nextMilestone) next")
+                                .font(.custom("Georgia", size: 11))
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("complete")
+                                .font(.custom("Georgia", size: 11))
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    .padding(.horizontal)
                 }
+                .padding(.top, 4)
+                .padding(.bottom, 16)
 
                 
+            
                 
-            }
-            .padding(.horizontal)
-            .padding(.top, 4)
-            .padding(.bottom, 20)
-            
-            // Calendar with horizontal scrolling
-            HorizontalCalendarView(
-                workoutSessions: workoutDataManager.workoutSessions,
-                refreshTrigger: calendarRefreshTrigger,
-                macroDataByDate: $macroDataByDate,
-                weightDataByWeek: $weightDataByWeek
-            ) { session in
-                selectedSession = session
-            } onDateTap: { date in
-                selectedDayForDetail = date
-            }
-            .environmentObject(workoutDataManager)
-            .padding(.bottom, 24)
-            
-            
-            // Activity Rings Section
-            VStack(spacing: 16) {
-                // Activity Rings
-                ActivityRingsView(
-                    calories: todaysNutrition.calories,
-                    protein: todaysNutrition.protein,
-                    carbs: todaysNutrition.carbs,
-                    fat: todaysNutrition.fat,
-                    goals: macroGoalsManager.goals
-                )
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 20)
-            
+                // Journey Section
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Spacer()
+                            Text("Cultivate your health journey with Hundred")
+                                .font(.custom("Georgia", size: 11))
+                                .foregroundColor(.secondary)
+                                .italic()
+                            .padding(.horizontal)
+                            Spacer()
+                        }
+                        
+                        // Progress split layout
+                        VStack(spacing: 12) {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text("Day \(calorieStreak)")
+                                        .font(.custom("Georgia", size: 24))
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primary)
+                                    Text("of 100")
+                                        .font(.custom("Georgia", size: 12))
+                                        .italic()
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                VStack(alignment: .trailing) {
+                                    Text("\(100 - calorieStreak) days")
+                                        .font(.custom("Georgia", size: 14))
+                                        .foregroundColor(.primary)
+                                    Text("until your first Hundred")
+                                        .font(.custom("Georgia", size: 12))
+                                        .italic()
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(12)
+                            .background(Color.lightGrayCalendar)
+                            .cornerRadius(6)
+                            
+                            // Progress bar
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(Color.progressBarBackground)
+                                        .frame(height: 6)
+                                    
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(Color.black)
+                                        .frame(width: geometry.size.width * min(Double(calorieStreak) / 100.0, 1.0), height: 6)
+                                        .animation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0), value: calorieStreak)
+                                }
+                            }
+                            .frame(height: 6)
+                        }
+                        .padding(.horizontal)
+                    }
+                
+                HorizontalCalendarView(
+                    workoutSessions: workoutDataManager.workoutSessions,
+                    refreshTrigger: calendarRefreshTrigger,
+                    macroDataByDate: $macroDataByDate,
+                    weightDataByWeek: $weightDataByWeek
+                ) { session in
+                    selectedSession = session
+                } onDateTap: { date in
+                    selectedDayForDetail = date
+                }
+                    .environmentObject(workoutDataManager)
+                    
+                    // Divider
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 1)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 8)
+                    
+                    // Today Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("today")
+                                .font(.custom("Georgia", size: 11))
+                                .foregroundColor(.secondary)
+                                .italic()
+                            Spacer()
+                        }
+                        
+                        // Compact macros with progress borders
+                        HStack(spacing: 8) {
+                            CompactMacroView(
+                                emoji: "🔥",
+                                value: "\(Int(max(0, macroGoalsManager.goals.calories - todaysNutrition.calories)))",
+                                label: "remaining",
+                                progress: min(todaysNutrition.calories / macroGoalsManager.goals.calories, 1.0),
+                                color: .black
+                            )
+                            
+                            CompactMacroView(
+                                emoji: "🥩",
+                                value: "\(Int(max(0, macroGoalsManager.goals.protein - todaysNutrition.protein)))g",
+                                label: "remaining",
+                                progress: min(todaysNutrition.protein / macroGoalsManager.goals.protein, 1.0),
+                                color: .red
+                            )
+                            
+                            CompactMacroView(
+                                emoji: "🌾",
+                                value: "\(Int(max(0, macroGoalsManager.goals.carbs - todaysNutrition.carbs)))g",
+                                label: "remaining",
+                                progress: min(todaysNutrition.carbs / macroGoalsManager.goals.carbs, 1.0),
+                                color: .orange
+                            )
+                            
+                            CompactMacroView(
+                                emoji: "🥑",
+                                value: "\(Int(max(0, macroGoalsManager.goals.fat - todaysNutrition.fat)))g",
+                                label: "remaining",
+                                progress: min(todaysNutrition.fat / macroGoalsManager.goals.fat, 1.0),
+                                color: .blue
+                            )
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 12)
+                }
+                .padding(.bottom, 16)
+                
                 Spacer()
             }
             
@@ -205,14 +321,11 @@ struct HomeView: View {
         .onAppear {
             // Force data refresh when view appears
             Task {
-                print("🏠 HomeView onAppear: Starting data load")
                 await workoutDataManager.loadWorkoutSessions()
                 await supabaseService.loadTodaysEntries()
                 
                 // Check what today's entries returned
                 let todaysNutrition = supabaseService.getTodaysNutritionSummary()
-                print("🏠 TODAY'S LOOKUP after loadTodaysEntries: \(todaysNutrition.calories) cal, \(todaysNutrition.protein)g protein")
-                
                 // Trigger calendar refresh after data loads
                 await MainActor.run {
                     calendarRefreshTrigger.toggle()
@@ -222,13 +335,11 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             // Refresh when app returns to foreground
             Task {
-                print("🏠 HomeView foreground: Starting data refresh")
                 await workoutDataManager.loadWorkoutSessions()
                 await supabaseService.loadTodaysEntries()
                 
                 // Check what today's entries returned after foreground refresh
                 let todaysNutrition = supabaseService.getTodaysNutritionSummary()
-                print("🏠 TODAY'S LOOKUP after foreground refresh: \(todaysNutrition.calories) cal, \(todaysNutrition.protein)g protein")
                 
                 await MainActor.run {
                     calendarRefreshTrigger.toggle()
@@ -237,7 +348,36 @@ struct HomeView: View {
         }
     }
     
-    
+    private func getMotivationalMessage() -> String {
+        let daysLeft = max(0, 100 - calorieStreak)
+        
+        switch calorieStreak {
+        case 0:
+            return "Start your hundred today - every journey begins with a single day"
+        case 1...7:
+            return "Building momentum - keep going!"
+        case 8...14:
+            return "Two weeks strong - you're establishing the habit"
+        case 15...24:
+            return "Approaching 25 days - your first milestone is near!"
+        case 25:
+            return "🎯 Quarter way there! 25 days of dedication"
+        case 26...49:
+            return "\(daysLeft) days to go - you're proving what's possible"
+        case 50:
+            return "🔥 Halfway to your hundred! Incredible progress"
+        case 51...74:
+            return "Past the halfway mark - \(daysLeft) days until your best self"
+        case 75:
+            return "💪 75 days! The final quarter begins"
+        case 76...99:
+            return "So close - just \(daysLeft) days to complete your hundred"
+        case 100:
+            return "🏆 You've completed your hundred! You are your best self"
+        default:
+            return "Beyond the hundred - keep cultivating excellence"
+        }
+    }
     
     private func addWeight(weight: Double, notes: String?) async {
         do {
@@ -273,18 +413,31 @@ struct HorizontalCalendarView: View {
         return availableWidth / 12
     }
     
-    // Generate initial 12 weeks total with today on far right
+    // Generate initial 12 weeks total starting from first workout week
     private var initialWeeks: [Date] {
-        let today = Date()
-        let weekday = calendar.component(.weekday, from: today)
+        // Find the earliest workout date
+        guard let earliestWorkout = workoutSessions.min(by: { $0.startedAt < $1.startedAt }) else {
+            // Fallback: if no workouts, show last 12 weeks ending with today
+            let today = calendar.startOfDay(for: Date())
+            let weekday = calendar.component(.weekday, from: today)
+            let daysFromMonday = (weekday == 1) ? 6 : weekday - 2
+            let currentWeekMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
+            let startWeek = calendar.date(byAdding: .weekOfYear, value: -11, to: currentWeekMonday) ?? currentWeekMonday
+            
+            return (0..<12).compactMap { weekOffset in
+                calendar.date(byAdding: .weekOfYear, value: weekOffset, to: startWeek)
+            }
+        }
+        
+        // Calculate the Monday of the week containing the first workout
+        let firstWorkoutDate = calendar.startOfDay(for: earliestWorkout.startedAt)
+        let weekday = calendar.component(.weekday, from: firstWorkoutDate)
         let daysFromMonday = (weekday == 1) ? 6 : weekday - 2
-        let currentWeekMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) ?? today
+        let firstWorkoutWeekMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: firstWorkoutDate) ?? firstWorkoutDate
         
-        // Start 11 weeks ago, show 12 weeks total (11 past + current) - today on far right
-        let startWeek = calendar.date(byAdding: .weekOfYear, value: -11, to: currentWeekMonday) ?? currentWeekMonday
-        
+        // Generate 12 weeks starting from the first workout week
         return (0..<12).compactMap { weekOffset in
-            calendar.date(byAdding: .weekOfYear, value: weekOffset, to: startWeek)
+            calendar.date(byAdding: .weekOfYear, value: weekOffset, to: firstWorkoutWeekMonday)
         }
     }
     
@@ -412,8 +565,6 @@ struct HorizontalCalendarView: View {
             }
             
             let startTime = Date()
-            print("📅 HorizontalCalendarView: Starting bulk macro data load for \(allCalendarDates.count) dates")
-            
             do {
                 let bulkData = try await SupabaseService.shared.getCachedMacroAchievements(for: allCalendarDates)
                 let duration = Date().timeIntervalSince(startTime)
@@ -421,7 +572,6 @@ struct HorizontalCalendarView: View {
                 await MainActor.run {
                     macroDataByDate = bulkData
                     isLoadingMacroData = false
-                    print("📅 HorizontalCalendarView: ✅ Completed bulk macro data load in \(String(format: "%.2f", duration))s")
                     
                     // Debug: Check today's macro data
                     let today = Date()
@@ -434,7 +584,6 @@ struct HorizontalCalendarView: View {
                     
                     // Debug: Summary of loaded dates
                     let achievementDates = bulkData.filter { $0.value.caloriesAchieved || $0.value.proteinAchieved }
-                    print("📊 Loaded macro data for \(bulkData.count) dates (\(achievementDates.count) with achievements)")
                     
                     // Only log dates with achievements
                     let formatter = DateFormatter()
@@ -512,9 +661,9 @@ struct HorizontalCalendarView: View {
                         if !weekEntries.isEmpty {
                             let averageWeight = weekEntries.map { $0.weightKg }.reduce(0, +) / Double(weekEntries.count)
                             weeklyAverages[weekDate] = averageWeight
-                            print("⚖️ 📈 Week \(weekDate): average \(String(format: "%.1f", averageWeight))kg")
+//                            print("⚖️ 📈 Week \(weekDate): average \(String(format: "%.1f", averageWeight))kg")
                         } else {
-                            print("⚖️ ❌ Week \(weekDate): no weight entries found")
+//                            print("⚖️ ❌ Week \(weekDate): no weight entries found")
                         }
                     }
                     
@@ -557,17 +706,12 @@ struct CalendarDayView: View {
         let caloriesHit = macroData.caloriesAchieved
         let proteinHit = macroData.proteinAchieved
         
-        // Debug June 24th specifically
-        if Calendar.current.isDate(date, equalTo: Calendar.current.date(from: DateComponents(year: 2025, month: 6, day: 24))!, toGranularity: .day) {
-            print("🎯 CALENDAR CELL June 24th: Cal=\(caloriesHit), Protein=\(proteinHit), MacroData=\(macroData)")
-        }
-        
         if caloriesHit && proteinHit {
-            return Color(red: 0.16, green: 0.66, blue: 0.27) // GitHub dark green
+            return Color(red: 0.2, green: 0.2, blue: 0.2) // Black for full macros
         } else if caloriesHit || proteinHit {
-            return Color(red: 0.40, green: 0.83, blue: 0.52) // GitHub light green
+            return Color(red: 0.53, green: 0.53, blue: 0.53) // Medium gray for partial macros
         } else {
-            return Color.clear // Transparent background for empty cells
+            return Color.lightGrayCalendar // Light gray for empty cells
         }
     }
     
@@ -576,11 +720,9 @@ struct CalendarDayView: View {
         let proteinHit = macroData.proteinAchieved
         
         if caloriesHit && proteinHit {
-            return .white // White dumbbell on dark green
-        } else if caloriesHit || proteinHit {
-            return .white // White dumbbell on light green
+            return .white // White dumbbell on black background
         } else {
-            return .blue // Blue dumbbell on gray
+            return .black // Black dumbbell on gray background
         }
     }
     
@@ -1138,56 +1280,141 @@ struct StreakInfoView: View {
     let streak: Int
     @Environment(\.dismiss) private var dismiss
     
+    private var daysToHundred: Int {
+        max(0, 100 - streak)
+    }
+    
+    private var progressPercentage: Double {
+        min(Double(streak) / 100.0, 1.0)
+    }
+    
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
-                // Header with flame and streak
-                VStack(spacing: 16) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(Color(red: 1.0, green: 0.8, blue: 0.0))
-                        .shadow(color: Color.yellow.opacity(0.3), radius: 4, x: 0, y: 0)
-                    
-                    Text("\(streak)")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    
-                    Text("Day Streak")
-                        .font(.title2)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 40)
-                
-                // Explanation
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Calorie Streak")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    
-                    Text("Your streak represents consecutive days you've hit your daily calorie goals. Keep it going by staying consistent with your nutrition!")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.leading)
-                    
-                    if streak > 0 {
-                        Text("🔥 You're on fire! Keep up the great work.")
-                            .font(.subheadline)
-                            .foregroundColor(.orange)
-                            .fontWeight(.medium)
-                    } else {
-                        Text("Start your streak today by hitting your calorie goal!")
-                            .font(.subheadline)
-                            .foregroundColor(.blue)
-                            .fontWeight(.medium)
+            ScrollView {
+                VStack(spacing: 32) {
+                    // Header with flame and streak
+                    VStack(spacing: 16) {
+                        ZStack {
+                            // Progress ring
+                            Circle()
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 12)
+                                .frame(width: 140, height: 140)
+                            
+                            Circle()
+                                .trim(from: 0, to: progressPercentage)
+                                .stroke(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(red: 0.8, green: 0.6, blue: 0.0),
+                                            Color(red: 1.0, green: 0.8, blue: 0.0)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                                )
+                                .frame(width: 140, height: 140)
+                                .rotationEffect(Angle(degrees: -90))
+                                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: streak)
+                            
+                            VStack(spacing: 4) {
+                                Image(systemName: "flame.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(Color(red: 1.0, green: 0.8, blue: 0.0))
+                                    .shadow(color: Color.yellow.opacity(0.3), radius: 4, x: 0, y: 0)
+                                
+                                Text("\(streak)")
+                                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                                    .foregroundColor(.primary)
+                                
+                                Text("days")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        if streak < 100 {
+                            Text("\(daysToHundred) days to your hundred")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                        } else if streak == 100 {
+                            Text("🏆 Hundred Complete!")
+                                .font(.headline)
+                                .foregroundColor(.green)
+                                .fontWeight(.bold)
+                        } else {
+                            Text("Beyond the hundred")
+                                .font(.headline)
+                                .foregroundColor(.purple)
+                                .fontWeight(.medium)
+                        }
                     }
+                    .padding(.top, 40)
+                    
+                    // Milestones
+                    VStack(spacing: 20) {
+                        Text("Your Hundred Journey")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        VStack(spacing: 12) {
+                            MilestoneRow(milestone: 25, currentStreak: streak, label: "Foundation Built")
+                            MilestoneRow(milestone: 50, currentStreak: streak, label: "Halfway There")
+                            MilestoneRow(milestone: 75, currentStreak: streak, label: "Final Quarter")
+                            MilestoneRow(milestone: 100, currentStreak: streak, label: "Transformation")
+                        }
+                        .padding(.horizontal)
+                    }
+                    
+                    // Explanation
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("The Hundred Day Promise")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                        
+                        Text("Complete 100 consecutive days of hitting your nutrition goals and consistent training. This isn't about perfection—it's about showing up every day and cultivating the habits that transform.")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                        
+                        if streak == 0 {
+                            Text("🌱 Plant the seed today. Your hundred starts now.")
+                                .font(.subheadline)
+                                .foregroundColor(.green)
+                                .fontWeight(.medium)
+                        } else if streak < 25 {
+                            Text("🌱 The foundation is being laid. Trust the process.")
+                                .font(.subheadline)
+                                .foregroundColor(.green)
+                                .fontWeight(.medium)
+                        } else if streak < 50 {
+                            Text("🔥 Momentum is building. You're proving it's possible.")
+                                .font(.subheadline)
+                                .foregroundColor(.orange)
+                                .fontWeight(.medium)
+                        } else if streak < 75 {
+                            Text("💪 Past halfway—you're becoming your best self.")
+                                .font(.subheadline)
+                                .foregroundColor(.orange)
+                                .fontWeight(.medium)
+                        } else if streak < 100 {
+                            Text("🚀 The final stretch. Finish what you started.")
+                                .font(.subheadline)
+                                .foregroundColor(.red)
+                                .fontWeight(.medium)
+                        } else {
+                            Text("🏆 You did it. The hundred is complete, but the journey continues.")
+                                .font(.subheadline)
+                                .foregroundColor(.purple)
+                                .fontWeight(.medium)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    Spacer(minLength: 40)
                 }
-                .padding(.horizontal, 24)
-                
-                Spacer()
             }
-            .navigationTitle("Streak Info")
+            .navigationTitle("Your Hundred")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -1197,6 +1424,116 @@ struct StreakInfoView: View {
                 }
             }
         }
+    }
+}
+
+struct CompactMacroView: View {
+    let emoji: String
+    let value: String
+    let label: String
+    let progress: Double
+    let color: Color
+    
+    var body: some View {
+        ZStack {
+            // Background shape
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(UIColor.systemGray6))
+            
+            // Progress border - circular for smooth curves
+            ZStack {
+                // Always show gray background circle
+                Circle()
+                    .stroke(Color.progressBarBackground, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .padding(4)
+                
+                // Colored progress ring on top (only when progress > 0)
+                if progress > 0 {
+                    Circle()
+                        .trim(from: 0, to: CGFloat(progress))
+                        .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .rotationEffect(Angle(degrees: -90))
+                        .padding(4)
+                        .animation(.linear, value: progress)
+                }
+            }
+            
+            // Content on top
+            VStack(spacing: 0) {
+                Text(emoji)
+                    .font(.system(size: 20))
+                
+                Text(value)
+                    .font(.custom("Georgia", size: 14))
+                    .foregroundColor(.primary)
+                
+                Text(label)
+                    .font(.custom("Georgia", size: 9))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
+        }
+        .frame(maxWidth: .infinity, maxHeight: 80)
+        .clipped()
+    }
+}
+
+struct MilestoneRow: View {
+    let milestone: Int
+    let currentStreak: Int
+    let label: String
+    
+    private var isCompleted: Bool {
+        currentStreak >= milestone
+    }
+    
+    private var isNext: Bool {
+        currentStreak < milestone && currentStreak >= (milestone - 25)
+    }
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(isCompleted ? Color.green : (isNext ? Color.orange.opacity(0.3) : Color.gray.opacity(0.1)))
+                    .frame(width: 44, height: 44)
+                
+                if isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                } else {
+                    Text("\(milestone)")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(isNext ? .orange : .gray)
+                }
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.subheadline)
+                    .fontWeight(isNext ? .semibold : .medium)
+                    .foregroundColor(isCompleted ? .primary : (isNext ? .primary : .secondary))
+                
+                if isCompleted {
+                    Text("Completed")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                } else if isNext {
+                    Text("\(milestone - currentStreak) days away")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                } else {
+                    Text("Day \(milestone)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 4)
     }
 }
 

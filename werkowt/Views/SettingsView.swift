@@ -175,7 +175,7 @@ struct SettingsView: View {
                         HStack {
                             Image(systemName: "info.circle")
                                 .foregroundColor(.blue)
-                            Text("About Centad")
+                            Text("About Hundred")
                                 .font(.headline)
                                 .fontWeight(.semibold)
                         }

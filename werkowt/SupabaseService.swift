@@ -383,25 +383,9 @@ class SupabaseService: ObservableObject {
     @Published var foodTrackingErrorMessage: String?
     
     // MARK: - Cache Properties
-    private var macroAchievementsCache: [String: MacroData] = [:]
+    private var macroAchievementsCache: [Date: MacroData] = [:]
     private var cacheTimestamp: Date = Date.distantPast
     private let cacheValidityDuration: TimeInterval = 300 // 5 minutes
-    
-    // Date formatter for consistent cache keys
-    private let dateKeyFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone.current
-        return formatter
-    }()
-    
-    // Simple date to cache key converter (no timezone bullshit)
-    func dateToKey(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone.current // Use local timezone
-        return formatter.string(from: date)
-    }
     
     private init() {}
     
@@ -1035,53 +1019,6 @@ class SupabaseService: ObservableObject {
         return entriesWithFoodItems
     }
     
-    func calculateMacroAchievements(for date: Date) async throws -> MacroData {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM dd"
-        let dateString = dateFormatter.string(from: date)
-        let startTime = Date()
-        
-        print("🔍 SupabaseService: Starting macro calculation for \(dateString)")
-        
-        print("🔍 SupabaseService: Fetching food entries for \(dateString)...")
-        let entriesStartTime = Date()
-        let entries = try await getEntriesForDate(date)
-        let entriesDuration = Date().timeIntervalSince(entriesStartTime)
-        
-        print("🔍 SupabaseService: Found \(entries.count) food entries for \(dateString) in \(String(format: "%.2f", entriesDuration))s")
-        
-        // Get macro goals
-        print("🔍 SupabaseService: Fetching macro goals for \(dateString)...")
-        let goalsStartTime = Date()
-        guard let goals = try await getMacroGoals() else {
-            print("❌ SupabaseService: No macro goals found for \(dateString)")
-            return MacroData.empty
-        }
-        let goalsDuration = Date().timeIntervalSince(goalsStartTime)
-        print("🔍 SupabaseService: Retrieved macro goals for \(dateString) in \(String(format: "%.2f", goalsDuration))s")
-        
-        // Calculate totals
-        let totals = entries.reduce((calories: 0.0, protein: 0.0, carbs: 0.0, fat: 0.0)) { result, entry in
-            (result.calories + entry.calories,
-             result.protein + entry.proteinG,
-             result.carbs + entry.carbsG,
-             result.fat + entry.fatG)
-        }
-        
-        // Check achievements (consider achieved if >= 100% of goal)
-        let achievements = MacroData(
-            caloriesAchieved: totals.calories >= goals.calories,
-            proteinAchieved: totals.protein >= goals.protein,
-            carbsAchieved: totals.carbs >= goals.carbs,
-            fatAchieved: totals.fat >= goals.fat
-        )
-        
-        let totalDuration = Date().timeIntervalSince(startTime)
-        print("🔍 SupabaseService: ✅ Completed macro calculation for \(dateString) in \(String(format: "%.2f", totalDuration))s - Achievements: C:\(achievements.caloriesAchieved) P:\(achievements.proteinAchieved) R:\(achievements.carbsAchieved) F:\(achievements.fatAchieved)")
-        
-        return achievements
-    }
-    
     func calculateBulkMacroAchievements(for dates: [Date]) async throws -> [Date: MacroData] {
         let startTime = Date()
         print("🔍 SupabaseService: Starting bulk macro calculation for \(dates.count) dates")
@@ -1150,13 +1087,12 @@ class SupabaseService: ObservableObject {
             
             // Debug logging for today
             if calendar.isDateInToday(date) {
-                let dateKey = dateToKey(date)
-                print("🐛 ✅ BULK CALC TODAY (\(date) -> storing with key: \(dateKey)):")
+                print("🐛 ✅ BULK CALC TODAY (\(date) -> storing with Date key):")
                 print("🐛   Found \(entriesForDate.count) entries using local filtering")
                 print("🐛   Totals: Cal=\(String(format: "%.1f", totals.calories)), Protein=\(String(format: "%.1f", totals.protein))")
                 print("🐛   Goals: Cal=\(goals.calories), Protein=\(goals.protein)")
                 print("🐛   Achievements: Cal=\(totals.calories >= goals.calories), Protein=\(totals.protein >= goals.protein)")
-                print("🐛   ✅ STORING DATA WITH KEY: \(dateKey)")
+                print("🐛   ✅ STORING DATA WITH DATE KEY: \(date)")
                 
                 // Log the actual entries
                 for (index, entry) in entriesForDate.enumerated() {
@@ -1178,7 +1114,7 @@ class SupabaseService: ObservableObject {
         
         let totalDuration = Date().timeIntervalSince(startTime)
         print("🔍 SupabaseService: ✅ Completed bulk macro calculation for \(dates.count) dates in \(String(format: "%.2f", totalDuration))s")
-        print("🐛 ✅ FIXED: Now storing data with startOfDay keys to match calendar lookup")
+        print("🐛 ✅ Using Date object keys directly for cache storage and lookup")
         
         return results
     }
@@ -1201,8 +1137,7 @@ class SupabaseService: ObservableObject {
         // Check if cache is valid and contains all requested dates
         if isCacheValid() {
             let cachedResults = dates.compactMap { date in
-                let dateKey = dateToKey(date)
-                return macroAchievementsCache[dateKey].map { (date, $0) }
+                return macroAchievementsCache[date].map { (date, $0) }
             }
             
             if cachedResults.count == dates.count {
@@ -1215,10 +1150,9 @@ class SupabaseService: ObservableObject {
         print("💾 SupabaseService: Cache miss or invalid, fetching new data")
         let results = try await calculateBulkMacroAchievements(for: dates)
         
-        // Update cache with simple date string keys
-        for (date, macroData) in results {
-            let dateKey = dateToKey(date)
-            macroAchievementsCache[dateKey] = macroData
+        // Update cache with Date keys
+        for (date, macroData) in results.sorted(by: { $0.key < $1.key }) {
+            macroAchievementsCache[date] = macroData
         }
         cacheTimestamp = Date()
         

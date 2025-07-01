@@ -255,16 +255,12 @@ struct FoodTrackingView: View {
                 ManualFoodSearchView(selectedMealType: selectedMealType)
             }
             .onChange(of: showingManualSearch) { _, isShowing in
-                print("🔄 showingManualSearch changed to: \(isShowing)")  // <- BREAKPOINT HERE
                 if !isShowing {
-                    print("🔄 Manual search dismissed, starting refresh...")
                     // Refresh data when returning from manual search
                     Task {
                         // Add small delay to ensure database transaction completes
                         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                        print("🔄 About to call loadTodaysEntries")  // <- BREAKPOINT HERE
                         await supabaseService.loadTodaysEntries()
-                        print("🔄 loadTodaysEntries completed")
                     }
                 }
             }

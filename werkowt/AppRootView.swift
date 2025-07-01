@@ -28,7 +28,7 @@ struct AppRootView: View {
 struct LoadingView: View {
     var body: some View {
         VStack(spacing: 16) {
-            Text("Centad")
+            Text("Hundred")
                 .font(.largeTitle)
                 .fontWeight(.black)
                 .foregroundColor(.blue)

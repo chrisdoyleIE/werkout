@@ -15,7 +15,7 @@ struct AuthView: View {
             VStack(spacing: 24) {
                 // Logo/Header
                 VStack(spacing: 8) {
-                    Text("centad")
+                    Text("hundred")
                         .font(.largeTitle)
                         .fontWeight(.black)
                         .foregroundColor(.blue)
