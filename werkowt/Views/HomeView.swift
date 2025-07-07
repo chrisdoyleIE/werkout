@@ -76,49 +76,9 @@ struct HomeView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                // Header with milestones
-                VStack(spacing: 12) {
-                    HStack {
-                        // Last milestone
-                        if lastMilestone > 0 {
-                            Text("\(lastMilestone) achieved")
-                                .font(.custom("Georgia", size: 11))
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("")
-                                .font(.custom("Georgia", size: 11))
-                        }
-                        
-                        Spacer()
-                        
-                        // App title
-                        Button(action: {
-                            showingStreakInfo = true
-                        }) {
-                            Text("Hundred")
-                                .font(.custom("Georgia", size: 40))
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Spacer()
-                        
-                        // Next milestone
-                        if calorieStreak < 100 {
-                            Text("\(nextMilestone) next")
-                                .font(.custom("Georgia", size: 11))
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("complete")
-                                .font(.custom("Georgia", size: 11))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-                .padding(.top, 4)
-                .padding(.bottom, 16)
+                // Spacer for top
+                Spacer()
+                    .frame(height: 20)
 
                 
             
@@ -126,60 +86,96 @@ struct HomeView: View {
                 // Journey Section
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Spacer()
-                            Text("Cultivate your health journey with Hundred")
-                                .font(.custom("Georgia", size: 11))
-                                .foregroundColor(.secondary)
-                                .italic()
-                            .padding(.horizontal)
-                            Spacer()
-                        }
                         
                         // Progress split layout
                         VStack(spacing: 12) {
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text("Day \(calorieStreak)")
-                                        .font(.custom("Georgia", size: 24))
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.primary)
-                                    Text("of 100")
-                                        .font(.custom("Georgia", size: 12))
-                                        .italic()
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                                
-                                VStack(alignment: .trailing) {
-                                    Text("\(100 - calorieStreak) days")
-                                        .font(.custom("Georgia", size: 14))
-                                        .foregroundColor(.primary)
-                                    Text("until your first Hundred")
-                                        .font(.custom("Georgia", size: 12))
-                                        .italic()
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .padding(12)
-                            .background(Color.lightGrayCalendar)
-                            .cornerRadius(6)
-                            
-                            // Progress bar
-                            GeometryReader { geometry in
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .fill(Color.progressBarBackground)
-                                        .frame(height: 6)
+                            VStack(spacing: 16) {
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text("Day \(calorieStreak)")
+                                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                                            .foregroundColor(.primary)
+                                        Text("of 100")
+                                            .font(.system(size: 14, weight: .regular))
+                                            .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+                                    }
                                     
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .fill(Color.black)
-                                        .frame(width: geometry.size.width * min(Double(calorieStreak) / 100.0, 1.0), height: 6)
-                                        .animation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0), value: calorieStreak)
+                                    Spacer()
+                                    
+                                    VStack(alignment: .trailing) {
+                                        Text(String(format: "%.1f weeks", Double(100 - calorieStreak) / 7.0))
+                                            .font(.system(size: 14, weight: .regular))
+                                            .foregroundColor(.primary)
+                                        HStack(spacing: 2) {
+                                            Text("until your first")
+                                                .font(.system(size: 14, weight: .regular))
+                                                .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
+                                            Text("Hundred")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.black)
+                                        }
+                                    }
                                 }
+                                
+                                // Progress bar with milestone notches
+                                GeometryReader { geometry in
+                                    ZStack(alignment: .leading) {
+                                        // Background with notches
+                                        HStack(spacing: 0) {
+                                            // First segment (0-25%)
+                                            RoundedRectangle(cornerRadius: 5)
+                                                .fill(Color(red: 0.90, green: 0.90, blue: 0.90))
+                                                .frame(width: geometry.size.width * 0.25 - 1, height: 10)
+                                            
+                                            // First notch
+                                            Rectangle()
+                                                .fill(Color.white)
+                                                .frame(width: 2, height: 10)
+                                            
+                                            // Second segment (25-50%)
+                                            RoundedRectangle(cornerRadius: 0)
+                                                .fill(Color(red: 0.90, green: 0.90, blue: 0.90))
+                                                .frame(width: geometry.size.width * 0.25 - 1, height: 10)
+                                            
+                                            // Second notch
+                                            Rectangle()
+                                                .fill(Color.white)
+                                                .frame(width: 2, height: 10)
+                                            
+                                            // Third segment (50-75%)
+                                            RoundedRectangle(cornerRadius: 0)
+                                                .fill(Color(red: 0.90, green: 0.90, blue: 0.90))
+                                                .frame(width: geometry.size.width * 0.25 - 1, height: 10)
+                                            
+                                            // Third notch
+                                            Rectangle()
+                                                .fill(Color.white)
+                                                .frame(width: 2, height: 10)
+                                            
+                                            // Fourth segment (75-100%)
+                                            RoundedRectangle(cornerRadius: 5)
+                                                .fill(Color(red: 0.90, green: 0.90, blue: 0.90))
+                                                .frame(width: geometry.size.width * 0.25 - 1, height: 10)
+                                        }
+                                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                                        
+                                        // Progress fill
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .fill(Color.black)
+                                            .frame(width: geometry.size.width * min(Double(calorieStreak) / 100.0, 1.0), height: 10)
+                                            .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0), value: calorieStreak)
+                                    }
+                                }
+                                .frame(height: 10)
                             }
-                            .frame(height: 6)
+                            .padding(20)
+                            .background(Color.white)
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                            )
+                            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
                         }
                         .padding(.horizontal)
                     }
@@ -206,46 +202,56 @@ struct HomeView: View {
                     // Today Section
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("today")
-                                .font(.custom("Georgia", size: 11))
-                                .foregroundColor(.secondary)
-                                .italic()
+                            Text("Today")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.primary)
                             Spacer()
                         }
                         
-                        // Compact macros with progress borders
-                        HStack(spacing: 8) {
-                            CompactMacroView(
-                                emoji: "🔥",
-                                value: "\(Int(max(0, macroGoalsManager.goals.calories - todaysNutrition.calories)))",
-                                label: "remaining",
-                                progress: min(todaysNutrition.calories / macroGoalsManager.goals.calories, 1.0),
-                                color: .black
-                            )
-                            
-                            CompactMacroView(
-                                emoji: "🥩",
-                                value: "\(Int(max(0, macroGoalsManager.goals.protein - todaysNutrition.protein)))g",
-                                label: "remaining",
-                                progress: min(todaysNutrition.protein / macroGoalsManager.goals.protein, 1.0),
-                                color: .red
-                            )
-                            
-                            CompactMacroView(
-                                emoji: "🌾",
-                                value: "\(Int(max(0, macroGoalsManager.goals.carbs - todaysNutrition.carbs)))g",
-                                label: "remaining",
-                                progress: min(todaysNutrition.carbs / macroGoalsManager.goals.carbs, 1.0),
-                                color: .orange
-                            )
-                            
-                            CompactMacroView(
-                                emoji: "🥑",
-                                value: "\(Int(max(0, macroGoalsManager.goals.fat - todaysNutrition.fat)))g",
-                                label: "remaining",
-                                progress: min(todaysNutrition.fat / macroGoalsManager.goals.fat, 1.0),
-                                color: .blue
-                            )
+                        // Vertical bar layout for macros - centered
+                        HStack {
+                            Spacer()
+                            HStack(spacing: 32) {
+                                VerticalMacroBar(
+                                    emoji: "🔥",
+                                    currentValue: Int(todaysNutrition.calories),
+                                    goalValue: Int(macroGoalsManager.goals.calories),
+                                    macroName: "calories",
+                                    progress: min(todaysNutrition.calories / macroGoalsManager.goals.calories, 1.0),
+                                    color: .black
+                                )
+                                
+                                VerticalMacroBar(
+                                    emoji: "🥩",
+                                    currentValue: Int(todaysNutrition.protein),
+                                    goalValue: Int(macroGoalsManager.goals.protein),
+                                    macroName: "protein",
+                                    unit: "g",
+                                    progress: min(todaysNutrition.protein / macroGoalsManager.goals.protein, 1.0),
+                                    color: .black
+                                )
+                                
+                                VerticalMacroBar(
+                                    emoji: "🌾",
+                                    currentValue: Int(todaysNutrition.carbs),
+                                    goalValue: Int(macroGoalsManager.goals.carbs),
+                                    macroName: "carbs",
+                                    unit: "g",
+                                    progress: min(todaysNutrition.carbs / macroGoalsManager.goals.carbs, 1.0),
+                                    color: .black
+                                )
+                                
+                                VerticalMacroBar(
+                                    emoji: "🥑",
+                                    currentValue: Int(todaysNutrition.fat),
+                                    goalValue: Int(macroGoalsManager.goals.fat),
+                                    macroName: "fat",
+                                    unit: "g",
+                                    progress: min(todaysNutrition.fat / macroGoalsManager.goals.fat, 1.0),
+                                    color: .black
+                                )
+                            }
+                            Spacer()
                         }
                     }
                     .padding(.horizontal)
@@ -499,7 +505,6 @@ struct HorizontalCalendarView: View {
                                 .foregroundColor(.primary)
                                 .frame(width: weekWidth)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.5)
                         } else {
                             Text("")
                                 .frame(width: weekWidth)
@@ -699,30 +704,22 @@ struct CalendarDayView: View {
     private let calendar = Calendar.current
     
     private var backgroundGradient: Color {
-        if !isCurrentMonth {
-            return Color(red: 0.95, green: 0.95, blue: 0.95).opacity(0.3)
-        }
-        
         let caloriesHit = macroData.caloriesAchieved
-        let proteinHit = macroData.proteinAchieved
         
-        if caloriesHit && proteinHit {
-            return Color(red: 0.2, green: 0.2, blue: 0.2) // Black for full macros
-        } else if caloriesHit || proteinHit {
-            return Color(red: 0.53, green: 0.53, blue: 0.53) // Medium gray for partial macros
+        if caloriesHit {
+            return Color.black // Black background for calorie achievement
         } else {
-            return Color.lightGrayCalendar // Light gray for empty cells
+            return Color(red: 0.97, green: 0.97, blue: 0.97) // Light gray for empty
         }
     }
     
     private var dumbbellColor: Color {
         let caloriesHit = macroData.caloriesAchieved
-        let proteinHit = macroData.proteinAchieved
         
-        if caloriesHit && proteinHit {
+        if caloriesHit {
             return .white // White dumbbell on black background
         } else {
-            return .black // Black dumbbell on gray background
+            return .black // Black dumbbell on light background
         }
     }
     
@@ -731,29 +728,29 @@ struct CalendarDayView: View {
         Button(action: { onTap(workoutSession) }) {
             // Main calendar square with dumbbell overlay
             ZStack {
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: 3)
                     .fill(backgroundGradient)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 2)
+                        RoundedRectangle(cornerRadius: 3)
                             .stroke(
-                                calendar.isDateInToday(date) ? Color.black : 
-                                (macroData.caloriesAchieved || macroData.proteinAchieved ? Color.clear : Color.gray.opacity(0.3)), 
-                                lineWidth: calendar.isDateInToday(date) ? 1.5 : 0.5
+                                calendar.isDateInToday(date) ? Color.black : Color.clear, 
+                                lineWidth: calendar.isDateInToday(date) ? 1 : 0
                             )
                     )
                 
                 // Dumbbell icon for workout days
                 if workoutSession != nil {
                     Image(systemName: "dumbbell.fill")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundColor(dumbbellColor)
-                        .shadow(color: .black.opacity(0.2), radius: 0.5, x: 0, y: 0.5)
                 }
             }
             .frame(height: 22)
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(PlainButtonStyle())
+        .scaleEffect(1.0)
+        .animation(.easeInOut(duration: 0.1), value: false)
     }
     
 }
@@ -1271,7 +1268,7 @@ extension DateFormatter {
     
     static let monthName: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM"
+        formatter.dateFormat = "MMM"
         return formatter
     }()
 }
@@ -1430,52 +1427,216 @@ struct StreakInfoView: View {
 struct CompactMacroView: View {
     let emoji: String
     let value: String
-    let label: String
+    let goalValue: String
+    let macroName: String
+    let progress: Double
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            // Main card with ring
+            ZStack {
+                // Background shape
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(red: 0.97, green: 0.97, blue: 0.97))
+                
+                // Progress border - circular for smooth curves
+                ZStack {
+                    // Always show gray background circle
+                    Circle()
+                        .stroke(Color.gray.opacity(0.2), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .padding(4)
+                    
+                    // Colored progress ring on top (only when progress > 0)
+                    if progress > 0 {
+                        Circle()
+                            .trim(from: 0, to: CGFloat(progress))
+                            .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                            .rotationEffect(Angle(degrees: -90))
+                            .padding(4)
+                            .animation(.easeOut(duration: 0.8), value: progress)
+                    }
+                }
+                
+                // Content centered in ring
+                VStack(spacing: 2) {
+                    Text(emoji)
+                        .font(.system(size: 20))
+                    
+                    Text(value)
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundColor(.primary)
+                    
+                    Text(goalValue)
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 6)
+            }
+            .frame(maxWidth: .infinity, maxHeight: 80)
+            
+            // Macro name below the entire card
+            Text(macroName)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.primary)
+                .textCase(.lowercase)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct HeroMacroView: View {
+    let emoji: String
+    let value: String
+    let goalValue: String
     let progress: Double
     let color: Color
     
     var body: some View {
         ZStack {
-            // Background shape
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(UIColor.systemGray6))
+            // Background circle
+            Circle()
+                .fill(Color(red: 0.97, green: 0.97, blue: 0.97))
             
-            // Progress border - circular for smooth curves
+            // Progress ring
             ZStack {
-                // Always show gray background circle
+                // Background ring
                 Circle()
-                    .stroke(Color.progressBarBackground, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .padding(4)
+                    .stroke(Color.gray.opacity(0.2), style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .padding(5)
                 
-                // Colored progress ring on top (only when progress > 0)
+                // Progress ring
                 if progress > 0 {
                     Circle()
                         .trim(from: 0, to: CGFloat(progress))
-                        .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                        .stroke(color, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                         .rotationEffect(Angle(degrees: -90))
-                        .padding(4)
-                        .animation(.linear, value: progress)
+                        .padding(5)
+                        .animation(.easeOut(duration: 0.8), value: progress)
                 }
             }
             
-            // Content on top
-            VStack(spacing: 0) {
+            // Content
+            VStack(spacing: 2) {
                 Text(emoji)
-                    .font(.system(size: 20))
+                    .font(.system(size: 28))
                 
                 Text(value)
-                    .font(.custom("Georgia", size: 14))
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
                     .foregroundColor(.primary)
                 
-                Text(label)
-                    .font(.custom("Georgia", size: 9))
+                Text(goalValue)
+                    .font(.system(size: 12, weight: .regular))
                     .foregroundColor(.secondary)
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 6)
         }
-        .frame(maxWidth: .infinity, maxHeight: 80)
-        .clipped()
+    }
+}
+
+struct PyramidMacroView: View {
+    let emoji: String
+    let value: String
+    let goalValue: String
+    let progress: Double
+    let color: Color
+    
+    var body: some View {
+        ZStack {
+            // Background circle
+            Circle()
+                .fill(Color(red: 0.97, green: 0.97, blue: 0.97))
+            
+            // Progress ring
+            ZStack {
+                // Background ring
+                Circle()
+                    .stroke(Color.gray.opacity(0.2), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .padding(3)
+                
+                // Progress ring
+                if progress > 0 {
+                    Circle()
+                        .trim(from: 0, to: CGFloat(progress))
+                        .stroke(color, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .rotationEffect(Angle(degrees: -90))
+                        .padding(3)
+                        .animation(.easeOut(duration: 0.8), value: progress)
+                }
+            }
+            
+            // Content
+            VStack(spacing: 1) {
+                Text(emoji)
+                    .font(.system(size: 16))
+                
+                Text(value)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(.primary)
+            }
+        }
+    }
+}
+
+struct VerticalMacroBar: View {
+    let emoji: String
+    let currentValue: Int
+    let goalValue: Int
+    let macroName: String
+    var unit: String = ""
+    let progress: Double
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            // Vertical bar
+            ZStack {
+                // Background - darker for better contrast
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color(red: 0.88, green: 0.88, blue: 0.88))
+                    .frame(width: 48, height: 120)
+                
+                // Progress fill - full width for maximum visibility
+                VStack {
+                    Spacer()
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color)
+                        .frame(width: 48, height: 120 * CGFloat(min(progress, 1.0)))
+                        .animation(.easeOut(duration: 0.8), value: progress)
+                }
+                .frame(width: 48, height: 120)
+                
+                // Golden crown when macro is met
+                if progress >= 1.0 {
+                    VStack {
+                        Spacer()
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(Color(red: 1.0, green: 0.8, blue: 0.0))
+                            .padding(.bottom, 60) // Halfway up the 120px bar
+                        Spacer()
+                    }
+                    .frame(width: 48, height: 120)
+                }
+            }
+            
+            // Values below bar
+            VStack(spacing: 4) {
+                Text("\(currentValue)\(unit)")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                Text("\(goalValue)\(unit)")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(Color(red: 0.53, green: 0.53, blue: 0.53))
+            }
+            
+            // Macro name only (no emoji)
+            Text(macroName)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(Color(red: 0.4, green: 0.4, blue: 0.4))
+        }
+        .padding(.top, 12)
     }
 }
 
