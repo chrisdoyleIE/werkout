@@ -31,6 +31,26 @@ struct HomeView: View {
         supabaseService.getTodaysNutritionSummary()
     }
     
+    private var journeyStartDate: Date? {
+        // Find the earliest workout session
+        guard let earliestWorkout = workoutDataManager.workoutSessions
+            .min(by: { $0.startedAt < $1.startedAt }) else {
+            return nil
+        }
+        return Calendar.current.startOfDay(for: earliestWorkout.startedAt)
+    }
+    
+    private var journeyDays: Int {
+        guard let startDate = journeyStartDate else {
+            return 0 // No workouts yet, journey hasn't started
+        }
+        
+        let calendar = Calendar.current
+        let today = Calendar.current.startOfDay(for: Date())
+        let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: today).day ?? 0
+        return max(0, daysSinceStart)
+    }
+    
     private var calorieStreak: Int {
         var streak = 0
         let today = Date()
@@ -58,12 +78,12 @@ struct HomeView: View {
     
     private var lastMilestone: Int {
         let milestones = [25, 50, 75, 100]
-        return milestones.last { $0 <= calorieStreak } ?? 0
+        return milestones.last { $0 <= journeyDays } ?? 0
     }
     
     private var nextMilestone: Int {
         let milestones = [25, 50, 75, 100]
-        return milestones.first { $0 > calorieStreak } ?? 100
+        return milestones.first { $0 > journeyDays } ?? 100
     }
     
     private let calendar = Calendar.current
@@ -92,7 +112,7 @@ struct HomeView: View {
                             VStack(spacing: 16) {
                                 HStack {
                                     VStack(alignment: .leading) {
-                                        Text("Day \(calorieStreak)")
+                                        Text("Day \(journeyDays)")
                                             .font(.system(size: 36, weight: .bold, design: .rounded))
                                             .foregroundColor(.primary)
                                         Text("of 100")
@@ -103,7 +123,7 @@ struct HomeView: View {
                                     Spacer()
                                     
                                     VStack(alignment: .trailing) {
-                                        Text(String(format: "%.1f weeks", Double(100 - calorieStreak) / 7.0))
+                                        Text(String(format: "%.1f weeks", Double(100 - journeyDays) / 7.0))
                                             .font(.system(size: 14, weight: .regular))
                                             .foregroundColor(.primary)
                                         HStack(spacing: 2) {
@@ -117,56 +137,86 @@ struct HomeView: View {
                                     }
                                 }
                                 
-                                // Progress bar with milestone notches
-                                GeometryReader { geometry in
-                                    ZStack(alignment: .leading) {
-                                        // Background with notches
-                                        HStack(spacing: 0) {
-                                            // First segment (0-25%)
+                                // Supercharged progress bar with milestone markers below
+                                VStack(spacing: 4) {
+                                    GeometryReader { geometry in
+                                        ZStack(alignment: .leading) {
+                                            // Background bar
                                             RoundedRectangle(cornerRadius: 5)
                                                 .fill(Color(red: 0.90, green: 0.90, blue: 0.90))
-                                                .frame(width: geometry.size.width * 0.25 - 1, height: 10)
+                                                .frame(width: geometry.size.width, height: 10)
                                             
-                                            // First notch
-                                            Rectangle()
-                                                .fill(Color.white)
-                                                .frame(width: 2, height: 10)
-                                            
-                                            // Second segment (25-50%)
-                                            RoundedRectangle(cornerRadius: 0)
-                                                .fill(Color(red: 0.90, green: 0.90, blue: 0.90))
-                                                .frame(width: geometry.size.width * 0.25 - 1, height: 10)
-                                            
-                                            // Second notch
-                                            Rectangle()
-                                                .fill(Color.white)
-                                                .frame(width: 2, height: 10)
-                                            
-                                            // Third segment (50-75%)
-                                            RoundedRectangle(cornerRadius: 0)
-                                                .fill(Color(red: 0.90, green: 0.90, blue: 0.90))
-                                                .frame(width: geometry.size.width * 0.25 - 1, height: 10)
-                                            
-                                            // Third notch
-                                            Rectangle()
-                                                .fill(Color.white)
-                                                .frame(width: 2, height: 10)
-                                            
-                                            // Fourth segment (75-100%)
+                                            // Progress fill
                                             RoundedRectangle(cornerRadius: 5)
-                                                .fill(Color(red: 0.90, green: 0.90, blue: 0.90))
-                                                .frame(width: geometry.size.width * 0.25 - 1, height: 10)
+                                                .fill(Color.black)
+                                                .frame(width: geometry.size.width * min(Double(journeyDays) / 100.0, 1.0), height: 10)
+                                                .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0), value: journeyDays)
                                         }
-                                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                                    }
+                                    .frame(height: 10)
+                                    
+                                    // Milestone symbols and day count annotations - aligned with bar edges
+                                    HStack {
+                                        // Day 0 - aligned to left edge
+                                        VStack(spacing: 2) {
+                                            Image(systemName: "figure.mixed.cardio")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.black)
+                                            Text("1")
+                                                .font(.system(size: 10, weight: .medium))
+                                                .foregroundColor(.black)
+                                        }
                                         
-                                        // Progress fill
-                                        RoundedRectangle(cornerRadius: 5)
-                                            .fill(Color.black)
-                                            .frame(width: geometry.size.width * min(Double(calorieStreak) / 100.0, 1.0), height: 10)
-                                            .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0), value: calorieStreak)
+                                        Spacer()
+                                        
+                                        // Day 25
+                                        VStack(spacing: 2) {
+                                            Image(systemName: "figure.walk")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(journeyDays >= 25 ? Color(red: 1.0, green: 0.8, blue: 0.0) : Color(red: 0.6, green: 0.6, blue: 0.6))
+                                            Text("25")
+                                                .font(.system(size: 10, weight: .medium))
+                                                .foregroundColor(journeyDays >= 25 ? Color(red: 1.0, green: 0.8, blue: 0.0) : Color(red: 0.6, green: 0.6, blue: 0.6))
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        // Day 50
+                                        VStack(spacing: 2) {
+                                            Image(systemName: "figure.walk.motion")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(journeyDays >= 50 ? Color(red: 1.0, green: 0.8, blue: 0.0) : Color(red: 0.6, green: 0.6, blue: 0.6))
+                                            Text("50")
+                                                .font(.system(size: 10, weight: .medium))
+                                                .foregroundColor(journeyDays >= 50 ? Color(red: 1.0, green: 0.8, blue: 0.0) : Color(red: 0.6, green: 0.6, blue: 0.6))
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        // Day 75
+                                        VStack(spacing: 2) {
+                                            Image(systemName: "figure.run")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(journeyDays >= 75 ? Color(red: 1.0, green: 0.8, blue: 0.0) : Color(red: 0.6, green: 0.6, blue: 0.6))
+                                            Text("75")
+                                                .font(.system(size: 10, weight: .medium))
+                                                .foregroundColor(journeyDays >= 75 ? Color(red: 1.0, green: 0.8, blue: 0.0) : Color(red: 0.6, green: 0.6, blue: 0.6))
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        // Day 100 - aligned to right edge
+                                        VStack(spacing: 2) {
+                                            Image(systemName: journeyDays >= 100 ? "crown.fill" : "crown")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(journeyDays >= 100 ? Color(red: 1.0, green: 0.8, blue: 0.0) : Color(red: 0.6, green: 0.6, blue: 0.6))
+                                            Text("100")
+                                                .font(.system(size: 10, weight: .medium))
+                                                .foregroundColor(journeyDays >= 100 ? Color(red: 1.0, green: 0.8, blue: 0.0) : Color(red: 0.6, green: 0.6, blue: 0.6))
+                                        }
                                     }
                                 }
-                                .frame(height: 10)
+                                .frame(height: 38)
                             }
                             .padding(20)
                             .background(Color.white)
@@ -322,7 +372,7 @@ struct HomeView: View {
             SettingsView()
         }
         .sheet(isPresented: $showingStreakInfo) {
-            StreakInfoView(streak: calorieStreak)
+            StreakInfoView(streak: journeyDays)
         }
         .onAppear {
             // Force data refresh when view appears
@@ -355,9 +405,9 @@ struct HomeView: View {
     }
     
     private func getMotivationalMessage() -> String {
-        let daysLeft = max(0, 100 - calorieStreak)
+        let daysLeft = max(0, 100 - journeyDays)
         
-        switch calorieStreak {
+        switch journeyDays {
         case 0:
             return "Start your hundred today - every journey begins with a single day"
         case 1...7:
@@ -741,7 +791,7 @@ struct CalendarDayView: View {
                 // Dumbbell icon for workout days
                 if workoutSession != nil {
                     Image(systemName: "dumbbell.fill")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundColor(dumbbellColor)
                 }
             }
