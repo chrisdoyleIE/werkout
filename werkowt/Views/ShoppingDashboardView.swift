@@ -58,9 +58,9 @@ struct ShoppingDashboardView: View {
     private var overviewSection: some View {
         VStack(spacing: 16) {
             HStack {
-                Label("Shopping Overview", systemImage: "cart.fill")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                Text("Shopping Overview")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
                 
                 Spacer()
             }
@@ -70,21 +70,21 @@ struct ShoppingDashboardView: View {
                     title: "Active Lists",
                     value: "\(activeShoppingLists.count)",
                     icon: "cart",
-                    color: .blue
+                    color: .primary
                 )
                 
                 overviewCard(
                     title: "Total Items",
                     value: "\(activeShoppingLists.reduce(0) { $0 + $1.items.count })",
                     icon: "list.bullet",
-                    color: .orange
+                    color: .primary
                 )
                 
                 overviewCard(
                     title: "Completed",
                     value: "\(activeShoppingLists.reduce(0) { $0 + $1.completedItems.count })",
                     icon: "checkmark.circle",
-                    color: .green
+                    color: .primary
                 )
             }
         }
@@ -113,14 +113,14 @@ struct ShoppingDashboardView: View {
     private var activeListsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Label("Active Shopping Lists", systemImage: "cart.badge.plus")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                Text("Active Shopping Lists")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
                 Text("\(activeShoppingLists.count)")
-                    .font(.subheadline)
+                    .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
             
@@ -151,11 +151,11 @@ struct ShoppingDashboardView: View {
             Button("Create Meal Plan") {
                 // Navigate to meal planning
             }
-            .font(.subheadline)
-            .foregroundColor(.blue)
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.primary)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
-            .background(Color.blue.opacity(0.1))
+            .background(Color(.systemGray6))
             .cornerRadius(8)
         }
         .padding(40)
@@ -214,7 +214,7 @@ struct ShoppingDashboardView: View {
                         
                         Circle()
                             .trim(from: 0, to: shoppingList.completionPercentage)
-                            .stroke(Color.blue, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                            .stroke(Color.primary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                             .frame(width: 32, height: 32)
                             .rotationEffect(.degrees(-90))
                         
@@ -233,7 +233,7 @@ struct ShoppingDashboardView: View {
                             .cornerRadius(3)
                         
                         Rectangle()
-                            .fill(Color.blue)
+                            .fill(Color.primary)
                             .frame(width: geometry.size.width * shoppingList.completionPercentage, height: 6)
                             .cornerRadius(3)
                     }
@@ -262,7 +262,7 @@ struct ShoppingDashboardView: View {
                     }) {
                         Image(systemName: "arrow.clockwise")
                             .font(.caption)
-                            .foregroundColor(.blue)
+                            .foregroundColor(.primary)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -295,7 +295,7 @@ struct ShoppingDashboardView: View {
     private func completedShoppingListCard(_ shoppingList: ShoppingList) -> some View {
         HStack {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                .foregroundColor(.primary)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(shoppingList.mealPlanTitle)
@@ -315,7 +315,7 @@ struct ShoppingDashboardView: View {
                 }
             }
             .font(.caption)
-            .foregroundColor(.blue)
+            .foregroundColor(.primary)
         }
         .padding(12)
         .background(Color(.systemGray6))
@@ -356,7 +356,7 @@ struct ShoppingListDetailView: View {
                             
                             Circle()
                                 .trim(from: 0, to: shoppingList.completionPercentage)
-                                .stroke(Color.blue, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                                .stroke(Color.primary, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                                 .frame(width: 60, height: 60)
                                 .rotationEffect(.degrees(-90))
                             
@@ -375,7 +375,7 @@ struct ShoppingListDetailView: View {
                                 .cornerRadius(4)
                             
                             Rectangle()
-                                .fill(Color.blue)
+                                .fill(Color.primary)
                                 .frame(width: geometry.size.width * shoppingList.completionPercentage, height: 8)
                                 .cornerRadius(4)
                         }
@@ -390,7 +390,7 @@ struct ShoppingListDetailView: View {
                     ForEach(ShoppingCategory.allCases.filter { shoppingList.categorizedItems[$0] != nil && !shoppingList.categorizedItems[$0]!.isEmpty }, id: \.self) { category in
                         Section(header: HStack {
                             Image(systemName: category.icon)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                                 .font(.caption)
                             Text(category.displayName)
                                 .font(.subheadline)
@@ -432,7 +432,7 @@ struct ShoppingListDetailView: View {
                 }
             }) {
                 Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(item.isCompleted ? .green : .gray)
+                    .foregroundColor(item.isCompleted ? .primary : .gray)
                     .font(.title3)
             }
             .buttonStyle(PlainButtonStyle())

@@ -53,8 +53,8 @@ struct CustomTabView: View {
                             )
                             
                             TabBarButton(
-                                icon: "carrot",
-                                title: "Shopping",
+                                icon: "leaf.fill",
+                                title: "Nutrition",
                                 isSelected: selectedTab == 1,
                                 action: {
                                     selectedTab = 1

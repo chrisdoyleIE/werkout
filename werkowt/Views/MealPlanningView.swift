@@ -129,30 +129,29 @@ struct MealPlanningView: View {
     }
     
     private var headerSection: some View {
-        VStack(spacing: 16) {
-            Text("MEAL PLANNING")
-                .font(.largeTitle)
-                .fontWeight(.black)
+        VStack(spacing: 12) {
+            Text("Create Meal Plan")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.primary)
             
-            Text("Hundred analyzes your preferences, dietary needs, and lifestyle to create  meal plans with shopping lists tailored to you.")
-                .font(.subheadline)
+            Text("Plan your meals with AI assistance")
+                .font(.system(size: 16))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-                .lineLimit(nil)
         }
     }
     
     private var macroGoalsCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Daily Macro Goals", systemImage: "target")
-                .font(.headline)
-                .fontWeight(.semibold)
+            Text("Daily Macro Goals")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
             
             HStack(spacing: 0) {
-                macroItem("Cal", value: Int(macroGoalsManager.goals.calories), color: .blue)
-                macroItem("Protein", value: Int(macroGoalsManager.goals.protein), color: .green, unit: "g")
-                macroItem("Carbs", value: Int(macroGoalsManager.goals.carbs), color: .orange, unit: "g")
-                macroItem("Fat", value: Int(macroGoalsManager.goals.fat), color: .red, unit: "g")
+                macroItem("Cal", value: Int(macroGoalsManager.goals.calories), color: .primary)
+                macroItem("Protein", value: Int(macroGoalsManager.goals.protein), color: .primary, unit: "g")
+                macroItem("Carbs", value: Int(macroGoalsManager.goals.carbs), color: .primary, unit: "g")
+                macroItem("Fat", value: Int(macroGoalsManager.goals.fat), color: .primary, unit: "g")
             }
         }
         .padding(20)
@@ -177,7 +176,7 @@ struct MealPlanningView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "target")
-                    .foregroundColor(.orange)
+                    .foregroundColor(.primary)
                     .font(.system(size: 16))
                 Text("Target Macros")
                     .fontWeight(.medium)
@@ -197,22 +196,22 @@ struct MealPlanningView: View {
             
             VStack(spacing: 12) {
                 HStack(spacing: 16) {
-                    adjustableMacroItem("Calories", value: $adjustedCalories, color: .red, range: 100...4000, step: 50)
-                    adjustableMacroItem("Protein", value: $adjustedProtein, color: .blue, range: 10...300, step: 5, unit: "g")
+                    adjustableMacroItem("Calories", value: $adjustedCalories, color: .primary, range: 100...4000, step: 50)
+                    adjustableMacroItem("Protein", value: $adjustedProtein, color: .primary, range: 10...300, step: 5, unit: "g")
                 }
                 
                 HStack(spacing: 16) {
-                    adjustableMacroItem("Carbs", value: $adjustedCarbs, color: .orange, range: 20...400, step: 10, unit: "g")
-                    adjustableMacroItem("Fat", value: $adjustedFat, color: .purple, range: 10...200, step: 5, unit: "g")
+                    adjustableMacroItem("Carbs", value: $adjustedCarbs, color: .primary, range: 20...400, step: 10, unit: "g")
+                    adjustableMacroItem("Fat", value: $adjustedFat, color: .primary, range: 10...200, step: 5, unit: "g")
                 }
             }
         }
         .padding(16)
-        .background(Color.orange.opacity(0.05))
+        .background(Color.primary.opacity(0.05))
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.2), lineWidth: 1)
         )
     }
     
@@ -230,7 +229,7 @@ struct MealPlanningView: View {
                     }
                 }) {
                     Image(systemName: "minus.circle.fill")
-                        .foregroundColor(color.opacity(0.7))
+                        .foregroundColor(.primary.opacity(0.7))
                         .font(.title3)
                 }
                 .disabled(value.wrappedValue <= range.lowerBound)
@@ -247,7 +246,7 @@ struct MealPlanningView: View {
                     }
                 }) {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundColor(color.opacity(0.7))
+                        .foregroundColor(.primary.opacity(0.7))
                         .font(.title3)
                 }
                 .disabled(value.wrappedValue >= range.upperBound)
@@ -258,9 +257,9 @@ struct MealPlanningView: View {
     
     private var dateSelectionCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Meal Plan Duration", systemImage: "calendar")
-                .font(.headline)
-                .fontWeight(.semibold)
+            Text("Meal Plan Duration")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
             
             HStack(spacing: 16) {
                 DatePicker("", selection: $startDate, displayedComponents: .date)
@@ -268,7 +267,7 @@ struct MealPlanningView: View {
                     .frame(maxWidth: .infinity)
                 
                 Image(systemName: "arrow.right")
-                    .font(.title3)
+                    .font(.system(size: 16))
                     .foregroundColor(.secondary)
                 
                 DatePicker("", selection: $endDate, in: startDate..., displayedComponents: .date)
@@ -277,7 +276,7 @@ struct MealPlanningView: View {
             }
             
             Text("\(numberOfDays) day\(numberOfDays > 1 ? "s" : "") of meal planning")
-                .font(.caption)
+                .font(.system(size: 14))
                 .foregroundColor(.secondary)
         }
         .padding(20)
@@ -287,9 +286,9 @@ struct MealPlanningView: View {
     
     private var mealConfigurationCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Meal Configuration", systemImage: "fork.knife")
-                .font(.headline)
-                .fontWeight(.semibold)
+            Text("Meal Configuration")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
             
             VStack(spacing: 16) {
                 // Meal type selection
@@ -325,7 +324,7 @@ struct MealPlanningView: View {
                                 .padding(.vertical, 12)
                                 .background(
                                     selectedMealTypes.contains(mealType) ?
-                                    Color.blue : Color(.systemGray5)
+                                    Color.primary : Color(.systemGray5)
                                 )
                                 .cornerRadius(8)
                             }
@@ -355,7 +354,7 @@ struct MealPlanningView: View {
                             }
                         }) {
                             Image(systemName: "minus.circle.fill")
-                                .foregroundColor(householdSize > 1 ? .blue : .gray.opacity(0.5))
+                                .foregroundColor(householdSize > 1 ? .primary : .gray.opacity(0.5))
                                 .font(.title2)
                         }
                         .disabled(householdSize <= 1)
@@ -364,7 +363,7 @@ struct MealPlanningView: View {
                             Text("\(householdSize)")
                                 .font(.title2)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                             
                             Text(householdSize == 1 ? "person" : "people")
                                 .font(.caption)
@@ -378,7 +377,7 @@ struct MealPlanningView: View {
                             }
                         }) {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundColor(householdSize < 8 ? .blue : .gray.opacity(0.5))
+                                .foregroundColor(householdSize < 8 ? .primary : .gray.opacity(0.5))
                                 .font(.title2)
                         }
                         .disabled(householdSize >= 8)
@@ -422,7 +421,7 @@ struct MealPlanningView: View {
                                         Spacer()
                                         if cookingFrequency == frequency {
                                             Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(.blue)
+                                                .foregroundColor(.primary)
                                                 .font(.system(size: 16))
                                         }
                                     }
@@ -440,13 +439,13 @@ struct MealPlanningView: View {
                                 .padding(12)
                                 .background(
                                     cookingFrequency == frequency ?
-                                    Color.blue.opacity(0.1) : Color(.systemGray5)
+                                    Color.primary.opacity(0.1) : Color(.systemGray5)
                                 )
                                 .cornerRadius(8)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(
-                                            cookingFrequency == frequency ? Color.blue.opacity(0.3) : Color.clear,
+                                            cookingFrequency == frequency ? Color.primary.opacity(0.3) : Color.clear,
                                             lineWidth: 1
                                         )
                                 )
@@ -463,9 +462,9 @@ struct MealPlanningView: View {
     
     private var dietaryPreferencesCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Dietary Preferences", systemImage: "leaf")
-                .font(.headline)
-                .fontWeight(.semibold)
+            Text("Dietary Preferences")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
             
             VStack(spacing: 16) {
                 // Diet type
@@ -498,16 +497,9 @@ struct MealPlanningView: View {
                                 .padding(.vertical, 12)
                                 .background(
                                     dietType == diet ?
-                                    Color.green : Color(.systemGray5)
+                                    Color.primary : Color(.systemGray5)
                                 )
                                 .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(
-                                            dietType == diet ? Color.green.opacity(0.3) : Color.clear,
-                                            lineWidth: 1
-                                        )
-                                )
                             }
                         }
                     }
@@ -557,7 +549,7 @@ struct MealPlanningView: View {
                                     .padding(.vertical, 8)
                                     .background(
                                         selectedAllergens.contains(allergen) ?
-                                        Color.red.opacity(0.9) : Color(.systemGray5)
+                                        Color.primary.opacity(0.9) : Color(.systemGray5)
                                     )
                                     .foregroundColor(
                                         selectedAllergens.contains(allergen) ? .white : .primary
@@ -582,9 +574,9 @@ struct MealPlanningView: View {
     
     private var budgetAndNotesCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Budget & Shopping", systemImage: "cart")
-                .font(.headline)
-                .fontWeight(.semibold)
+            Text("Budget & Shopping")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
             
             VStack(spacing: 16) {
                 // Budget level
@@ -617,7 +609,7 @@ struct MealPlanningView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Image(systemName: "text.quote")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.primary)
                             .font(.system(size: 16))
                         Text("Additional Preferences")
                             .fontWeight(.medium)
@@ -706,15 +698,8 @@ struct MealPlanningView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(
-                LinearGradient(
-                    colors: [Color.blue, Color.blue.opacity(0.8)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            .background(Color.primary)
             .cornerRadius(12)
-            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
         }
         .disabled(isButtonDisabled)
         .opacity(isButtonDisabled ? 0.6 : 1.0)

@@ -19,7 +19,7 @@ struct NutritionTabView: View {
                 .padding(.bottom, 16)
                 
                 // Content
-                UnifiedNutritionView()
+                MealPlanningDashboardView()
                     .environmentObject(macroGoalsManager)
                     .environmentObject(mealPlanManager)
                     .environmentObject(shoppingListManager)
