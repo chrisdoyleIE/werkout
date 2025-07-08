@@ -1310,4 +1310,165 @@ class SupabaseService: ObservableObject {
             ]
         }
     }
+    
+    // MARK: - Meal Template Methods
+    
+    func getRecentFoodsAndMeals(days: Int = 7, mealType: MealType? = nil) async throws -> [RecentFoodItem] {
+        let userId = try ensureAuthenticated()
+        
+        do {
+            // Call the database function
+            let response = try await supabase
+                .rpc("get_recent_foods_and_meals", params: [
+                    "p_user_id": userId.uuidString,
+                    "p_days": String(days),
+                    "p_meal_type": mealType?.rawValue ?? "null"
+                ])
+                .execute()
+            
+            // Parse the response
+            let data = response.data
+            guard !data.isEmpty else {
+                return []
+            }
+            
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            // Define structure for the response
+            struct DBRecentFoodItem: Decodable {
+                let item_type: String
+                let item_id: String
+                let name: String
+                let brand: String?
+                let last_used: String
+                let use_count: Int
+                let avg_quantity: Double?
+                let calories_per_serving: Double
+                let protein_per_serving: Double
+                let is_meal: Bool
+                let components: [MealComponent]?
+            }
+            
+            let dbItems = try decoder.decode([DBRecentFoodItem].self, from: data)
+            
+            return dbItems.compactMap { dbItem in
+                guard let itemId = UUID(uuidString: dbItem.item_id),
+                      let lastUsed = ISO8601DateFormatter().date(from: dbItem.last_used) else {
+                    return nil as RecentFoodItem?
+                }
+                
+                return RecentFoodItem(
+                    itemType: dbItem.item_type,
+                    itemId: itemId,
+                    name: dbItem.name,
+                    brand: dbItem.brand,
+                    lastUsed: lastUsed,
+                    useCount: dbItem.use_count,
+                    avgQuantity: dbItem.avg_quantity,
+                    caloriesPerServing: dbItem.calories_per_serving,
+                    proteinPerServing: dbItem.protein_per_serving,
+                    isMeal: dbItem.is_meal,
+                    components: dbItem.components
+                )
+            }
+        } catch {
+            print("Error getting recent foods and meals: \(error)")
+            return []
+        }
+    }
+    
+    func getMealTemplates() async throws -> [MealTemplate] {
+        let userId = try ensureAuthenticated()
+        
+        do {
+            let response: [MealTemplate] = try await supabase
+                .from("meal_templates")
+                .select()
+                .eq("user_id", value: userId)
+                .order("last_used", ascending: false)
+                .execute()
+                .value
+            
+            return response
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func saveMealTemplate(name: String, foodEntryIds: [UUID]) async throws -> UUID {
+        let userId = try ensureAuthenticated()
+        
+        do {
+            let response = try await supabase
+                .rpc("save_meal_template", params: [
+                    "p_user_id": userId.uuidString,
+                    "p_meal_name": name,
+                    "p_food_entries": foodEntryIds.map { $0.uuidString }.joined(separator: ",")
+                ])
+                .execute()
+            
+            let data = response.data
+            guard let resultString = String(data: data, encoding: .utf8),
+                  let mealGroupId = UUID(uuidString: resultString.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).replacingOccurrences(of: "\"", with: "")) else {
+                throw SupabaseServiceError.invalidData
+            }
+            
+            return mealGroupId
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func logMealFromTemplate(mealGroupId: UUID, mealType: MealType, scaleFactor: Double = 1.0) async throws {
+        let userId = try ensureAuthenticated()
+        
+        do {
+            _ = try await supabase
+                .rpc("log_meal_from_template", params: [
+                    "p_user_id": userId.uuidString,
+                    "p_meal_group_id": mealGroupId.uuidString,
+                    "p_meal_type": mealType.rawValue,
+                    "p_consumed_date": ISO8601DateFormatter().string(from: Date()),
+                    "p_scale_factor": String(scaleFactor)
+                ])
+                .execute()
+            
+            // Invalidate cache and reload today's entries
+            invalidateCache()
+            await loadTodaysEntries()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
+    func updateFoodEntryMealGroup(entryIds: [UUID], mealGroupId: UUID?, mealGroupName: String?) async throws {
+        let userId = try ensureAuthenticated()
+        
+        do {
+            // Build update dictionary
+            var updates: [String: String] = [:]
+            if let mealGroupId = mealGroupId {
+                updates["meal_group_id"] = mealGroupId.uuidString
+            }
+            if let mealGroupName = mealGroupName {
+                updates["meal_group_name"] = mealGroupName
+            }
+            
+            // Update all entries
+            for entryId in entryIds {
+                try await supabase
+                    .from("food_entries")
+                    .update(updates)
+                    .eq("id", value: entryId)
+                    .eq("user_id", value: userId)
+                    .execute()
+            }
+            
+            // Reload entries
+            await loadTodaysEntries()
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
 }

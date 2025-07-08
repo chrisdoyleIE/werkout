@@ -29,7 +29,7 @@ struct WorkoutCreatorView: View {
                                 Text(generatedWorkoutName)
                                     .font(.largeTitle)
                                     .fontWeight(.black)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.primary)
                                     .multilineTextAlignment(.center)
                             }
                         } else {
@@ -47,17 +47,17 @@ struct WorkoutCreatorView: View {
                         if selectedExercises.count > 0 {
                             HStack(spacing: 6) {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
+                                    .foregroundColor(.primary)
                                     .font(.caption)
                                 
                                 Text("\(selectedExercises.count) exercise\(selectedExercises.count == 1 ? "" : "s") ready")
                                     .font(.caption)
                                     .fontWeight(.semibold)
-                                    .foregroundColor(.green)
+                                    .foregroundColor(.primary)
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color.green.opacity(0.1))
+                            .background(Color(.systemGray6))
                             .cornerRadius(12)
                         }
                     }
@@ -116,14 +116,14 @@ struct WorkoutCreatorView: View {
                                         .font(.headline)
                                         .fontWeight(.semibold)
                                 }
-                                .foregroundColor(.purple)
+                                .foregroundColor(.primary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
-                                .background(Color.purple.opacity(0.1))
+                                .background(Color(.systemGray6))
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
                                 )
                             }
                             .padding(.horizontal)
@@ -147,7 +147,7 @@ struct WorkoutCreatorView: View {
                                         }
                                     }
                                     .font(.subheadline)
-                                    .foregroundColor(.red)
+                                    .foregroundColor(.secondary)
                                 }
                             }
                             .padding(.horizontal)
@@ -193,13 +193,13 @@ struct WorkoutCreatorView: View {
                             .padding(.vertical, 16)
                             .background(
                                 LinearGradient(
-                                    colors: [Color.blue, Color.blue.opacity(0.8)],
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                             .cornerRadius(16)
-                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                            .shadow(color: Color.primary.opacity(0.3), radius: 8, x: 0, y: 4)
                         }
                         .disabled(isCreatingWorkout)
                         .padding(.horizontal)
@@ -209,7 +209,7 @@ struct WorkoutCreatorView: View {
                     if !errorMessage.isEmpty {
                         Text(errorMessage)
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
@@ -305,15 +305,15 @@ struct MuscleGroupCard: View {
         }
     }
     
-    var muscleGroupColor: Color {
+    var muscleGroupIntensity: Double {
         switch muscleGroup.id {
-        case "chest": return .blue
-        case "back": return .blue
-        case "legs": return .blue
-        case "core": return .blue
-        case "arms": return .blue
-        case "shoulders": return .blue
-        default: return .gray
+        case "chest": return 0.8
+        case "back": return 0.7
+        case "legs": return 0.9
+        case "core": return 0.6
+        case "arms": return 0.8
+        case "shoulders": return 0.7
+        default: return 0.5
         }
     }
     
@@ -323,12 +323,12 @@ struct MuscleGroupCard: View {
                 // Icon in colored circle
                 ZStack {
                     Circle()
-                        .fill(isSelected ? Color.white.opacity(0.2) : muscleGroupColor.opacity(0.1))
+                        .fill(isSelected ? Color.white.opacity(0.2) : Color.primary.opacity(0.1))
                         .frame(width: 50, height: 50)
                     
                     Image(systemName: muscleGroupIcon)
                         .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(isSelected ? .white : muscleGroupColor)
+                        .foregroundColor(isSelected ? .white : Color.primary.opacity(muscleGroupIntensity))
                 }
                 
                 // Name
@@ -347,17 +347,17 @@ struct MuscleGroupCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(isSelected ? 
-                          LinearGradient(colors: [muscleGroupColor, muscleGroupColor.opacity(0.8)], 
+                          LinearGradient(colors: [Color.primary.opacity(muscleGroupIntensity), Color.primary.opacity(muscleGroupIntensity * 0.8)], 
                                        startPoint: .topLeading, endPoint: .bottomTrailing) :
                           LinearGradient(colors: [Color(.systemGray6)], 
                                        startPoint: .topLeading, endPoint: .bottomTrailing))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? muscleGroupColor.opacity(0.3) : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.primary.opacity(0.3) : Color.clear, lineWidth: 2)
             )
             .scaleEffect(isSelected ? 1.02 : 1.0)
-            .shadow(color: isSelected ? muscleGroupColor.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
+            .shadow(color: isSelected ? Color.primary.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -392,7 +392,7 @@ struct ExerciseCard: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.blue : Color(.systemGray6))
+                    .fill(isSelected ? Color.primary : Color(.systemGray6))
             )
             .scaleEffect(isSelected ? 1.02 : 1.0)
         }

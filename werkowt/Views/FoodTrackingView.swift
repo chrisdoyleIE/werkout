@@ -80,12 +80,12 @@ struct FoodTrackingView: View {
                                     .font(.caption)
                                     .fontWeight(.medium)
                             }
-                            .foregroundColor(selectedMealType == mealType ? .blue : .secondary)
+                            .foregroundColor(selectedMealType == mealType ? .primary : .secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             .background(
                                 selectedMealType == mealType ?
-                                Color.blue.opacity(0.1) : Color.clear
+                                Color.primary.opacity(0.1) : Color.clear
                             )
                             .cornerRadius(10)
                         }
@@ -114,7 +114,7 @@ struct FoodTrackingView: View {
                                 } else {
                                     Image(systemName: "arrow.up.circle.fill")
                                         .font(.system(size: 28))
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.primary)
                                 }
                             }
                             .disabled(isAnalyzing)
@@ -126,7 +126,7 @@ struct FoodTrackingView: View {
                         Button(action: { showingManualSearch = true }) {
                             Label("Search", systemImage: "magnifyingglass")
                                 .font(.subheadline)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                         }
                         
                         Spacer()
@@ -149,7 +149,7 @@ struct FoodTrackingView: View {
                     if let errorMessage = errorMessage {
                         Text(errorMessage)
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundColor(.secondary)
                     }
                 }
                 .padding(.horizontal)
@@ -205,22 +205,22 @@ struct FoodTrackingView: View {
                                     MacroView(
                                         value: String(format: "%.0f", todaysNutrition.calories),
                                         label: "cal",
-                                        color: .red
+                                        color: .primary
                                     )
                                     MacroView(
                                         value: String(format: "%.1f", todaysNutrition.protein),
                                         label: "protein",
-                                        color: .green
+                                        color: .primary.opacity(0.8)
                                     )
                                     MacroView(
                                         value: String(format: "%.1f", todaysNutrition.carbs),
                                         label: "carbs",
-                                        color: .orange
+                                        color: .primary.opacity(0.6)
                                     )
                                     MacroView(
                                         value: String(format: "%.1f", todaysNutrition.fat),
                                         label: "fat",
-                                        color: .purple
+                                        color: .primary.opacity(0.4)
                                     )
                                 }
                                 .padding()
@@ -325,7 +325,7 @@ struct CameraView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
+                .background(Color.primary)
                 .cornerRadius(12)
                 .padding(.horizontal)
             }
@@ -374,7 +374,7 @@ struct ActionButtonContent: View {
                 .foregroundColor(.secondary)
         }
         .padding()
-        .background(color.opacity(0.1))
+        .background(Color.primary.opacity(0.1))
         .cornerRadius(12)
     }
 }
@@ -436,11 +436,11 @@ struct FoodEntryRowView: View {
                 HStack {
                     Label("\(String(format: "%.0f", entry.calories)) cal", systemImage: "flame.fill")
                         .font(.caption)
-                        .foregroundColor(.red)
+                        .foregroundColor(.primary)
                     
                     Label("\(String(format: "%.1f", entry.proteinG))g protein", systemImage: "circle.fill")
                         .font(.caption)
-                        .foregroundColor(.green)
+                        .foregroundColor(.primary.opacity(0.8))
                     
                     Spacer()
                     
@@ -474,13 +474,13 @@ struct FoodEntryRowView: View {
     private var mealTypeColor: Color {
         switch entry.mealType {
         case .breakfast:
-            return .orange
+            return .primary.opacity(0.9)
         case .lunch:
-            return .blue
+            return .primary.opacity(0.7)
         case .dinner:
-            return .purple
+            return .primary.opacity(0.5)
         case .snack:
-            return .gray
+            return .primary.opacity(0.3)
         }
     }
 }
@@ -586,13 +586,13 @@ struct MealSectionView: View {
     private func mealTypeColor(for mealType: MealType) -> Color {
         switch mealType {
         case .breakfast:
-            return .orange
+            return .primary.opacity(0.9)
         case .lunch:
-            return .blue
+            return .primary.opacity(0.7)
         case .dinner:
-            return .purple
+            return .primary.opacity(0.5)
         case .snack:
-            return .pink
+            return .primary.opacity(0.3)
         }
     }
 }

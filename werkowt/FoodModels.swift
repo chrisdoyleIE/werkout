@@ -21,6 +21,13 @@ struct FoodItem: Identifiable, Codable {
     let createdAt: Date
     let updatedAt: Date
     
+    // New meal-related properties
+    let isUserRecipe: Bool?
+    let servingSizeName: String?
+    let servingSizeGrams: Double?
+    let useCount: Int?
+    let lastUsedAt: Date?
+    
     enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -39,6 +46,11 @@ struct FoodItem: Identifiable, Codable {
         case createdByUserId = "created_by_user_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case isUserRecipe = "is_user_recipe"
+        case servingSizeName = "serving_size_name"
+        case servingSizeGrams = "serving_size_grams"
+        case useCount = "use_count"
+        case lastUsedAt = "last_used_at"
     }
     
     init(
@@ -58,7 +70,12 @@ struct FoodItem: Identifiable, Codable {
         lastVerifiedAt: Date? = nil,
         createdByUserId: UUID? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        isUserRecipe: Bool? = nil,
+        servingSizeName: String? = nil,
+        servingSizeGrams: Double? = nil,
+        useCount: Int? = nil,
+        lastUsedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -77,6 +94,11 @@ struct FoodItem: Identifiable, Codable {
         self.createdByUserId = createdByUserId
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.isUserRecipe = isUserRecipe
+        self.servingSizeName = servingSizeName
+        self.servingSizeGrams = servingSizeGrams
+        self.useCount = useCount
+        self.lastUsedAt = lastUsedAt
     }
     
     var displayName: String {
@@ -116,6 +138,11 @@ struct FoodEntry: Identifiable, Codable {
     let confidenceScore: Double
     let createdAt: Date
     
+    // New meal grouping properties
+    let mealGroupId: UUID?
+    let mealGroupName: String?
+    let isMealTemplate: Bool?
+    
     var foodItem: FoodItem?
     
     enum CodingKeys: String, CodingKey {
@@ -133,6 +160,9 @@ struct FoodEntry: Identifiable, Codable {
         case source
         case confidenceScore = "confidence_score"
         case createdAt = "created_at"
+        case mealGroupId = "meal_group_id"
+        case mealGroupName = "meal_group_name"
+        case isMealTemplate = "is_meal_template"
         // foodItem is not encoded/decoded as it's populated separately
     }
     
@@ -151,6 +181,9 @@ struct FoodEntry: Identifiable, Codable {
         source: FoodEntrySource = .manual,
         confidenceScore: Double = 1.0,
         createdAt: Date = Date(),
+        mealGroupId: UUID? = nil,
+        mealGroupName: String? = nil,
+        isMealTemplate: Bool? = nil,
         foodItem: FoodItem? = nil
     ) {
         self.id = id
@@ -167,6 +200,9 @@ struct FoodEntry: Identifiable, Codable {
         self.source = source
         self.confidenceScore = confidenceScore
         self.createdAt = createdAt
+        self.mealGroupId = mealGroupId
+        self.mealGroupName = mealGroupName
+        self.isMealTemplate = isMealTemplate
         self.foodItem = foodItem
     }
 }
@@ -177,6 +213,7 @@ enum FoodEntrySource: String, CaseIterable, Codable {
     case camera = "camera"
     case text = "text"
     case claudeSearch = "claude_search"
+    case mealTemplate = "meal_template"
     
     var displayName: String {
         switch self {
@@ -190,6 +227,8 @@ enum FoodEntrySource: String, CaseIterable, Codable {
             return "Text Input"
         case .claudeSearch:
             return "AI Search"
+        case .mealTemplate:
+            return "Meal Template"
         }
     }
     
@@ -205,6 +244,8 @@ enum FoodEntrySource: String, CaseIterable, Codable {
             return "textformat"
         case .claudeSearch:
             return "wand.and.stars"
+        case .mealTemplate:
+            return "square.stack.3d.up.fill"
         }
     }
 }
@@ -231,6 +272,95 @@ extension Array where Element == FoodEntry {
     
     func groupedByMealType() -> [MealType: [FoodEntry]] {
         return Dictionary(grouping: self, by: \.mealType)
+    }
+}
+
+// MARK: - Meal Template Models
+
+struct MealTemplate: Identifiable, Codable {
+    let mealGroupId: UUID
+    let mealGroupName: String
+    let userId: UUID
+    let componentCount: Int
+    let components: [MealComponent]
+    let totalCalories: Double
+    let totalProtein: Double
+    let totalCarbs: Double
+    let totalFat: Double
+    let lastUsed: Date
+    let useCount: Int
+    
+    var id: UUID { mealGroupId }
+    
+    enum CodingKeys: String, CodingKey {
+        case mealGroupId = "meal_group_id"
+        case mealGroupName = "meal_group_name"
+        case userId = "user_id"
+        case componentCount = "component_count"
+        case components
+        case totalCalories = "total_calories"
+        case totalProtein = "total_protein"
+        case totalCarbs = "total_carbs"
+        case totalFat = "total_fat"
+        case lastUsed = "last_used"
+        case useCount = "use_count"
+    }
+}
+
+struct MealComponent: Codable {
+    let foodItemId: UUID
+    let quantityGrams: Double
+    let foodName: String
+    let brand: String?
+    let caloriesPer100g: Double
+    let proteinPer100g: Double
+    let carbsPer100g: Double
+    let fatPer100g: Double
+    
+    enum CodingKeys: String, CodingKey {
+        case foodItemId = "food_item_id"
+        case quantityGrams = "quantity_grams"
+        case foodName = "food_name"
+        case brand
+        case caloriesPer100g = "calories_per_100g"
+        case proteinPer100g = "protein_per_100g"
+        case carbsPer100g = "carbs_per_100g"
+        case fatPer100g = "fat_per_100g"
+    }
+}
+
+// Model for recent foods and meals search results
+struct RecentFoodItem: Identifiable {
+    let itemType: String // "food" or "meal"
+    let itemId: UUID
+    let name: String
+    let brand: String?
+    let lastUsed: Date
+    let useCount: Int
+    let avgQuantity: Double?
+    let caloriesPerServing: Double
+    let proteinPerServing: Double
+    let isMeal: Bool
+    let components: [MealComponent]?
+    
+    var id: UUID { itemId }
+    
+    var displayName: String {
+        if isMeal {
+            return "🍽️ \(name)"
+        } else if let brand = brand, !brand.isEmpty {
+            return "\(brand) \(name)"
+        }
+        return name
+    }
+    
+    var subtitle: String {
+        if isMeal {
+            return "\(components?.count ?? 0) items • \(Int(caloriesPerServing)) cal"
+        } else {
+            let quantity = avgQuantity ?? 100
+            return "\(Int(quantity))g • \(Int(caloriesPerServing)) cal"
+        }
     }
 }
 

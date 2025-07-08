@@ -9,6 +9,7 @@ struct CustomTabView: View {
     @State private var showingWorkoutCreator = false
     @State private var showingFoodLogger = false
     @State private var showingAddWeight = false
+    @State private var showingManualSearch = false
     
     var body: some View {
         ZStack {
@@ -136,21 +137,24 @@ struct CustomTabView: View {
                 VStack {
                     Spacer()
                     
-                    VStack(spacing: 12) {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 16),
+                        GridItem(.flexible(), spacing: 16)
+                    ], spacing: 16) {
                         ActionMenuItem(
-                            icon: "figure.stand",
-                            label: "Log Weight",
-                            color: .purple,
+                            icon: "figure.strengthtraining.functional",
+                            label: "Log exercise",
+                            isPrimary: true,
                             action: {
-                                showingAddWeight = true
+                                showingWorkoutCreator = true
                                 showingActionMenu = false
                             }
                         )
                         
                         ActionMenuItem(
-                            icon: "fork.knife",
-                            label: "Track Food",
-                            color: .green,
+                            icon: "camera.viewfinder",
+                            label: "Scan Food",
+                            isPrimary: false,
                             action: {
                                 showingFoodLogger = true
                                 showingActionMenu = false
@@ -158,17 +162,27 @@ struct CustomTabView: View {
                         )
                         
                         ActionMenuItem(
-                            icon: "figure.strengthtraining.functional",
-                            label: "Start Workout",
-                            color: .blue,
+                            icon: "magnifyingglass",
+                            label: "Search Food",
+                            isPrimary: false,
                             action: {
-                                showingWorkoutCreator = true
+                                showingManualSearch = true
+                                showingActionMenu = false
+                            }
+                        )
+                        
+                        ActionMenuItem(
+                            icon: "figure.stand",
+                            label: "Record weight",
+                            isPrimary: false,
+                            action: {
+                                showingAddWeight = true
                                 showingActionMenu = false
                             }
                         )
                     }
                     .padding(.bottom, 120)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, 16)
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(1)
@@ -186,11 +200,28 @@ struct CustomTabView: View {
                 await addWeight(weight: weight, notes: notes)
             }
         }
+        .sheet(isPresented: $showingManualSearch) {
+            ManualFoodSearchView(selectedMealType: mealTypeForCurrentTime())
+        }
     }
     
     private func addWeight(weight: Double, notes: String?) async {
         // This would be handled by HomeView's WorkoutDataManager
         print("Weight logging would be handled here")
+    }
+    
+    private func mealTypeForCurrentTime() -> MealType {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5...10:
+            return .breakfast
+        case 11...15:
+            return .lunch
+        case 16...21:
+            return .dinner
+        default:
+            return .snack
+        }
     }
 }
 
@@ -218,30 +249,34 @@ struct TabBarButton: View {
 struct ActionMenuItem: View {
     let icon: String
     let label: String
-    let color: Color
+    let isPrimary: Bool
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            VStack(spacing: 16) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(color)
-                    .frame(width: 40)
+                    .font(.system(size: isPrimary ? 36 : 32, weight: isPrimary ? .semibold : .medium))
+                    .foregroundColor(isPrimary ? .primary : .primary.opacity(0.7))
+                    .frame(width: 50, height: 50)
                 
                 Text(label)
-                    .font(.body)
-                    .foregroundColor(.primary)
-                
-                Spacer()
+                    .font(.system(size: isPrimary ? 17 : 16, weight: isPrimary ? .semibold : .medium))
+                    .foregroundColor(isPrimary ? .primary : .primary.opacity(0.7))
+                    .multilineTextAlignment(.center)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+            .frame(maxWidth: .infinity)
+            .frame(height: isPrimary ? 130 : 120)
+            .background(isPrimary ? Color(.systemBackground) : Color(.systemGray6))
+            .cornerRadius(20)
+            .shadow(color: Color.black.opacity(isPrimary ? 0.1 : 0.05), radius: isPrimary ? 12 : 8, x: 0, y: isPrimary ? 6 : 4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(isPrimary ? Color(.systemGray4) : Color(.systemGray5), lineWidth: isPrimary ? 1.5 : 1)
+            )
+            .scaleEffect(isPrimary ? 1.0 : 0.95)
         }
-        .padding(.horizontal, 20)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

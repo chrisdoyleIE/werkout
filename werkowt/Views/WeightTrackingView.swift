@@ -33,7 +33,7 @@ struct WeightTrackingView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue)
+                            .background(Color.primary)
                             .foregroundColor(.white)
                             .cornerRadius(12)
                         }
@@ -197,15 +197,15 @@ struct WeightChartView: View {
                                             Text(String(format: "%.1f kg", entry.weightKg))
                                                 .font(.caption)
                                                 .fontWeight(.semibold)
-                                                .foregroundColor(.blue)
+                                                .foregroundColor(.primary)
                                                 .padding(.horizontal, 6)
                                                 .padding(.vertical, 2)
-                                                .background(Color.blue.opacity(0.1))
+                                                .background(Color.primary.opacity(0.1))
                                                 .cornerRadius(6)
                                             
                                             // Bar chart
                                             Rectangle()
-                                                .fill(Color.blue)
+                                                .fill(Color.primary)
                                                 .frame(width: 12, height: CGFloat(barHeight(for: entry.weightKg)))
                                                 .cornerRadius(2)
                                             
@@ -259,7 +259,7 @@ struct WeightChartView: View {
                                         Text(change >= 0 ? "+\(String(format: "%.1f", change)) kg" : "\(String(format: "%.1f", change)) kg")
                                             .font(.caption)
                                             .fontWeight(.medium)
-                                            .foregroundColor(change >= 0 ? .orange : .green)
+                                            .foregroundColor(change >= 0 ? .primary.opacity(0.8) : .primary.opacity(0.6))
                                     }
                                 }
                             }
@@ -298,7 +298,7 @@ struct WeightEntryCard: View {
                 Text(String(format: "%.1f kg", entry.weightKg))
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.primary)
                 
                 Text(entry.recordedAt.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
@@ -316,7 +316,7 @@ struct WeightEntryCard: View {
             
             Button(action: onDelete) {
                 Image(systemName: "trash")
-                    .foregroundColor(.red)
+                    .foregroundColor(.secondary)
                     .font(.subheadline)
             }
         }
@@ -364,7 +364,7 @@ struct AddWeightView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "figure.stand")
                             .font(.system(size: 48, weight: .light))
-                            .foregroundColor(.blue)
+                            .foregroundColor(.primary)
                         
                         VStack(spacing: 8) {
                             Text("Track Weight")
@@ -390,7 +390,7 @@ struct AddWeightView: View {
                                 .keyboardType(.decimalPad)
                                 .font(.title2)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.blue)
+                                .foregroundColor(.primary)
                                 .padding()
                                 .background(Color(.systemGray6))
                                 .cornerRadius(12)
@@ -453,7 +453,7 @@ struct AddWeightView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(isValidWeight ? Color.blue : Color(.systemGray4))
+                    .background(isValidWeight ? Color.primary : Color(.systemGray4))
                     .foregroundColor(isValidWeight ? .white : .secondary)
                     .cornerRadius(16)
                     .disabled(!isValidWeight || isLoading)
