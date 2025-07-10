@@ -98,14 +98,21 @@ struct ManualFoodSearchView: View {
                             )
                         }
                         
-                        // Section 3: Create New Food
+                        // Section 3: Create New Options
                         if !searchText.isEmpty {
                             FoodSearchSection(
                                 title: "Can't find it?",
                                 items: {
-                                    CreateFoodRow(foodName: searchText) {
-                                        // TODO: Navigate to create food view
-                                        print("Create new food: \(searchText)")
+                                    VStack(spacing: 8) {
+                                        CreateFoodRow(foodName: searchText) {
+                                            // TODO: Navigate to create food view
+                                            print("Create new food: \(searchText)")
+                                        }
+                                        
+                                        CreateMealRow {
+                                            // TODO: Navigate to create meal view
+                                            print("Create new meal")
+                                        }
                                     }
                                 }
                             )
@@ -445,6 +452,47 @@ struct CreateFoodRow: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.2), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct CreateMealRow: View {
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: "square.stack.3d.up.badge.plus")
+                    .font(.system(size: 20))
+                    .foregroundColor(.primary)
+                    .frame(width: 32)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Create new meal")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Text("Combine multiple foods")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 
                 Spacer()

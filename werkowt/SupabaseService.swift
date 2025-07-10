@@ -1420,6 +1420,39 @@ class SupabaseService: ObservableObject {
         }
     }
     
+    // Overloaded method that takes MealComponent array
+    func saveMealTemplate(name: String, foods: [MealComponent]) async throws -> UUID {
+        let userId = try ensureAuthenticated()
+        let mealGroupId = UUID()
+        
+        do {
+            // Create food entries for each component with meal_template source
+            for food in foods {
+                let entry = FoodEntry(
+                    userId: userId,
+                    foodItemId: food.foodItemId,
+                    consumedDate: Date(),
+                    mealType: .lunch, // Temporary meal type for template
+                    quantityGrams: food.quantityGrams,
+                    calories: food.caloriesPer100g * (food.quantityGrams / 100.0),
+                    proteinG: food.proteinPer100g * (food.quantityGrams / 100.0),
+                    carbsG: food.carbsPer100g * (food.quantityGrams / 100.0),
+                    fatG: food.fatPer100g * (food.quantityGrams / 100.0),
+                    source: .mealTemplate,
+                    mealGroupId: mealGroupId,
+                    mealGroupName: name,
+                    isMealTemplate: true
+                )
+                
+                try await logFoodEntry(entry)
+            }
+            
+            return mealGroupId
+        } catch {
+            throw SupabaseServiceError.networkError(error)
+        }
+    }
+    
     func logMealFromTemplate(mealGroupId: UUID, mealType: MealType, scaleFactor: Double = 1.0) async throws {
         let userId = try ensureAuthenticated()
         

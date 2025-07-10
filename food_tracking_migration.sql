@@ -10,7 +10,7 @@ ADD COLUMN IF NOT EXISTS created_by_user_id uuid REFERENCES auth.users(id);
 
 -- Add source tracking and confidence to food_entries
 ALTER TABLE public.food_entries 
-ADD COLUMN IF NOT EXISTS source text CHECK (source IN ('manual', 'voice', 'camera', 'text', 'claude_search')) DEFAULT 'manual',
+ADD COLUMN IF NOT EXISTS source text CHECK (source IN ('manual', 'voice', 'camera', 'text', 'claude_search', 'meal_template')) DEFAULT 'manual',
 ADD COLUMN IF NOT EXISTS confidence_score numeric DEFAULT 1.0 CHECK (confidence_score >= 0.0 AND confidence_score <= 1.0);
 
 -- Create indexes for efficient searching

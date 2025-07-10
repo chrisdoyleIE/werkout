@@ -381,6 +381,86 @@ extension ClaudeAPIClient {
         
         return text
     }
+    
+    func estimateNutrition(foodName: String, brand: String? = nil) async throws -> NutritionInfo {
+        guard let url = URL(string: baseURL) else {
+            throw ClaudeAPIError.invalidURL
+        }
+        
+        let apiKey = Config.anthropicKey
+        guard !apiKey.isEmpty else {
+            throw ClaudeAPIError.noAPIKey
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 60.0
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.addValue(apiVersion, forHTTPHeaderField: "anthropic-version")
+        
+        let brandText = brand.map { " (brand: \($0))" } ?? ""
+        let prompt = """
+        Estimate the nutrition information per 100g for: \(foodName)\(brandText)
+        
+        Provide realistic estimates based on typical values for this food item.
+        Return ONLY a JSON object with this exact format:
+        {
+            "calories": 165.0,
+            "protein": 31.0,
+            "carbs": 0.0,
+            "fat": 3.6,
+            "fiber": 0.0,
+            "sugar": 0.0,
+            "sodium": 74.0
+        }
+        
+        All values should be per 100 grams. Use decimal numbers.
+        """
+        
+        let body: [String: Any] = [
+            "model": model,
+            "messages": [
+                ["role": "user", "content": prompt]
+            ],
+            "max_tokens": 256
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, _) = try await URLSession.shared.data(for: request)
+        
+        guard let jsonResult = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = jsonResult["content"] as? [[String: Any]],
+              let firstContent = content.first,
+              let text = firstContent["text"] as? String else {
+            throw ClaudeAPIError.invalidResponse
+        }
+        
+        // Extract JSON from the response text
+        guard let jsonData = extractJSON(from: text) else {
+            throw ClaudeAPIError.invalidResponse
+        }
+        
+        do {
+            let nutritionDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Double]
+            guard let nutritionDict = nutritionDict else {
+                throw ClaudeAPIError.invalidResponse
+            }
+            
+            return NutritionInfo(
+                calories: nutritionDict["calories"] ?? 0,
+                protein: nutritionDict["protein"] ?? 0,
+                carbs: nutritionDict["carbs"] ?? 0,
+                fat: nutritionDict["fat"] ?? 0,
+                fiber: nutritionDict["fiber"] ?? 0,
+                sugar: nutritionDict["sugar"] ?? 0,
+                sodium: nutritionDict["sodium"] ?? 0
+            )
+        } catch {
+            throw ClaudeAPIError.jsonParsingError
+        }
+    }
 }
 
 // MARK: - Food Analysis with Tool Use
