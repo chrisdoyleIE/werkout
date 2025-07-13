@@ -95,16 +95,17 @@ struct HomeView: View {
     
     var body: some View {
         ZStack {
-            VStack(spacing: 0) {
-                // Spacer for top
-                Spacer()
-                    .frame(height: 20)
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Spacer for top
+                    Spacer()
+                        .frame(height: 20)
 
+                    
                 
-            
-                
-                // Journey Section
-                VStack(alignment: .leading, spacing: 20) {
+                    
+                    // Journey Section
+                    VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 16) {
                         
                         // Progress split layout
@@ -311,6 +312,8 @@ struct HomeView: View {
                 
                 Spacer()
             }
+            }
+            .scrollIndicators(.hidden)
             
             // Action button removed - now in tab bar
         }

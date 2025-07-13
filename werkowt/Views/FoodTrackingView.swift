@@ -291,7 +291,7 @@ struct FoodTrackingView: View {
 }
 
 // MARK: - Camera View (Placeholder)
-struct CameraView: View {
+struct PlaceholderCameraView: View {
     let onImageCaptured: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
     

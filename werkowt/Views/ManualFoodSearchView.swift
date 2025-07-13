@@ -16,6 +16,8 @@ struct ManualFoodSearchView: View {
     @State private var showingMealDetail = false
     @State private var showingFoodCreator = false
     @State private var showingMealCreator = false
+    @State private var showingPhotoCapture = false
+    @State private var capturedPhotoReference: UIImage?
     @State private var isLoading = false
     
     private let searchDebouncer = Debouncer()
@@ -106,9 +108,15 @@ struct ManualFoodSearchView: View {
                                 title: "Can't find it?",
                                 items: {
                                     VStack(spacing: 8) {
-                                        CreateFoodRow(foodName: searchText) {
-                                            showingFoodCreator = true
-                                        }
+                                        CreateFoodOptionsRow(
+                                            foodName: searchText,
+                                            onManualCreate: {
+                                                showingFoodCreator = true
+                                            },
+                                            onCameraCreate: {
+                                                showingPhotoCapture = true
+                                            }
+                                        )
                                         
                                         CreateMealRow {
                                             showingMealCreator = true
@@ -180,9 +188,12 @@ struct ManualFoodSearchView: View {
         .sheet(isPresented: $showingFoodCreator) {
             FoodCreatorView(
                 initialFoodName: searchText.isEmpty ? nil : searchText,
+                capturedPhotoReference: capturedPhotoReference,
                 onFoodSaved: { finalFoodName in
                     // Update search text with the final food name
                     searchText = finalFoodName
+                    // Clear captured photo after use
+                    capturedPhotoReference = nil
                     // Refresh search results to show the newly created food
                     Task {
                         await performSearch(query: finalFoodName)
@@ -191,7 +202,26 @@ struct ManualFoodSearchView: View {
             )
         }
         .sheet(isPresented: $showingMealCreator) {
-            MealCreatorView()
+            MealCreatorView(
+                onMealSaved: { finalMealName in
+                    // Update search text with the final meal name
+                    searchText = finalMealName
+                    // Refresh search results to show the newly created meal
+                    Task {
+                        await loadRecentItems()
+                    }
+                }
+            )
+        }
+        .sheet(isPresented: $showingPhotoCapture) {
+            PhotoFoodCaptureView(
+                selectedMealType: selectedMealType,
+                onImageCaptured: { image in
+                    capturedPhotoReference = image
+                    showingPhotoCapture = false
+                    showingFoodCreator = true
+                }
+            )
         }
         .overlay(
             Group {
@@ -224,7 +254,7 @@ struct ManualFoodSearchView: View {
         do {
             let items = try await supabaseService.getRecentFoodsAndMeals(
                 days: 7,
-                mealType: selectedMealType
+                mealType: nil
             )
             await MainActor.run {
                 recentItems = items
@@ -775,6 +805,70 @@ extension Date {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: self, relativeTo: Date())
+    }
+}
+
+struct CreateFoodOptionsRow: View {
+    let foodName: String
+    let onManualCreate: () -> Void
+    let onCameraCreate: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Camera option
+            Button(action: onCameraCreate) {
+                HStack(spacing: 8) {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.primary)
+                        .frame(width: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Take Photo")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        Text("Capture image")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Manual option  
+            Button(action: onManualCreate) {
+                HStack(spacing: 8) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 16))
+                        .foregroundColor(.primary)
+                        .frame(width: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Manual Entry")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        Text("Enter details")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
     }
 }
 

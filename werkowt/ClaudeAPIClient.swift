@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 class ClaudeAPIClient {
     static let shared = ClaudeAPIClient()
@@ -673,6 +674,25 @@ extension ClaudeAPIClient {
     }
     
     @MainActor
+    func analyzeFoodPhoto(
+        image: UIImage,
+        hasNutritionInfo: Bool
+    ) async throws -> FoodAnalysisResult {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            throw ClaudeAPIError.invalidResponse
+        }
+        
+        let instruction = hasNutritionInfo ? 
+            "Extract nutrition information from the food photo. Use only the nutrition facts visible in the image." :
+            "Identify the food in the photo and estimate nutrition values. Use web search if needed to find accurate nutrition data."
+        
+        return try await analyzeFoodWithTools(
+            input: instruction,
+            inputType: .camera,
+            imageData: imageData
+        )
+    }
+    
     func analyzeFoodWithTools(
         input: String,
         inputType: FoodInputType,

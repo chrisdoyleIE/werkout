@@ -63,6 +63,7 @@ struct FoodCreatorView: View {
     @State private var fat: String = ""
     
     // AI and estimation states
+    @State private var useAIEstimation = true
     @State private var isEstimatingWithAI = false
     @State private var isAIEstimated = false
     @State private var aiConfidence: Double = 0.0
@@ -73,6 +74,7 @@ struct FoodCreatorView: View {
     @State private var isSaving = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @State private var capturedPhotoReference: UIImage?
     
     // Auto-estimation debouncer
     @State private var estimationTask: Task<Void, Never>?
@@ -87,9 +89,10 @@ struct FoodCreatorView: View {
         case servingAndNutrition
     }
     
-    init(initialFoodName: String? = nil, onFoodSaved: ((String) -> Void)? = nil) {
+    init(initialFoodName: String? = nil, capturedPhotoReference: UIImage? = nil, onFoodSaved: ((String) -> Void)? = nil) {
         self.initialFoodName = initialFoodName
         self.onFoodSaved = onFoodSaved
+        self._capturedPhotoReference = State(initialValue: capturedPhotoReference)
     }
     
     var body: some View {
@@ -102,6 +105,7 @@ struct FoodCreatorView: View {
                         FoodNameStep(
                             foodName: $foodName,
                             isEstimating: $isEstimatingWithAI,
+                            capturedPhotoReference: capturedPhotoReference,
                             onNext: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     currentStep = .brandAndDetails
@@ -113,17 +117,25 @@ struct FoodCreatorView: View {
                         BrandDetailsStep(
                             foodName: $foodName,
                             brandName: $brandName,
+                            useAIEstimation: $useAIEstimation,
                             isAIEstimated: $isAIEstimated,
                             aiConfidence: $aiConfidence,
                             showingFixPanel: $showingFixPanel,
                             isEstimating: $isEstimatingWithAI,
                             onNext: {
-                                Task {
-                                    await estimateWithAI()
-                                    await MainActor.run {
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            currentStep = .servingAndNutrition
+                                if useAIEstimation {
+                                    Task {
+                                        await estimateWithAI()
+                                        await MainActor.run {
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                currentStep = .servingAndNutrition
+                                            }
                                         }
+                                    }
+                                } else {
+                                    // Skip AI estimation, go directly to nutrition step
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        currentStep = .servingAndNutrition
                                     }
                                 }
                             },
@@ -309,62 +321,81 @@ struct FoodCreatorView: View {
 struct MealCreatorView: View {
     @Environment(\.dismiss) private var dismiss
     private let supabaseService = SupabaseService.shared
+    let onMealSaved: ((String) -> Void)?
     
     @State private var mealName = ""
     @State private var searchText = ""
     @State private var selectedFoods: [MealFood] = []
-    @State private var showingFoodSearch = false
+    @State private var currentStep: MealCreationStep = .nameEntry
+    @State private var showingFoodCreator = false
     @State private var editingFood: MealFood?
     @State private var isSaving = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
     
-    // For quantity input
-    @State private var quantityInput = ""
-    @State private var selectedUnit: FoodUnit = .grams
+    enum MealCreationStep {
+        case nameEntry
+        case foodAddition
+    }
     
     struct MealFood: Identifiable {
         let id = UUID()
         let food: FoodItem
         var quantity: Double
         var unit: FoodUnit
+        
+        var nutritionInfo: NutritionInfo {
+            let quantityInGrams = quantity * unit.conversionToGrams
+            return food.calculateNutrition(for: quantityInGrams)
+        }
+    }
+    
+    init(onMealSaved: ((String) -> Void)? = nil) {
+        self.onMealSaved = onMealSaved
+    }
+    
+    var totalNutrition: NutritionInfo {
+        selectedFoods.reduce(NutritionInfo.zero) { total, mealFood in
+            total + mealFood.nutritionInfo
+        }
     }
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Form {
-                    Section("Meal Details") {
-                        TextField("Meal Name", text: $mealName)
-                    }
-                    
-                    Section("Foods") {
-                        if selectedFoods.isEmpty {
-                            Text("No foods added yet")
-                                .foregroundColor(.secondary)
-                        } else {
-                            ForEach(selectedFoods) { mealFood in
-                                MealFoodRow(mealFood: mealFood) {
-                                    editingFood = mealFood
-                                }
-                            }
-                            .onDelete(perform: deleteFoods)
-                        }
-                        
-                        Button(action: { showingFoodSearch = true }) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                Text("Add Food")
+                // Progressive Steps
+                switch currentStep {
+                case .nameEntry:
+                    MealNameEntryStep(
+                        mealName: $mealName,
+                        onNext: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentStep = .foodAddition
                             }
                         }
-                    }
+                    )
                     
-                    if !selectedFoods.isEmpty {
-                        Section("Total Nutrition") {
-                            MealNutritionSummaryRow(nutrition: totalNutrition)
-                        }
-                    }
+                case .foodAddition:
+                    MealBuilderStep(
+                        mealName: mealName,
+                        searchText: $searchText,
+                        selectedFoods: $selectedFoods,
+                        showingFoodCreator: $showingFoodCreator,
+                        editingFood: $editingFood,
+                        totalNutrition: totalNutrition,
+                        onBack: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentStep = .nameEntry
+                            }
+                        },
+                        onSave: {
+                            saveMeal()
+                        },
+                        isSaving: $isSaving
+                    )
                 }
+                
+                Spacer()
             }
             .navigationTitle("Create Meal")
             .navigationBarTitleDisplayMode(.inline)
@@ -374,16 +405,18 @@ struct MealCreatorView: View {
                         dismiss()
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveMeal()
-                    }
-                    .disabled(mealName.isEmpty || selectedFoods.isEmpty || isSaving)
-                }
             }
-            .sheet(isPresented: $showingFoodSearch) {
-                FoodSearchSheet(selectedFoods: $selectedFoods)
+            .sheet(isPresented: $showingFoodCreator) {
+                FoodCreatorView(
+                    initialFoodName: searchText.isEmpty ? nil : searchText,
+                    onFoodSaved: { finalFoodName in
+                        // Add the newly created food to search results
+                        searchText = finalFoodName
+                        Task {
+                            // Refresh search or add to selectedFoods
+                        }
+                    }
+                )
             }
             .sheet(item: $editingFood) { mealFood in
                 QuantityEditSheet(mealFood: mealFood, selectedFoods: $selectedFoods)
@@ -393,28 +426,7 @@ struct MealCreatorView: View {
             } message: {
                 Text(alertMessage)
             }
-            .overlay {
-                if isSaving {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                    ProgressView("Saving...")
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(10)
-                }
-            }
         }
-    }
-    
-    private var totalNutrition: NutritionInfo {
-        selectedFoods.reduce(NutritionInfo.zero) { total, mealFood in
-            let foodNutrition = mealFood.food.calculateNutrition(for: mealFood.quantity)
-            return total + foodNutrition
-        }
-    }
-    
-    private func deleteFoods(at offsets: IndexSet) {
-        selectedFoods.remove(atOffsets: offsets)
     }
     
     private func saveMeal() {
@@ -444,6 +456,8 @@ struct MealCreatorView: View {
                 )
                 
                 await MainActor.run {
+                    // Call completion callback with the meal name
+                    onMealSaved?(mealName)
                     dismiss()
                 }
             } catch {
@@ -454,6 +468,293 @@ struct MealCreatorView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Meal Creation Steps
+
+struct MealNameEntryStep: View {
+    @Binding var mealName: String
+    let onNext: () -> Void
+    
+    private var isValidMealName: Bool {
+        let trimmedName = mealName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedName.count >= 2
+    }
+    
+    var body: some View {
+        VStack(spacing: 32) {
+            VStack(spacing: 24) {
+                // Hero icon
+                Image(systemName: "rectangle.stack.badge.plus")
+                    .font(.system(size: 48, weight: .medium))
+                    .foregroundColor(.primary)
+                    .opacity(0.8)
+                
+                VStack(spacing: 16) {
+                    Text("Create Your Meal")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Give your meal a name to get started")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            
+            VStack(spacing: 24) {
+                TextField("Enter meal name", text: $mealName)
+                    .font(.system(size: 18, weight: .medium))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                
+                Button(action: onNext) {
+                    HStack {
+                        Text("Continue")
+                            .font(.system(size: 16, weight: .semibold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(isValidMealName ? Color.primary : Color(.systemGray4))
+                    .cornerRadius(12)
+                }
+                .disabled(!isValidMealName)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 40)
+    }
+}
+
+struct MealBuilderStep: View {
+    let mealName: String
+    @Binding var searchText: String
+    @Binding var selectedFoods: [MealCreatorView.MealFood]
+    @Binding var showingFoodCreator: Bool
+    @Binding var editingFood: MealCreatorView.MealFood?
+    let totalNutrition: NutritionInfo
+    let onBack: () -> Void
+    let onSave: () -> Void
+    @Binding var isSaving: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            VStack(spacing: 16) {
+                HStack {
+                    Image(systemName: "rectangle.stack.badge.plus")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text(mealName)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    Spacer()
+                }
+                
+                if !selectedFoods.isEmpty {
+                    MealSummaryCard(
+                        selectedFoods: selectedFoods,
+                        totalNutrition: totalNutrition,
+                        onEditFood: { food in
+                            editingFood = food
+                        },
+                        onRemoveFood: { food in
+                            selectedFoods.removeAll { $0.id == food.id }
+                        }
+                    )
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 16)
+            
+            // Divider between selected foods and search
+            if !selectedFoods.isEmpty {
+                Rectangle()
+                    .fill(Color(.systemGray5))
+                    .frame(height: 1)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+            }
+            
+            // Food Search Section
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                .padding(.horizontal)
+                
+                FoodSearchCore(
+                    searchText: $searchText,
+                    onFoodSelected: { food in
+                        // Add selected food with default quantity
+                        let mealFood = MealCreatorView.MealFood(
+                            food: food,
+                            quantity: 100,
+                            unit: .grams
+                        )
+                        selectedFoods.append(mealFood)
+                        searchText = ""
+                    },
+                    onCreateFood: {
+                        showingFoodCreator = true
+                    },
+                    onCreateMeal: {
+                        // Not applicable in meal creation context
+                    },
+                    showCreateMeal: false
+                )
+                .padding(.horizontal)
+            }
+            
+            // Bottom Actions
+            VStack(spacing: 12) {
+                if !selectedFoods.isEmpty {
+                    Text("Total: \(Int(totalNutrition.calories)) cal • \(String(format: "%.1f", totalNutrition.protein))g protein")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack(spacing: 12) {
+                    Button(action: onBack) {
+                        HStack {
+                            Image(systemName: "arrow.left")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Back")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: 52)
+                    
+                    Button(action: onSave) {
+                        HStack {
+                            if isSaving {
+                                ProgressView()
+                                    .scaleEffect(0.9)
+                                    .foregroundColor(.white)
+                                Text("Saving...")
+                                    .font(.system(size: 18, weight: .bold))
+                            } else {
+                                Text("Save Meal")
+                                    .font(.system(size: 18, weight: .bold))
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 16, weight: .bold))
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background((!selectedFoods.isEmpty && !isSaving) ? Color.primary : Color(.systemGray4))
+                        .cornerRadius(16)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: 56)
+                    .disabled(selectedFoods.isEmpty || isSaving)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 32)
+            .background(Color(.systemBackground))
+        }
+    }
+}
+
+struct MealSummaryCard: View {
+    let selectedFoods: [MealCreatorView.MealFood]
+    let totalNutrition: NutritionInfo
+    let onEditFood: (MealCreatorView.MealFood) -> Void
+    let onRemoveFood: (MealCreatorView.MealFood) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "list.bullet")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Text("Added Foods (\(selectedFoods.count))")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            VStack(spacing: 8) {
+                ForEach(selectedFoods) { mealFood in
+                    MealFoodCard(
+                        mealFood: mealFood,
+                        onEdit: { onEditFood(mealFood) },
+                        onRemove: { onRemoveFood(mealFood) }
+                    )
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+    }
+}
+
+struct MealFoodCard: View {
+    let mealFood: MealCreatorView.MealFood
+    let onEdit: () -> Void
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "circle.fill")
+                .font(.system(size: 16))
+                .foregroundColor(.primary.opacity(0.7))
+                .frame(width: 32)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(mealFood.food.displayName)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                Text("\(Int(mealFood.quantity))\(mealFood.unit.abbreviation)")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            Text("\(Int(mealFood.nutritionInfo.calories)) cal")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.secondary)
+            
+            Button(action: onEdit) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Button(action: onRemove) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
     }
 }
 
@@ -645,6 +946,7 @@ struct QuantityEditSheet: View {
 struct FoodNameStep: View {
     @Binding var foodName: String
     @Binding var isEstimating: Bool
+    let capturedPhotoReference: UIImage?
     let onNext: () -> Void
     
     private var isValidFoodName: Bool {
@@ -659,6 +961,23 @@ struct FoodNameStep: View {
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                 
+                // Photo reference section
+                if let photo = capturedPhotoReference {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Photo Reference")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        Image(uiImage: photo)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 100)
+                            .cornerRadius(8)
+                            .clipped()
+                    }
+                }
+                
+                // Food name input
                 TextField("Enter food name", text: $foodName)
                     .font(.system(size: 18, weight: .medium))
                     .padding(.horizontal, 16)
@@ -712,6 +1031,7 @@ struct FoodNameStep: View {
 struct BrandDetailsStep: View {
     @Binding var foodName: String
     @Binding var brandName: String
+    @Binding var useAIEstimation: Bool
     @Binding var isAIEstimated: Bool
     @Binding var aiConfidence: Double
     @Binding var showingFixPanel: Bool
@@ -752,39 +1072,77 @@ struct BrandDetailsStep: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
                 
-                // AI Status
-                if isEstimating {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Re-estimating with brand information...")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                } else if isAIEstimated {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text("Nutrition estimated")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary)
+                // AI Estimation Toggle
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "wand.and.stars.inverse")
+                            .font(.system(size: 20))
+                            .foregroundColor(useAIEstimation ? Color.purple : Color(.systemGray3))
                         
-                        Text("(\(Int(aiConfidence * 100))% confidence)")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("AI Nutrition Estimation")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Text("Automatically estimate nutrition values")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $useAIEstimation)
+                            .toggleStyle(SwitchToggleStyle(tint: Color.purple))
+                            .scaleEffect(0.9)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    
+                    if !useAIEstimation {
+                        Text("You'll enter nutrition values manually in the next step")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
-                        
-                        Spacer()
-                        
-                        Button("Adjust") {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showingFixPanel.toggle()
-                            }
-                        }
-                        .font(.system(size: 14))
-                        .foregroundColor(.blue)
+                            .padding(.horizontal, 4)
                     }
-                    .padding(.top, 8)
+                }
+                
+                // AI Status (only show when AI estimation is enabled)
+                if useAIEstimation {
+                    if isEstimating {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Re-estimating with brand information...")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+                    } else if isAIEstimated {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Nutrition estimated")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Text("(\(Int(aiConfidence * 100))% confidence)")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            Button("Adjust") {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showingFixPanel.toggle()
+                                }
+                            }
+                            .font(.system(size: 14))
+                            .foregroundColor(.blue)
+                        }
+                        .padding(.top, 8)
+                    }
                 }
             }
             .padding(24)
@@ -819,9 +1177,9 @@ struct BrandDetailsStep: View {
                             Text("Getting nutrition info...")
                                 .font(.system(size: 16, weight: .semibold))
                         } else {
-                            Text("Continue")
+                            Text(useAIEstimation ? "Estimate & Continue" : "Continue")
                                 .font(.system(size: 16, weight: .semibold))
-                            Image(systemName: "arrow.right")
+                            Image(systemName: useAIEstimation ? "wand.and.stars" : "arrow.right")
                                 .font(.system(size: 14, weight: .semibold))
                         }
                     }
@@ -1019,6 +1377,236 @@ struct NutritionComparisonRow: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .foregroundColor(.primary)
+    }
+}
+
+// MARK: - Shared Food Search Components
+
+struct FoodSearchBar: View {
+    @Binding var searchText: String
+    let placeholder: String
+    let onClear: () -> Void
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+            
+            TextField(placeholder, text: $searchText)
+                .textFieldStyle(PlainTextFieldStyle())
+            
+            if !searchText.isEmpty {
+                Button(action: onClear) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(.systemGray6))
+        .cornerRadius(10)
+    }
+}
+
+
+struct FoodSearchCore: View {
+    @Binding var searchText: String
+    let onFoodSelected: (FoodItem) -> Void
+    let onCreateFood: () -> Void
+    let onCreateMeal: () -> Void
+    let showCreateMeal: Bool
+    
+    @StateObject private var supabaseService = SupabaseService.shared
+    @State private var searchResults: [FoodItem] = []
+    @State private var isSearching = false
+    @State private var recentItems: [RecentFoodItem] = []
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Search Bar
+            FoodSearchBar(
+                searchText: $searchText,
+                placeholder: "Search foods...",
+                onClear: {
+                    searchText = ""
+                    searchResults = []
+                }
+            )
+            
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Recent Items Section
+                    if searchText.isEmpty && !recentItems.isEmpty {
+                        FoodSearchSection(
+                            title: "Recent",
+                            items: {
+                                ForEach(recentItems.prefix(5)) { item in
+                                    RecentItemRow(item: item) {
+                                        // Handle recent item selection
+                                        if let foodItem = convertToFoodItem(item) {
+                                            onFoodSelected(foodItem)
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    
+                    // Database Search Results
+                    if !searchText.isEmpty && !searchResults.isEmpty {
+                        FoodSearchSection(
+                            title: "From Database",
+                            items: {
+                                ForEach(searchResults) { food in
+                                    DatabaseFoodRow(food: food) {
+                                        onFoodSelected(food)
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    
+                    // Create New Options
+                    if !searchText.isEmpty {
+                        FoodSearchSection(
+                            title: "Can't find it?",
+                            items: {
+                                VStack(spacing: 8) {
+                                    CreateFoodRow(foodName: searchText) {
+                                        onCreateFood()
+                                    }
+                                    
+                                    if showCreateMeal {
+                                        CreateMealRow {
+                                            onCreateMeal()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    
+                    // Empty search state
+                    if searchText.isEmpty && recentItems.isEmpty {
+                        MealCreationEmptyState()
+                            .padding(.top, 40)
+                    }
+                    
+                    // No results state
+                    if !searchText.isEmpty && searchResults.isEmpty && !isSearching {
+                        NoResultsView(query: searchText)
+                            .padding(.top, 40)
+                    }
+                }
+            }
+            
+            if isSearching {
+                ProgressView()
+                    .padding()
+            }
+        }
+        .onChange(of: searchText) { _, newValue in
+            Task {
+                await performSearch(query: newValue)
+            }
+        }
+        .task {
+            await loadRecentItems()
+        }
+    }
+    
+    private func performSearch(query: String) async {
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            await MainActor.run {
+                searchResults = []
+                isSearching = false
+            }
+            return
+        }
+        
+        await MainActor.run {
+            isSearching = true
+        }
+        
+        do {
+            let results = try await supabaseService.searchFoods(query: query, limit: 20)
+            await MainActor.run {
+                searchResults = results
+                isSearching = false
+            }
+        } catch {
+            await MainActor.run {
+                searchResults = []
+                isSearching = false
+            }
+            print("Search error: \(error)")
+        }
+    }
+    
+    private func loadRecentItems() async {
+        do {
+            let items = try await supabaseService.getRecentFoodsAndMeals(
+                days: 7,
+                mealType: nil
+            )
+            await MainActor.run {
+                recentItems = items
+            }
+        } catch {
+            print("Failed to load recent items: \(error)")
+        }
+    }
+    
+    private func convertToFoodItem(_ recentItem: RecentFoodItem) -> FoodItem? {
+        // Convert RecentFoodItem to FoodItem for consistency
+        // This is a placeholder - actual conversion depends on your data models
+        return FoodItem(
+            id: UUID(),
+            name: recentItem.name,
+            brand: nil,
+            caloriesPer100g: recentItem.caloriesPerServing,
+            proteinPer100g: recentItem.proteinPerServing,
+            carbsPer100g: 0, // Would need actual values
+            fatPer100g: 0,   // Would need actual values
+            servingSizeName: "100g",
+            servingSizeGrams: 100
+        )
+    }
+}
+
+// MARK: - Empty State Components
+
+struct MealCreationEmptyState: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "magnifyingglass.circle")
+                .font(.system(size: 48, weight: .light))
+                .foregroundColor(.secondary.opacity(0.7))
+            
+            VStack(spacing: 12) {
+                Text("Search for foods to add")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                VStack(spacing: 8) {
+                    Text("• Type a food name to search our database")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                    
+                    Text("• Create custom foods if you can't find them")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                    
+                    Text("• Build your meal by adding multiple foods")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .multilineTextAlignment(.leading)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 40)
     }
 }
 
