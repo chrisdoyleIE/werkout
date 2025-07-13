@@ -14,6 +14,8 @@ struct ManualFoodSearchView: View {
     @State private var selectedMeal: RecentFoodItem?
     @State private var showingQuantityInput = false
     @State private var showingMealDetail = false
+    @State private var showingFoodCreator = false
+    @State private var showingMealCreator = false
     @State private var isLoading = false
     
     private let searchDebouncer = Debouncer()
@@ -105,13 +107,11 @@ struct ManualFoodSearchView: View {
                                 items: {
                                     VStack(spacing: 8) {
                                         CreateFoodRow(foodName: searchText) {
-                                            // TODO: Navigate to create food view
-                                            print("Create new food: \(searchText)")
+                                            showingFoodCreator = true
                                         }
                                         
                                         CreateMealRow {
-                                            // TODO: Navigate to create meal view
-                                            print("Create new meal")
+                                            showingMealCreator = true
                                         }
                                     }
                                 }
@@ -176,6 +176,22 @@ struct ManualFoodSearchView: View {
                     }
                 )
             }
+        }
+        .sheet(isPresented: $showingFoodCreator) {
+            FoodCreatorView(
+                initialFoodName: searchText.isEmpty ? nil : searchText,
+                onFoodSaved: { finalFoodName in
+                    // Update search text with the final food name
+                    searchText = finalFoodName
+                    // Refresh search results to show the newly created food
+                    Task {
+                        await performSearch(query: finalFoodName)
+                    }
+                }
+            )
+        }
+        .sheet(isPresented: $showingMealCreator) {
+            MealCreatorView()
         }
         .overlay(
             Group {
@@ -437,7 +453,7 @@ struct CreateFoodRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                Image(systemName: "plus.circle.fill")
+                Image(systemName: "rectangle.badge.plus")
                     .font(.system(size: 20))
                     .foregroundColor(.primary)
                     .frame(width: 32)
@@ -479,7 +495,7 @@ struct CreateMealRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                Image(systemName: "square.stack.3d.up.badge.plus")
+                Image(systemName: "rectangle.stack.badge.plus")
                     .font(.system(size: 20))
                     .foregroundColor(.primary)
                     .frame(width: 32)

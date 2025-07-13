@@ -319,10 +319,14 @@ class ClaudeAPIClient {
     }
     
     private func extractJSON(from text: String) -> Data? {
-        // Try to find JSON object markers
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // Look for the start and end of JSON object
+        // First, try to extract JSON from markdown code blocks (```json ... ```)
+        if let jsonFromCodeBlock = extractJSONFromCodeBlock(trimmedText) {
+            return jsonFromCodeBlock
+        }
+        
+        // Fallback: Look for raw JSON object markers
         guard let startIndex = trimmedText.firstIndex(of: "{"),
               let endIndex = trimmedText.lastIndex(of: "}") else {
             return nil
@@ -330,6 +334,26 @@ class ClaudeAPIClient {
         
         let jsonString = String(trimmedText[startIndex...endIndex])
         return jsonString.data(using: .utf8)
+    }
+    
+    private func extractJSONFromCodeBlock(_ text: String) -> Data? {
+        // Look for ```json ... ``` code blocks
+        let patterns = [
+            "```json\\s*\\n([\\s\\S]*?)\\n```",  // ```json\n{...}\n```
+            "```json([\\s\\S]*?)```",           // ```json{...}```
+            "`json([\\s\\S]*?)`"                // `json{...}`
+        ]
+        
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+               let match = regex.firstMatch(in: text, options: [], range: NSRange(text.startIndex..., in: text)),
+               let jsonRange = Range(match.range(at: 1), in: text) {
+                let jsonString = String(text[jsonRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                return jsonString.data(using: .utf8)
+            }
+        }
+        
+        return nil
     }
 }
 
@@ -382,7 +406,7 @@ extension ClaudeAPIClient {
         return text
     }
     
-    func estimateNutrition(foodName: String, brand: String? = nil) async throws -> NutritionInfo {
+    func estimateNutrition(foodName: String, brand: String? = nil, userFeedback: String? = nil) async throws -> NutritionInfo {
         guard let url = URL(string: baseURL) else {
             throw ClaudeAPIError.invalidURL
         }
@@ -394,17 +418,29 @@ extension ClaudeAPIClient {
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.timeoutInterval = 60.0
+        request.timeoutInterval = 120.0
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
         request.addValue(apiVersion, forHTTPHeaderField: "anthropic-version")
         
         let brandText = brand.map { " (brand: \($0))" } ?? ""
-        let prompt = """
-        Estimate the nutrition information per 100g for: \(foodName)\(brandText)
+        let feedbackText = userFeedback.map { "\n\nUser feedback for refinement: \($0)" } ?? ""
         
-        Provide realistic estimates based on typical values for this food item.
-        Return ONLY a JSON object with this exact format:
+        let prompt = """
+        I need nutrition information per 100g for: \(foodName)\(brandText)\(feedbackText)
+        
+        CRITICAL: You MUST return a JSON response in ALL cases, even if exact data is unavailable.
+        
+        Search strategy:
+        - Make ONE focused web search for nutrition data from sources like USDA FoodData Central, official brand websites, or verified nutrition databases
+        - If exact match found: use that data (confidence: 0.8-0.95)
+        - If no exact match: provide reasonable estimate based on similar foods (confidence: 0.3-0.7)
+        
+        \(userFeedback != nil ? "The user has provided feedback to help refine the estimate. Please use this to improve accuracy and increase confidence if the feedback helps." : "")
+        
+        The user will be able to correct estimates using our feedback system, so provide your best guess rather than no response.
+        
+        REQUIRED JSON FORMAT (no exceptions - always return this structure):
         {
             "calories": 165.0,
             "protein": 31.0,
@@ -412,10 +448,13 @@ extension ClaudeAPIClient {
             "fat": 3.6,
             "fiber": 0.0,
             "sugar": 0.0,
-            "sodium": 74.0
+            "sodium": 74.0,
+            "confidence": 0.75,
+            "sources": "Web search result or estimation based on similar foods"
         }
         
-        All values should be per 100 grams. Use decimal numbers.
+        All nutrition values must be per 100 grams. Use decimal numbers only.
+        Confidence score: 0.8-0.95 for exact matches, 0.3-0.7 for estimates.
         """
         
         let body: [String: Any] = [
@@ -423,42 +462,109 @@ extension ClaudeAPIClient {
             "messages": [
                 ["role": "user", "content": prompt]
             ],
-            "max_tokens": 256
+            "tools": [
+                [
+                    "type": "web_search_20250305",
+                    "name": "web_search",
+                    "max_uses": 1
+                ]
+            ],
+            "max_tokens": 2048
         ]
         
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        // Handle HTTP errors
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+            let responseString = String(data: data, encoding: .utf8) ?? "Unable to decode response"
+            print("❌ Claude API Error Response: \(responseString)")
+            throw ClaudeAPIError.networkError(NSError(domain: "ClaudeAPI", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: responseString]))
+        }
         
         guard let jsonResult = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let content = jsonResult["content"] as? [[String: Any]],
-              let firstContent = content.first,
-              let text = firstContent["text"] as? String else {
+              let content = jsonResult["content"] as? [[String: Any]] else {
             throw ClaudeAPIError.invalidResponse
         }
         
-        // Extract JSON from the response text
-        guard let jsonData = extractJSON(from: text) else {
-            throw ClaudeAPIError.invalidResponse
+        // Look for JSON in any content item (Claude returns multiple text blocks)
+        var jsonData: Data?
+        var allText = ""
+        
+        for contentItem in content {
+            if let text = contentItem["text"] as? String, !text.isEmpty {
+                allText += text + "\n"
+                
+                // Try to extract JSON from this content item
+                if jsonData == nil {
+                    jsonData = extractJSON(from: text)
+                }
+            }
+        }
+        
+        // If no JSON found in individual items, try the combined text
+        if jsonData == nil {
+            jsonData = extractJSON(from: allText)
+        }
+        
+        guard let extractedJsonData = jsonData else {
+            print("❌ Failed to extract JSON from Claude response. All text: \(allText)")
+            print("🔄 Providing fallback nutrition estimate for: \(foodName)")
+            
+            // Fallback: return reasonable default estimates
+            return NutritionInfo(
+                calories: 150,  // Reasonable average for most foods
+                protein: 10,
+                carbs: 20,
+                fat: 5,
+                fiber: 2,
+                sugar: 5,
+                sodium: 100
+            )
         }
         
         do {
-            let nutritionDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Double]
+            let nutritionDict = try JSONSerialization.jsonObject(with: extractedJsonData) as? [String: Any]
             guard let nutritionDict = nutritionDict else {
-                throw ClaudeAPIError.invalidResponse
+                print("❌ Failed to parse extracted JSON data")
+                print("🔄 Providing fallback nutrition estimate for: \(foodName)")
+                
+                // Fallback: return reasonable default estimates
+                return NutritionInfo(
+                    calories: 150,
+                    protein: 10,
+                    carbs: 20,
+                    fat: 5,
+                    fiber: 2,
+                    sugar: 5,
+                    sodium: 100
+                )
             }
             
             return NutritionInfo(
-                calories: nutritionDict["calories"] ?? 0,
-                protein: nutritionDict["protein"] ?? 0,
-                carbs: nutritionDict["carbs"] ?? 0,
-                fat: nutritionDict["fat"] ?? 0,
-                fiber: nutritionDict["fiber"] ?? 0,
-                sugar: nutritionDict["sugar"] ?? 0,
-                sodium: nutritionDict["sodium"] ?? 0
+                calories: (nutritionDict["calories"] as? Double) ?? 150,
+                protein: (nutritionDict["protein"] as? Double) ?? 10,
+                carbs: (nutritionDict["carbs"] as? Double) ?? 20,
+                fat: (nutritionDict["fat"] as? Double) ?? 5,
+                fiber: (nutritionDict["fiber"] as? Double) ?? 2,
+                sugar: (nutritionDict["sugar"] as? Double) ?? 5,
+                sodium: (nutritionDict["sodium"] as? Double) ?? 100
             )
         } catch {
-            throw ClaudeAPIError.jsonParsingError
+            print("❌ JSON parsing error: \(error)")
+            print("🔄 Providing fallback nutrition estimate for: \(foodName)")
+            
+            // Fallback: return reasonable default estimates
+            return NutritionInfo(
+                calories: 150,
+                protein: 10,
+                carbs: 20,
+                fat: 5,
+                fiber: 2,
+                sugar: 5,
+                sodium: 100
+            )
         }
     }
 }

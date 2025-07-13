@@ -109,7 +109,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "70"
             endingLineNumber = "70"
-            landmarkName = "generateMealPlan(numberOfDays:startDate:macroGoals:configuration:)"
+            landmarkName = "generateMealPlan(numberOfDays:startDate:macroGoals:configuration:measurementUnit:temperatureUnit:)"
             landmarkType = "7">
             <Locations>
                <Location
@@ -156,6 +156,550 @@
                   startingLineNumber = "70"
                   endingLineNumber = "70"
                   offsetFromSymbolStart = "548">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - 15cd3ae07aff42ae"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71"
+                  offsetFromSymbolStart = "4204">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - 6b14cc132dbb011a"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "31"
+                  endingLineNumber = "31"
+                  offsetFromSymbolStart = "28">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - 6b14cc132dbb0c32"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71"
+                  offsetFromSymbolStart = "80">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - 6766bb911b8083c0"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "31"
+                  endingLineNumber = "31"
+                  offsetFromSymbolStart = "184">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - 6766bb911b808ee8"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71"
+                  offsetFromSymbolStart = "440">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - dfaa7bca6801a1e3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "31"
+                  endingLineNumber = "31"
+                  offsetFromSymbolStart = "48">
+               </Location>
+               <Location
+                  uuid = "B91E6965-84B7-4C6B-935F-33E537AF2DF4 - dfaa7bca6801accb"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for werkowt.ClaudeAPIClient.generateMealPlan(numberOfDays: Swift.Int, startDate: Foundation.Date, macroGoals: Swift.Optional&lt;werkowt.MacroGoals&gt;, configuration: werkowt.MealPlanningConfiguration, measurementUnit: werkowt.MeasurementUnit, temperatureUnit: werkowt.TemperatureUnit) async throws -&gt; werkowt.GeneratedMealPlan"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "71"
+                  endingLineNumber = "71"
+                  offsetFromSymbolStart = "176">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "786C507F-0DAE-4EC2-84EA-81000B5FADD2"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "431"
+            endingLineNumber = "431"
+            landmarkName = "estimateNutrition(foodName:brand:userFeedback:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "786C507F-0DAE-4EC2-84EA-81000B5FADD2 - 910de13caa460fae"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "431"
+                  endingLineNumber = "431"
+                  offsetFromSymbolStart = "2460">
+               </Location>
+               <Location
+                  uuid = "786C507F-0DAE-4EC2-84EA-81000B5FADD2 - e8bf6b65ab3c8af5"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "395"
+                  endingLineNumber = "395"
+                  offsetFromSymbolStart = "28">
+               </Location>
+               <Location
+                  uuid = "786C507F-0DAE-4EC2-84EA-81000B5FADD2 - e8bf6b65ab3c8651"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(2) await resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "431"
+                  endingLineNumber = "431"
+                  offsetFromSymbolStart = "72">
+               </Location>
+               <Location
+                  uuid = "786C507F-0DAE-4EC2-84EA-81000B5FADD2 - bb8b7fadb7ff470c"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "395"
+                  endingLineNumber = "395"
+                  offsetFromSymbolStart = "96">
+               </Location>
+               <Location
+                  uuid = "786C507F-0DAE-4EC2-84EA-81000B5FADD2 - bb8b7fadb7ff4ba8"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "431"
+                  endingLineNumber = "431"
+                  offsetFromSymbolStart = "408">
+               </Location>
+               <Location
+                  uuid = "786C507F-0DAE-4EC2-84EA-81000B5FADD2 - b14a0ee542dcf90f"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "395"
+                  endingLineNumber = "395"
+                  offsetFromSymbolStart = "28">
+               </Location>
+               <Location
+                  uuid = "786C507F-0DAE-4EC2-84EA-81000B5FADD2 - b14a0ee542dcf5ab"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(4) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "431"
+                  endingLineNumber = "431"
+                  offsetFromSymbolStart = "100">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "A24176A1-5868-49B0-97A8-FCDE00CDC992"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "441"
+            endingLineNumber = "441"
+            landmarkName = "estimateNutrition(foodName:brand:userFeedback:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "A24176A1-5868-49B0-97A8-FCDE00CDC992 - bb8b7fadb7ff48fe"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "441"
+                  endingLineNumber = "441"
+                  offsetFromSymbolStart = "2400">
+               </Location>
+               <Location
+                  uuid = "A24176A1-5868-49B0-97A8-FCDE00CDC992 - 9c2fde85fc47f2cb"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "441"
+                  endingLineNumber = "441"
+                  offsetFromSymbolStart = "3232">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "09390DC4-75A1-4CC5-B512-A7511FD8C04B"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "433"
+            endingLineNumber = "433"
+            landmarkName = "estimateNutrition(foodName:brand:userFeedback:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "09390DC4-75A1-4CC5-B512-A7511FD8C04B - bb8b7fadb7ff4be6"
+                  shouldBeEnabled = "No"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "433"
+                  endingLineNumber = "433"
+                  offsetFromSymbolStart = "548">
+               </Location>
+               <Location
+                  uuid = "09390DC4-75A1-4CC5-B512-A7511FD8C04B - 9c2fde85fc47f1d3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "433"
+                  endingLineNumber = "433"
+                  offsetFromSymbolStart = "2488">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "99526F40-4FFB-48CB-B5DE-D32CCCD08614"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "459"
+            endingLineNumber = "459"
+            landmarkName = "estimateNutrition(foodName:brand:userFeedback:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "99526F40-4FFB-48CB-B5DE-D32CCCD08614 - ccb1d6fea3f97d7d"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "459"
+                  endingLineNumber = "459"
+                  offsetFromSymbolStart = "2560">
+               </Location>
+               <Location
+                  uuid = "99526F40-4FFB-48CB-B5DE-D32CCCD08614 - ccb1d6fea3f97d7d"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "459"
+                  endingLineNumber = "459"
+                  offsetFromSymbolStart = "2092">
+               </Location>
+               <Location
+                  uuid = "99526F40-4FFB-48CB-B5DE-D32CCCD08614 - 9c2fde85fc47f55e"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "460"
+                  endingLineNumber = "460"
+                  offsetFromSymbolStart = "2488">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "7596C1A7-ACD2-4FDE-8841-0D94E1E90DD3"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "454"
+            endingLineNumber = "454"
+            landmarkName = "estimateNutrition(foodName:brand:userFeedback:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "31977348-891A-405F-B95B-D04409AAB3BF"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "455"
+            endingLineNumber = "455"
+            landmarkName = "estimateNutrition(foodName:brand:userFeedback:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "31977348-891A-405F-B95B-D04409AAB3BF - ccb1d6fea3f97c81"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "455"
+                  endingLineNumber = "455"
+                  offsetFromSymbolStart = "1676">
+               </Location>
+               <Location
+                  uuid = "31977348-891A-405F-B95B-D04409AAB3BF - ccb1d6fea3f97cde"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "456"
+                  endingLineNumber = "456"
+                  offsetFromSymbolStart = "816">
+               </Location>
+               <Location
+                  uuid = "31977348-891A-405F-B95B-D04409AAB3BF - ccb1d6fea3f97cde"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "456"
+                  endingLineNumber = "456"
+                  offsetFromSymbolStart = "1140">
+               </Location>
+               <Location
+                  uuid = "31977348-891A-405F-B95B-D04409AAB3BF - 9c2fde85fc47f55e"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "460"
+                  endingLineNumber = "460"
+                  offsetFromSymbolStart = "2488">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "2F83BE5B-BD60-4A8A-81E0-317ABF077B60"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "werkowt/ClaudeAPIClient.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "466"
+            endingLineNumber = "466"
+            landmarkName = "estimateNutrition(foodName:brand:userFeedback:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "2F83BE5B-BD60-4A8A-81E0-317ABF077B60 - ccb1d6fea3f97e14"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "466"
+                  endingLineNumber = "466"
+                  offsetFromSymbolStart = "3764">
+               </Location>
+               <Location
+                  uuid = "2F83BE5B-BD60-4A8A-81E0-317ABF077B60 - ccb1d6fea3f97eb3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "469"
+                  endingLineNumber = "469"
+                  offsetFromSymbolStart = "3852">
+               </Location>
+               <Location
+                  uuid = "2F83BE5B-BD60-4A8A-81E0-317ABF077B60 - 9c2fde85fc47f610"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(1) suspend resume partial function for werkowt.ClaudeAPIClient.estimateNutrition(foodName: Swift.String, brand: Swift.Optional&lt;Swift.String&gt;, userFeedback: Swift.Optional&lt;Swift.String&gt;) async throws -&gt; werkowt.NutritionInfo"
+                  moduleName = "werkowt"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/christopherdoyle/code/werkowt/werkowt/ClaudeAPIClient.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "466"
+                  endingLineNumber = "466"
+                  offsetFromSymbolStart = "3100">
                </Location>
             </Locations>
          </BreakpointContent>

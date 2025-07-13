@@ -485,34 +485,3 @@ struct NutritionDetailRow: View {
         }
     }
 }
-
-#Preview {
-    let mockResult = ClaudeAPIClient.FoodAnalysisResult(
-        identifiedFoods: [
-            ClaudeAPIClient.AnalyzedFood(
-                name: "Banana",
-                brand: nil,
-                nutrition: ClaudeAPIClient.NutritionPer100g(
-                    calories: 89,
-                    protein: 1.1,
-                    carbs: 22.8,
-                    fat: 0.3,
-                    fiber: 2.6,
-                    sugar: 12.2,
-                    sodium: 1
-                ),
-                confidence: 0.95,
-                existsInDatabase: true,
-                databaseId: UUID()
-            )
-        ],
-        estimatedAmounts: ["Banana": 120],
-        confidence: 0.95,
-        needsVerification: []
-    )
-    
-    FoodVerificationView(
-        analysisResult: mockResult,
-        selectedMealType: .breakfast
-    )
-}
