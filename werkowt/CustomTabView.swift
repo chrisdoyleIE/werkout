@@ -21,7 +21,11 @@ struct CustomTabView: View {
             Group {
                 switch selectedTab {
                 case 0:
-                    HomeView()
+                    HomeView(
+                        showingWorkoutCreator: $showingWorkoutCreator,
+                        showingAddWeight: $showingAddWeight,
+                        showingFoodLogger: $showingFoodLogger
+                    )
                 case 1:
                     NutritionTabView() // Shopping
                 case 2:
@@ -29,7 +33,11 @@ struct CustomTabView: View {
                 case 3:
                     SettingsView() // Profile
                 default:
-                    HomeView()
+                    HomeView(
+                        showingWorkoutCreator: $showingWorkoutCreator,
+                        showingAddWeight: $showingAddWeight,
+                        showingFoodLogger: $showingFoodLogger
+                    )
                 }
             }
             

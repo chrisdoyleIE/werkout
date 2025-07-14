@@ -21,18 +21,12 @@ struct LiveWorkoutView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header with workout info
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 HStack {
                     Button("Finish") {
                         showingFinishConfirmation = true
                     }
                     .font(.headline)
-                    
-                    Spacer()
-                    
-                    Text(activeWorkout.session?.name ?? "Workout")
-                        .font(.title2)
-                        .fontWeight(.bold)
                     
                     Spacer()
                     
@@ -64,17 +58,18 @@ struct LiveWorkoutView: View {
                     }
                 }
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .background(Color(.systemBackground))
             
             if let currentExercise = activeWorkout.currentExercise {
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 16) {
                         // Exercise name
                         Text(currentExercise.exercise.name)
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .padding(.top)
+                            .font(.system(size: 32, weight: .bold, design: .default))
+                            .foregroundColor(.black)
+                            .padding(.top, 4)
                             .id(currentExercise.exercise.id)
                             .transition(.opacity.combined(with: .move(edge: .trailing)))
                             .animation(.easeInOut(duration: 0.4), value: currentExercise.exercise.id)
@@ -201,9 +196,10 @@ struct LiveWorkoutView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(8)
                         
-                        Spacer(minLength: 100)
+                        Spacer(minLength: 60)
                     }
-                    .padding()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                 }
             } else {
                 Spacer()
@@ -434,7 +430,7 @@ struct LiveWorkoutView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(canAddSet ? Color.green : Color.gray)
+                .background(canAddSet ? Color.black : Color.gray)
                 .cornerRadius(12)
             }
             .disabled(!canAddSet)
@@ -467,7 +463,7 @@ struct LiveWorkoutView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(canAddBodyweightSet ? Color.green : Color.gray)
+                .background(canAddBodyweightSet ? Color.black : Color.gray)
                 .cornerRadius(12)
             }
             .disabled(!canAddBodyweightSet)
@@ -496,7 +492,7 @@ struct LiveWorkoutView: View {
                             recordTimedExercise()
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.green)
+                        .tint(.black)
                     }
                 }
                 .padding()
@@ -526,7 +522,7 @@ struct LiveWorkoutView: View {
                         startExerciseTimer()
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.orange)
+                    .tint(.black)
                 }
             }
         }
@@ -580,7 +576,7 @@ struct ExerciseTab: View {
                 // Muscle group icon
                 Image(systemName: muscleGroupIcon)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : muscleGroupColor)
+                    .foregroundColor(isSelected ? .white : .black)
                 
                 // Exercise name
                 Text(exercise.name)
@@ -594,17 +590,17 @@ struct ExerciseTab: View {
                     if isCompleted {
                         Text("\(setCount) sets")
                             .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(isSelected ? .white : .green)
+                            .foregroundColor(isSelected ? .white : .black)
                     } else {
                         Text("0 sets")
                             .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(isSelected ? .white : .gray)
                     }
                 }
                 
                 // Bottom indicator bar
                 Rectangle()
-                    .fill(isSelected ? Color.white : (isCompleted ? Color.green : Color.gray.opacity(0.3)))
+                    .fill(isSelected ? Color.white : (isCompleted ? Color.black : Color.gray.opacity(0.3)))
                     .frame(height: 3)
                     .cornerRadius(1.5)
             }
@@ -613,9 +609,13 @@ struct ExerciseTab: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.blue : (isCompleted ? Color.green.opacity(0.1) : Color(.systemGray6)))
+                    .fill(isSelected ? Color.black : Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.black, lineWidth: isSelected ? 0 : 1)
+                    )
             )
-            .foregroundColor(isSelected ? .white : .primary)
+            .foregroundColor(isSelected ? .white : .black)
             .scaleEffect(isSelected ? 1.05 : 1.0)
             .animation(.easeInOut(duration: 0.2), value: isSelected)
         }

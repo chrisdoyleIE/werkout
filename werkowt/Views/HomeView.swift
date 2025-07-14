@@ -15,10 +15,12 @@ struct HomeView: View {
     @StateObject private var mealPlanManager = MealPlanManager()
     @StateObject private var supabaseService = SupabaseService.shared
     
-    @State private var showingWorkoutCreator = false
+    // Sheet state bindings passed from parent CustomTabView
+    @Binding var showingWorkoutCreator: Bool
+    @Binding var showingAddWeight: Bool
+    @Binding var showingFoodLogger: Bool
+    
     @State private var showingLiveWorkout = false
-    @State private var showingAddWeight = false
-    @State private var showingFoodLogger = false
     @State private var showingSettings = false
     @State private var selectedSession: WorkoutSession?
     @State private var selectedDayForDetail: Date?
@@ -317,14 +319,6 @@ struct HomeView: View {
             
             // Action button removed - now in tab bar
         }
-        .sheet(isPresented: $showingWorkoutCreator) {
-            WorkoutCreatorView()
-        }
-        .sheet(isPresented: $showingAddWeight) {
-            AddWeightView { weight, notes in
-                await addWeight(weight: weight, notes: notes)
-            }
-        }
         .sheet(item: $selectedSession) { session in
             WorkoutDetailView(session: session)
         }
@@ -335,9 +329,6 @@ struct HomeView: View {
             if let selectedDay = selectedDayForDetail {
                 DayDetailView(selectedDate: selectedDay)
             }
-        }
-        .sheet(isPresented: $showingFoodLogger) {
-            FoodTrackingView()
         }
         .onChange(of: showingFoodLogger) { _, isShowing in
             if !isShowing {
