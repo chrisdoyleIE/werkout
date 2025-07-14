@@ -44,6 +44,7 @@ struct CustomTabView: View {
                         HStack {
                             TabBarButton(
                                 icon: "house",
+                                iconFilled: "house.fill",
                                 title: "Home",
                                 isSelected: selectedTab == 0,
                                 action: {
@@ -53,7 +54,8 @@ struct CustomTabView: View {
                             )
                             
                             TabBarButton(
-                                icon: "leaf.fill",
+                                icon: "leaf",
+                                iconFilled: "leaf.fill",
                                 title: "Nutrition",
                                 isSelected: selectedTab == 1,
                                 action: {
@@ -74,7 +76,8 @@ struct CustomTabView: View {
                         // Right group: Training and Profile
                         HStack {
                             TabBarButton(
-                                icon: "dumbbell.fill",
+                                icon: "dumbbell",
+                                iconFilled: "dumbbell.fill",
                                 title: "Training",
                                 isSelected: selectedTab == 2,
                                 action: {
@@ -85,6 +88,7 @@ struct CustomTabView: View {
                             
                             TabBarButton(
                                 icon: "person.circle",
+                                iconFilled: "person.circle.fill",
                                 title: "Profile",
                                 isSelected: selectedTab == 3,
                                 action: {
@@ -227,6 +231,7 @@ struct CustomTabView: View {
 
 struct TabBarButton: View {
     let icon: String
+    let iconFilled: String
     let title: String
     let isSelected: Bool
     let action: () -> Void
@@ -234,12 +239,12 @@ struct TabBarButton: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
-                Image(systemName: icon)
+                Image(systemName: isSelected ? iconFilled : icon)
                     .font(.system(size: 22))
                 Text(title)
                     .font(.caption)
             }
-            .foregroundColor(isSelected ? .black : .gray)
+            .foregroundColor(.black)
             .frame(maxWidth: .infinity)
             .padding(.top, 12)
         }

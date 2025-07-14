@@ -75,6 +75,9 @@ struct LiveWorkoutView: View {
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .padding(.top)
+                            .id(currentExercise.exercise.id)
+                            .transition(.opacity.combined(with: .move(edge: .trailing)))
+                            .animation(.easeInOut(duration: 0.4), value: currentExercise.exercise.id)
                         
                         // Last workout data - full display
                         if !lastWorkoutSets.isEmpty {

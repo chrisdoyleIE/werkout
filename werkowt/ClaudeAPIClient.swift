@@ -611,6 +611,26 @@ extension ClaudeAPIClient {
         let sodium: Double?
     }
     
+    struct ServingSuggestion: Codable {
+        let serving_name: String
+        let grams_equivalent: Double
+        let category: String
+        let confidence: Double
+        
+        var servingCategory: ServingCategory {
+            switch category.lowercased() {
+            case "piece":
+                return .piece
+            case "volume":
+                return .volume
+            case "weight":
+                return .weight
+            default:
+                return .piece
+            }
+        }
+    }
+    
     private var foodAnalysisTools: [ClaudeToolDefinition] {
         [
             ClaudeToolDefinition(
@@ -846,6 +866,106 @@ extension ClaudeAPIClient {
                 "error": "Failed to search database: \(error.localizedDescription)",
                 "success": false
             ]
+        }
+    }
+    
+    func suggestServingSize(foodName: String, brand: String? = nil) async throws -> ServingSuggestion {
+        guard let url = URL(string: baseURL) else {
+            throw ClaudeAPIError.invalidURL
+        }
+        
+        let apiKey = Config.anthropicKey
+        guard !apiKey.isEmpty else {
+            throw ClaudeAPIError.noAPIKey
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 30.0
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.addValue(apiVersion, forHTTPHeaderField: "anthropic-version")
+        
+        let brandText = brand.map { " (brand: \($0))" } ?? ""
+        
+        let prompt = """
+        I need to suggest the most natural serving size for: \(foodName)\(brandText)
+        
+        Consider what serving size people would most naturally use when eating this food.
+        
+        Examples:
+        - Banana → "1 medium" (120g)
+        - Apple → "1 medium" (180g)
+        - Bread → "1 slice" (25g)
+        - Milk → "1 cup" (240ml)
+        - Chicken breast → "1 piece" (150g)
+        - Cookie → "1 piece" (15g)
+        - Pizza → "1 slice" (100g)
+        - Rice → "1 cup cooked" (175g)
+        
+        Return ONLY a JSON object with this exact structure:
+        {
+            "serving_name": "1 medium",
+            "grams_equivalent": 120,
+            "category": "piece",
+            "confidence": 0.9
+        }
+        
+        Categories: "piece", "volume", "weight"
+        Confidence: 0.1-1.0 (1.0 = very confident this is natural)
+        """
+        
+        let requestBody: [String: Any] = [
+            "model": model,
+            "max_tokens": 200,
+            "temperature": 0.3,
+            "messages": [
+                [
+                    "role": "user",
+                    "content": prompt
+                ]
+            ]
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        // Handle HTTP errors
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+            let responseString = String(data: data, encoding: .utf8) ?? "Unable to decode response"
+            print("❌ Claude API Error Response: \(responseString)")
+            throw ClaudeAPIError.networkError(NSError(domain: "ClaudeAPI", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: responseString]))
+        }
+        
+        guard let jsonResult = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = jsonResult["content"] as? [[String: Any]] else {
+            throw ClaudeAPIError.invalidResponse
+        }
+        
+        var allText = ""
+        for item in content {
+            if let text = item["text"] as? String {
+                allText += text + "\n"
+            }
+        }
+        
+        // Extract JSON from Claude's response
+        guard let jsonData = extractJSON(from: allText) else {
+            print("❌ Failed to extract JSON from Claude's serving size response")
+            print("❌ Full text: \(allText)")
+            throw ClaudeAPIError.invalidResponse
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            return try decoder.decode(ServingSuggestion.self, from: jsonData)
+        } catch {
+            print("❌ JSON decoding error for serving size: \(error)")
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("❌ Failed JSON: \(jsonString)")
+            }
+            throw ClaudeAPIError.jsonParsingError
         }
     }
     

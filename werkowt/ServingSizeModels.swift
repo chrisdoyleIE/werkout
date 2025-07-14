@@ -101,6 +101,13 @@ extension ServingSize {
         ServingSize(name: "1 tablespoon", gramsEquivalent: 15, volumeML: 15, category: .volume, isStandard: true),
         ServingSize(name: "1 teaspoon", gramsEquivalent: 5, volumeML: 5, category: .volume, isStandard: true),
         
+        // Universal piece servings
+        ServingSize(name: "1 piece", gramsEquivalent: 50, category: .piece, isStandard: true),
+        ServingSize(name: "1 whole", gramsEquivalent: 100, category: .piece, isStandard: true),
+        ServingSize(name: "1 item", gramsEquivalent: 75, category: .piece, isStandard: true),
+        ServingSize(name: "1 unit", gramsEquivalent: 60, category: .piece, isStandard: true),
+        ServingSize(name: "1 serving", gramsEquivalent: 80, category: .piece, isStandard: true),
+        
         // Fruit servings
         ServingSize(name: "1 small", gramsEquivalent: 80, category: .piece, foodCategory: .fruits),
         ServingSize(name: "1 medium", gramsEquivalent: 120, category: .piece, foodCategory: .fruits),
@@ -144,6 +151,22 @@ extension ServingSize {
     
     // Get the most appropriate serving size for a food based on its name and category
     static func suggestedDefaultServing(for foodName: String, foodCategory: FoodCategory?) -> ServingSize {
+        // Try to get AI suggestion first
+        if let aiSuggestion = suggestedServingFromAI(for: foodName) {
+            return aiSuggestion
+        }
+        
+        // Fallback to existing logic
+        return fallbackSuggestedServing(for: foodName, foodCategory: foodCategory)
+    }
+    
+    private static func suggestedServingFromAI(for foodName: String) -> ServingSize? {
+        // This will be called synchronously from UI, so we can't use async here
+        // Instead, we'll implement this in the UI layer with proper async handling
+        return nil
+    }
+    
+    private static func fallbackSuggestedServing(for foodName: String, foodCategory: FoodCategory?) -> ServingSize {
         let foodNameLower = foodName.lowercased()
         
         // Smart suggestions based on food name patterns

@@ -55,6 +55,7 @@ struct FoodCreatorView: View {
     @State private var selectedServingSize: ServingSize = ServingSize.standardServingSizes.first!
     @StateObject private var servingSizeManager = ServingSizeManager()
     @State private var showingServingSizePicker = false
+    @State private var isLoadingServingSuggestion = false
     
     // Nutrition values (per serving)
     @State private var calories: String = ""
@@ -122,20 +123,21 @@ struct FoodCreatorView: View {
                             aiConfidence: $aiConfidence,
                             showingFixPanel: $showingFixPanel,
                             isEstimating: $isEstimatingWithAI,
+                            isLoadingServingSuggestion: $isLoadingServingSuggestion,
                             onNext: {
-                                if useAIEstimation {
-                                    Task {
+                                Task {
+                                    // Always get AI serving size suggestion
+                                    await suggestServingSizeFromAI()
+                                    
+                                    // Then estimate nutrition if requested
+                                    if useAIEstimation {
                                         await estimateWithAI()
-                                        await MainActor.run {
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                currentStep = .servingAndNutrition
-                                            }
-                                        }
                                     }
-                                } else {
-                                    // Skip AI estimation, go directly to nutrition step
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        currentStep = .servingAndNutrition
+                                    
+                                    await MainActor.run {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            currentStep = .servingAndNutrition
+                                        }
                                     }
                                 }
                             },
@@ -222,6 +224,44 @@ struct FoodCreatorView: View {
                 // Skip to brand step if we have initial food name
                 currentStep = .brandAndDetails
             }
+        }
+    }
+    
+    // MARK: - Serving size suggestion
+    
+    private func suggestServingSizeFromAI() async {
+        guard !foodName.isEmpty else { return }
+        
+        await MainActor.run {
+            isLoadingServingSuggestion = true
+        }
+        
+        do {
+            let suggestion = try await ClaudeAPIClient.shared.suggestServingSize(
+                foodName: foodName,
+                brand: brandName.isEmpty ? nil : brandName
+            )
+            
+            await MainActor.run {
+                let volumeML = suggestion.servingCategory == .volume ? suggestion.grams_equivalent : nil
+                
+                selectedServingSize = ServingSize(
+                    name: suggestion.serving_name,
+                    gramsEquivalent: suggestion.grams_equivalent,
+                    volumeML: volumeML,
+                    category: suggestion.servingCategory,
+                    isStandard: false
+                )
+                
+                isLoadingServingSuggestion = false
+            }
+        } catch {
+            await MainActor.run {
+                // Fall back to current logic on error
+                selectedServingSize = ServingSize.suggestedDefaultServing(for: foodName, foodCategory: nil)
+                isLoadingServingSuggestion = false
+            }
+            print("Error getting AI serving suggestion: \(error)")
         }
     }
     
@@ -1036,6 +1076,7 @@ struct BrandDetailsStep: View {
     @Binding var aiConfidence: Double
     @Binding var showingFixPanel: Bool
     @Binding var isEstimating: Bool
+    @Binding var isLoadingServingSuggestion: Bool
     let onNext: () -> Void
     let onBack: () -> Void
     
@@ -1108,6 +1149,19 @@ struct BrandDetailsStep: View {
                     }
                 }
                 
+                // Serving size prediction status
+                if isLoadingServingSuggestion {
+                    HStack {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Suggesting natural serving size...")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    .padding(.top, 8)
+                }
+                
                 // AI Status (only show when AI estimation is enabled)
                 if useAIEstimation {
                     if isEstimating {
@@ -1170,11 +1224,11 @@ struct BrandDetailsStep: View {
                 
                 Button(action: onNext) {
                     HStack {
-                        if isEstimating {
+                        if isEstimating || isLoadingServingSuggestion {
                             ProgressView()
                                 .scaleEffect(0.8)
                                 .foregroundColor(.white)
-                            Text("Getting nutrition info...")
+                            Text(isLoadingServingSuggestion ? "Suggesting serving size..." : "Getting nutrition info...")
                                 .font(.system(size: 16, weight: .semibold))
                         } else {
                             Text(useAIEstimation ? "Estimate & Continue" : "Continue")
@@ -1186,10 +1240,10 @@ struct BrandDetailsStep: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(isValidFoodName && !isEstimating ? Color.primary : Color(.systemGray4))
+                    .background(isValidFoodName && !isEstimating && !isLoadingServingSuggestion ? Color.primary : Color(.systemGray4))
                     .cornerRadius(12)
                 }
-                .disabled(!isValidFoodName || isEstimating)
+                .disabled(!isValidFoodName || isEstimating || isLoadingServingSuggestion)
             }
         }
     }
