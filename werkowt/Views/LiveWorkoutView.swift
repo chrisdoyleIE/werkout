@@ -26,12 +26,13 @@ struct LiveWorkoutView: View {
                     Button("Finish") {
                         showingFinishConfirmation = true
                     }
-                    .font(.headline)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(.accentRed)
                     
                     Spacer()
                     
                     Text(formatElapsedTime())
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .monospacedDigit()
                 }
                 
@@ -46,9 +47,7 @@ struct LiveWorkoutView: View {
                                     isCompleted: !exerciseWithSets.sets.isEmpty,
                                     setCount: exerciseWithSets.sets.count
                                 ) {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        activeWorkout.currentExerciseIndex = index
-                                    }
+                                    activeWorkout.currentExerciseIndex = index
                                     loadLastWorkoutData()
                                     clearInputs()
                                 }
@@ -67,25 +66,22 @@ struct LiveWorkoutView: View {
                     VStack(spacing: 16) {
                         // Exercise name
                         Text(currentExercise.exercise.name)
-                            .font(.system(size: 32, weight: .bold, design: .default))
-                            .foregroundColor(.black)
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(.primary)
                             .padding(.top, 4)
                             .id(currentExercise.exercise.id)
-                            .transition(.opacity.combined(with: .move(edge: .trailing)))
-                            .animation(.easeInOut(duration: 0.4), value: currentExercise.exercise.id)
                         
                         // Last workout data - full display
                         if !lastWorkoutSets.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("LAST WORKOUT")
-                                    .font(.headline)
-                                    .fontWeight(.bold)
+                                    .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(.secondary)
+                                    .textCase(.uppercase)
                                 
                                 ForEach(lastWorkoutSets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
                                     Text("Set \(set.setNumber): \(formatSetDisplay(set))")
-                                        .font(.title3)
-                                        .fontWeight(.medium)
+                                        .font(.system(size: 15, weight: .medium))
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,15 +94,14 @@ struct LiveWorkoutView: View {
                         if !currentExercise.sets.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("TODAY")
-                                    .font(.headline)
-                                    .fontWeight(.bold)
+                                    .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(.primary)
+                                    .textCase(.uppercase)
                                 
                                 ForEach(currentExercise.sets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
                                     HStack {
                                         Text("Set \(set.setNumber): \(formatSetDisplay(set))")
-                                            .font(.title3)
-                                            .fontWeight(.medium)
+                                            .font(.system(size: 15, weight: .medium))
                                         
                                         Spacer()
                                         
@@ -114,8 +109,8 @@ struct LiveWorkoutView: View {
                                             deleteSet(set)
                                         }) {
                                             Image(systemName: "trash")
-                                                .font(.title3)
-                                                .foregroundColor(.red)
+                                                .font(.system(size: 15))
+                                                .foregroundColor(.accentRed)
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                     }
@@ -133,23 +128,30 @@ struct LiveWorkoutView: View {
                             if restTimeRemaining > 0 {
                                 VStack(spacing: 8) {
                                     Text("REST TIME")
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.blue)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .textCase(.uppercase)
                                     
                                     Text(formatTime(restTimeRemaining))
-                                        .font(.largeTitle)
-                                        .fontWeight(.bold)
+                                        .font(.system(size: 32, weight: .semibold))
                                         .monospacedDigit()
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.primary)
                                     
                                     Button("Skip Rest") {
                                         stopRestTimer()
                                     }
-                                    .buttonStyle(.bordered)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color(.systemGray6))
+                                    .foregroundColor(.primary)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color(.systemGray4), lineWidth: 1)
+                                    )
                                 }
                                 .padding()
-                                .background(Color.blue.opacity(0.1))
+                                .background(Color(.systemGray6))
                                 .cornerRadius(12)
                             }
                             
@@ -169,24 +171,47 @@ struct LiveWorkoutView: View {
                             if restTimeRemaining == 0 {
                                 VStack(spacing: 8) {
                                     Text("Start Rest Timer")
-                                        .font(.headline)
-                                        .fontWeight(.medium)
+                                        .font(.system(size: 17, weight: .medium))
                                     
                                     HStack(spacing: 12) {
                                         Button("1m") {
                                             startRestTimer(duration: 60)
                                         }
-                                        .buttonStyle(.bordered)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color(.systemGray6))
+                                        .foregroundColor(.primary)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color(.systemGray4), lineWidth: 1)
+                                        )
                                         
                                         Button("2m") {
                                             startRestTimer(duration: 120)
                                         }
-                                        .buttonStyle(.bordered)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color(.systemGray6))
+                                        .foregroundColor(.primary)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color(.systemGray4), lineWidth: 1)
+                                        )
                                         
                                         Button("3m") {
                                             startRestTimer(duration: 180)
                                         }
-                                        .buttonStyle(.bordered)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color(.systemGray6))
+                                        .foregroundColor(.primary)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color(.systemGray4), lineWidth: 1)
+                                        )
                                     }
                                 }
                                 .padding(.top, 8)
@@ -204,7 +229,7 @@ struct LiveWorkoutView: View {
             } else {
                 Spacer()
                 Text("No exercises selected")
-                    .font(.headline)
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.secondary)
                 Spacer()
             }
@@ -396,26 +421,24 @@ struct LiveWorkoutView: View {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Weight (kg)")
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                     
                     TextField("0", text: $weightInput)
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.decimalPad)
-                        .font(.title2)
+                        .font(.system(size: 17))
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Reps")
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                     
                     TextField("0", text: $repsInput)
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.numberPad)
-                        .font(.title2)
+                        .font(.system(size: 17))
                 }
             }
             
@@ -424,13 +447,12 @@ struct LiveWorkoutView: View {
                     Image(systemName: "plus.circle.fill")
                         .font(.title3)
                     Text("Add Set")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 17, weight: .semibold))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(canAddSet ? Color.black : Color.gray)
+                .background(canAddSet ? Color.black : Color(.systemGray4))
                 .cornerRadius(12)
             }
             .disabled(!canAddSet)
@@ -442,14 +464,13 @@ struct LiveWorkoutView: View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Reps")
-                    .font(.caption)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
                 
                 TextField("0", text: $repsInput)
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(.numberPad)
-                    .font(.title2)
+                    .font(.system(size: 17))
             }
             
             Button(action: addBodyweightSet) {
@@ -457,13 +478,12 @@ struct LiveWorkoutView: View {
                     Image(systemName: "plus.circle.fill")
                         .font(.title3)
                     Text("Add Set")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 17, weight: .semibold))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(canAddBodyweightSet ? Color.black : Color.gray)
+                .background(canAddBodyweightSet ? Color.black : Color(.systemGray4))
                 .cornerRadius(12)
             }
             .disabled(!canAddBodyweightSet)
@@ -477,26 +497,28 @@ struct LiveWorkoutView: View {
             if exerciseTimer != nil {
                 VStack(spacing: 12) {
                     Text("EXERCISE TIMER")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .textCase(.uppercase)
                     
                     Text(formatTime(exerciseTimeElapsed))
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                        .font(.system(size: 32, weight: .semibold))
                         .monospacedDigit()
-                        .foregroundColor(.orange)
+                        .foregroundColor(.primary)
                     
                     HStack(spacing: 16) {
                         Button("Stop & Record") {
                             recordTimedExercise()
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.black)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
                     }
                 }
                 .padding()
-                .background(Color.orange.opacity(0.1))
+                .background(Color(.systemGray6))
                 .cornerRadius(12)
             } else {
                 // Timer controls
@@ -505,24 +527,51 @@ struct LiveWorkoutView: View {
                         Button("30s") {
                             startExerciseTimer()
                         }
-                        .buttonStyle(.bordered)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .foregroundColor(.primary)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
                         
                         Button("60s") {
                             startExerciseTimer()
                         }
-                        .buttonStyle(.bordered)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .foregroundColor(.primary)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
                         
                         Button("90s") {
                             startExerciseTimer()
                         }
-                        .buttonStyle(.bordered)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .foregroundColor(.primary)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
                     }
                     
                     Button("Start Timer") {
                         startExerciseTimer()
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.black)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.black)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
                 }
             }
         }
@@ -536,88 +585,39 @@ struct ExerciseTab: View {
     let setCount: Int
     let action: () -> Void
     
-    @EnvironmentObject var exerciseDataManager: ExerciseDataManager
-    
-    var muscleGroupIcon: String {
-        guard let muscleGroup = exerciseDataManager.getMuscleGroup(for: exercise.id) else {
-            return "dumbbell.fill"
-        }
-        
-        switch muscleGroup.id {
-        case "chest": return "figure.strengthtraining.traditional"
-        case "back": return "figure.climbing"
-        case "legs": return "figure.walk"
-        case "core": return "figure.core.training"
-        case "arms": return "dumbbell.fill"
-        case "shoulders": return "figure.mixed.cardio"
-        default: return "dumbbell.fill"
-        }
-    }
-    
-    var muscleGroupColor: Color {
-        guard let muscleGroup = exerciseDataManager.getMuscleGroup(for: exercise.id) else {
-            return .gray
-        }
-        
-        switch muscleGroup.id {
-        case "chest": return .red
-        case "back": return .blue
-        case "legs": return .green
-        case "core": return .orange
-        case "arms": return .purple
-        case "shoulders": return .pink
-        default: return .gray
-        }
-    }
-    
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                // Muscle group icon
-                Image(systemName: muscleGroupIcon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : .black)
-                
                 // Exercise name
                 Text(exercise.name)
-                    .font(.system(size: isSelected ? 13 : 11, weight: isSelected ? .bold : .semibold))
+                    .font(.system(size: 13, weight: .medium))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    .foregroundColor(isSelected ? .white : .primary)
                 
                 // Progress indicator
-                HStack(spacing: 2) {
-                    if isCompleted {
-                        Text("\(setCount) sets")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(isSelected ? .white : .black)
-                    } else {
-                        Text("0 sets")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(isSelected ? .white : .gray)
-                    }
-                }
+                Text(isCompleted ? "\(setCount) sets" : "0 sets")
+                    .font(.system(size: 11))
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
                 
                 // Bottom indicator bar
                 Rectangle()
-                    .fill(isSelected ? Color.white : (isCompleted ? Color.black : Color.gray.opacity(0.3)))
-                    .frame(height: 3)
-                    .cornerRadius(1.5)
+                    .fill(isSelected ? Color.accentRed : (isCompleted ? Color.primary : Color(.systemGray4)))
+                    .frame(height: 2)
+                    .cornerRadius(1)
             }
-            .frame(width: 80, height: 90)
+            .frame(width: 80, height: 65)
             .padding(.horizontal, 8)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.black : Color.white)
+                    .fill(isSelected ? Color.primary : Color(.systemGray6))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.black, lineWidth: isSelected ? 0 : 1)
+                            .stroke(Color(.systemGray4), lineWidth: isSelected ? 0 : 1)
                     )
             )
-            .foregroundColor(isSelected ? .white : .black)
-            .scaleEffect(isSelected ? 1.05 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
     }

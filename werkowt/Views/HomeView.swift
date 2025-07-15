@@ -135,7 +135,7 @@ struct HomeView: View {
                                                 .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
                                             Text("Hundred")
                                                 .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(.black)
+                                                .foregroundColor(.accentRed)
                                         }
                                     }
                                 }
@@ -774,13 +774,11 @@ struct CalendarDayView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(backgroundGradient)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 3)
-                            .stroke(
-                                calendar.isDateInToday(date) ? Color.black : Color.clear, 
-                                lineWidth: calendar.isDateInToday(date) ? 1 : 0
-                            )
-                    )
+                
+                if calendar.isDateInToday(date) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(Color.accentRed, lineWidth: 2)
+                }
                 
                 // Dumbbell icon for workout days
                 if workoutSession != nil {
@@ -791,6 +789,7 @@ struct CalendarDayView: View {
             }
             .frame(height: 22)
             .frame(maxWidth: .infinity)
+            .padding(.horizontal, 1) // Add 1px padding to prevent border clipping
         }
         .buttonStyle(PlainButtonStyle())
         .scaleEffect(1.0)

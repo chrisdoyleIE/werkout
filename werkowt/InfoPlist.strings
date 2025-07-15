@@ -1,0 +1,7 @@
+/* 
+  InfoPlist.strings
+  werkowt
+*/
+
+// Change "Your App Name" to whatever you want the app to be called
+CFBundleDisplayName = "Hundred";

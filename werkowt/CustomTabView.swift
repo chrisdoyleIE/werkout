@@ -113,9 +113,8 @@ struct CustomTabView: View {
                     }) {
                         ZStack {
                             Circle()
-                                .fill(Color.black)
+                                .fill(Color.accentRed)
                                 .frame(width: 56, height: 56)
-                                .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                             
                             Image(systemName: showingActionMenu ? "xmark" : "plus")
                                 .font(.system(size: 24, weight: .medium))

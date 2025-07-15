@@ -13,6 +13,14 @@ struct Exercise: Codable, Identifiable, Hashable {
     let instructions: String
     let type: ExerciseType
     
+    // Standard memberwise initializer
+    init(id: String, name: String, instructions: String, type: ExerciseType) {
+        self.id = id
+        self.name = name
+        self.instructions = instructions
+        self.type = type
+    }
+    
     // For backwards compatibility with existing JSON
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
