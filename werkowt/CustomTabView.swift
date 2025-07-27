@@ -7,7 +7,6 @@ struct CustomTabView: View {
     @State private var selectedTab = 0 // Start with Home
     @State private var showingActionMenu = false
     @State private var showingWorkoutCreator = false
-    @State private var showingFoodLogger = false
     @State private var showingAddWeight = false
     @State private var showingManualSearch = false
     
@@ -23,8 +22,7 @@ struct CustomTabView: View {
                 case 0:
                     HomeView(
                         showingWorkoutCreator: $showingWorkoutCreator,
-                        showingAddWeight: $showingAddWeight,
-                        showingFoodLogger: $showingFoodLogger
+                        showingAddWeight: $showingAddWeight
                     )
                 case 1:
                     NutritionTabView() // Shopping
@@ -35,8 +33,7 @@ struct CustomTabView: View {
                 default:
                     HomeView(
                         showingWorkoutCreator: $showingWorkoutCreator,
-                        showingAddWeight: $showingAddWeight,
-                        showingFoodLogger: $showingFoodLogger
+                        showingAddWeight: $showingAddWeight
                     )
                 }
             }
@@ -155,19 +152,9 @@ struct CustomTabView: View {
                         ActionMenuItem(
                             icon: "figure.strengthtraining.functional",
                             label: "Log exercise",
-                            isPrimary: true,
-                            action: {
-                                showingWorkoutCreator = true
-                                showingActionMenu = false
-                            }
-                        )
-                        
-                        ActionMenuItem(
-                            icon: "camera.viewfinder",
-                            label: "Scan Food",
                             isPrimary: false,
                             action: {
-                                showingFoodLogger = true
+                                showingWorkoutCreator = true
                                 showingActionMenu = false
                             }
                         )
@@ -202,9 +189,6 @@ struct CustomTabView: View {
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showingActionMenu)
         .sheet(isPresented: $showingWorkoutCreator) {
             WorkoutCreatorView()
-        }
-        .sheet(isPresented: $showingFoodLogger) {
-            FoodTrackingView()
         }
         .sheet(isPresented: $showingAddWeight) {
             AddWeightView { weight, notes in

@@ -18,7 +18,6 @@ struct HomeView: View {
     // Sheet state bindings passed from parent CustomTabView
     @Binding var showingWorkoutCreator: Bool
     @Binding var showingAddWeight: Bool
-    @Binding var showingFoodLogger: Bool
     
     @State private var showingLiveWorkout = false
     @State private var showingSettings = false
@@ -328,21 +327,6 @@ struct HomeView: View {
         )) {
             if let selectedDay = selectedDayForDetail {
                 DayDetailView(selectedDate: selectedDay)
-            }
-        }
-        .onChange(of: showingFoodLogger) { _, isShowing in
-            if !isShowing {
-                // Refresh nutrition data when returning from food tracking
-                Task {
-                    // Add small delay to ensure database transaction completes
-                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                    await supabaseService.loadTodaysEntries()
-                    
-                    // Trigger calendar refresh
-                    await MainActor.run {
-                        calendarRefreshTrigger.toggle()
-                    }
-                }
             }
         }
         .onChange(of: activeWorkout.isActive) { _, isActive in

@@ -16,6 +16,7 @@ struct WorkoutCreatorView: View {
     @State private var searchQuery = ""
     @State private var selectedEquipment: Set<ExerciseEquipment> = []
     @State private var expandedSections: Set<String> = []
+    @State private var selectedMuscleGroupTab: String = ""
     
     var body: some View {
         NavigationView {
@@ -65,13 +66,54 @@ struct WorkoutCreatorView: View {
                         }
                         .padding(.top)
                         
+                        // Log Gym Class Button - Only show when no muscle groups selected
+                        if selectedMuscleGroups.isEmpty {
+                            Button(action: {
+                                showingClassLogger = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "figure.strengthtraining.functional")
+                                        .font(.system(size: 20))
+                                    Text("LOG GYM CLASS")
+                                        .font(.system(size: 17, weight: .semibold))
+                                }
+                                .foregroundColor(.primary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(12)
+                            }
+                            .padding(.horizontal)
+                        }
+                        
+                        // OR Divider
+                        if selectedMuscleGroups.isEmpty {
+                            HStack {
+                                VStack(spacing: 4) {
+                                    Rectangle()
+                                        .fill(Color(.systemGray4))
+                                        .frame(height: 1)
+                                    
+                                    Text("OR")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .padding(.horizontal, 12)
+                                        .background(Color(.systemBackground))
+                                    
+                                    Rectangle()
+                                        .fill(Color(.systemGray4))
+                                        .frame(height: 1)
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                        
                         // Muscle Group Selection
-                        VStack(spacing: 0) {
+                        VStack(spacing: 8) {
                             ForEach(exerciseDataManager.muscleGroups, id: \.id) { muscleGroup in
                                 MuscleGroupRow(
                                     muscleGroup: muscleGroup,
-                                    isSelected: selectedMuscleGroups.contains(muscleGroup.id),
-                                    exerciseCount: muscleGroup.exercises.count
+                                    isSelected: selectedMuscleGroups.contains(muscleGroup.id)
                                 ) {
                                     if selectedMuscleGroups.contains(muscleGroup.id) {
                                         selectedMuscleGroups.remove(muscleGroup.id)
@@ -83,128 +125,122 @@ struct WorkoutCreatorView: View {
                         }
                         .padding(.horizontal)
                         
-                        // Log Gym Class Button (show only if no muscle groups selected)
-                        if selectedMuscleGroups.isEmpty {
-                            VStack(spacing: 16) {
-                                HStack {
-                                    VStack(spacing: 4) {
-                                        Rectangle()
-                                            .fill(Color(.systemGray4))
-                                            .frame(height: 1)
-                                        
-                                        Text("OR")
-                                            .font(.system(size: 13, weight: .medium))
-                                            .foregroundColor(.secondary)
-                                            .padding(.horizontal, 12)
-                                            .background(Color(.systemBackground))
-                                        
-                                        Rectangle()
-                                            .fill(Color(.systemGray4))
-                                            .frame(height: 1)
-                                    }
-                                }
-                                .padding(.horizontal)
-                                
-                                Button(action: {
-                                    showingClassLogger = true
-                                }) {
-                                    HStack {
-                                        Image(systemName: "figure.strengthtraining.functional")
-                                            .font(.title3)
-                                        Text("LOG GYM CLASS")
-                                            .font(.system(size: 17, weight: .semibold))
-                                    }
-                                    .foregroundColor(.primary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color(.systemGray4), lineWidth: 1)
-                                    )
-                                }
-                                .padding(.horizontal)
-                            }
-                        }
-                        
                         // Exercise Selection (only show if muscle groups selected)
                         if !selectedMuscleGroups.isEmpty {
-                            VStack(alignment: .leading, spacing: 16) {
-                                // Header with search and filters
-                                VStack(spacing: 12) {
-                                    HStack {
-                                        Text("Choose Your Exercises")
-                                            .font(.system(size: 20, weight: .semibold))
-                                        
-                                        Spacer()
-                                        
-                                        if !selectedExercises.isEmpty {
-                                            Button("Clear All") {
-                                                selectedExercises.removeAll()
-                                            }
-                                            .font(.system(size: 15))
-                                            .foregroundColor(.secondary)
-                                        }
-                                    }
+                            VStack(alignment: .leading, spacing: 0) {
+                                // Choose Your Exercises header with Clear All
+                                HStack {
+                                    Text("Choose Your Exercises")
+                                        .font(.system(size: 20, weight: .semibold))
                                     
-                                    // Search Bar
-                                    HStack {
-                                        Image(systemName: "magnifyingglass")
-                                            .foregroundColor(.secondary)
-                                        TextField("Search exercises...", text: $searchQuery)
-                                            .textFieldStyle(PlainTextFieldStyle())
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8)
+                                    Spacer()
                                     
-                                    // Equipment Filter
-                                    if !selectedMuscleGroups.isEmpty {
-                                        ScrollView(.horizontal, showsIndicators: false) {
-                                            HStack(spacing: 8) {
-                                                Text("Equipment:")
-                                                    .font(.system(size: 13))
-                                                    .foregroundColor(.secondary)
-                                                
-                                                ForEach(ExerciseEquipment.allCases, id: \.self) { equipment in
-                                                    FilterTab(
-                                                        title: equipment.displayName,
-                                                        isSelected: selectedEquipment.contains(equipment)
-                                                    ) {
-                                                        if selectedEquipment.contains(equipment) {
-                                                            selectedEquipment.remove(equipment)
-                                                        } else {
-                                                            selectedEquipment.insert(equipment)
-                                                        }
-                                                    }
-                                                }
-                                                
-                                                if !selectedEquipment.isEmpty {
-                                                    Button("Clear") {
-                                                        selectedEquipment.removeAll()
-                                                    }
-                                                    .font(.system(size: 13))
-                                                    .foregroundColor(.primary)
-                                                }
-                                            }
-                                            .padding(.horizontal)
+                                    if !selectedExercises.isEmpty {
+                                        Button("Clear All") {
+                                            selectedExercises.removeAll()
                                         }
+                                        .font(.system(size: 15))
+                                        .foregroundColor(.secondary)
                                     }
                                 }
                                 .padding(.horizontal)
+                                .padding(.bottom, 12)
                                 
-                                // Categorized Exercise Sections
-                                ForEach(selectedMuscleGroups.sorted(), id: \.self) { muscleGroupId in
-                                    if let muscleGroup = exerciseDataManager.muscleGroups.first(where: { $0.id == muscleGroupId }) {
-                                        CategorySection(
-                                            muscleGroup: muscleGroup,
-                                            selectedExercises: $selectedExercises,
-                                            expandedSections: $expandedSections,
-                                            searchQuery: searchQuery,
-                                            selectedEquipment: selectedEquipment
-                                        )
+                                // Muscle Group Tabs
+                                let sortedMuscleGroups = selectedMuscleGroups.sorted()
+                                
+                                // Tab selector
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(sortedMuscleGroups, id: \.self) { muscleGroupId in
+                                            if let muscleGroup = exerciseDataManager.muscleGroups.first(where: { $0.id == muscleGroupId }) {
+                                                Button(action: {
+                                                    selectedMuscleGroupTab = muscleGroupId
+                                                    // Clear search and filters when switching tabs
+                                                    searchQuery = ""
+                                                    selectedEquipment.removeAll()
+                                                }) {
+                                                    Text(muscleGroup.name)
+                                                        .font(.system(size: 15, weight: selectedMuscleGroupTab == muscleGroupId ? .semibold : .medium))
+                                                        .foregroundColor(selectedMuscleGroupTab == muscleGroupId ? .white : .primary)
+                                                        .padding(.horizontal, 16)
+                                                        .padding(.vertical, 8)
+                                                        .background(
+                                                            RoundedRectangle(cornerRadius: 16)
+                                                                .fill(selectedMuscleGroupTab == muscleGroupId ? Color.primary : Color(.systemGray6))
+                                                        )
+                                                }
+                                                .buttonStyle(PlainButtonStyle())
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal)
+                                }
+                                .padding(.bottom, 12)
+                                
+                                // Content for selected tab
+                                if !selectedMuscleGroupTab.isEmpty,
+                                   let selectedMuscleGroup = exerciseDataManager.muscleGroups.first(where: { $0.id == selectedMuscleGroupTab }) {
+                                    
+                                    VStack(spacing: 0) {
+                                        // Search and filters for selected muscle group
+                                        VStack(spacing: 12) {
+                                            // Search Bar
+                                            HStack {
+                                                Image(systemName: "magnifyingglass")
+                                                    .foregroundColor(.secondary)
+                                                TextField("Search \(selectedMuscleGroup.name) exercises...", text: $searchQuery)
+                                                    .textFieldStyle(PlainTextFieldStyle())
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(Color(.systemGray6))
+                                            .cornerRadius(8)
+                                            
+                                            // Equipment Filter
+                                            ScrollView(.horizontal, showsIndicators: false) {
+                                                HStack(spacing: 8) {
+                                                    Text("Equipment:")
+                                                        .font(.system(size: 13))
+                                                        .foregroundColor(.secondary)
+                                                    
+                                                    ForEach(ExerciseEquipment.allCases, id: \.self) { equipment in
+                                                        FilterTab(
+                                                            title: equipment.displayName,
+                                                            isSelected: selectedEquipment.contains(equipment)
+                                                        ) {
+                                                            if selectedEquipment.contains(equipment) {
+                                                                selectedEquipment.remove(equipment)
+                                                            } else {
+                                                                selectedEquipment.insert(equipment)
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    if !selectedEquipment.isEmpty {
+                                                        Button("Clear") {
+                                                            selectedEquipment.removeAll()
+                                                        }
+                                                        .font(.system(size: 13))
+                                                        .foregroundColor(.primary)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        .padding(.horizontal)
+                                        .padding(.vertical, 12)
+                                        
+                                        // Exercise list for selected muscle group
+                                        ScrollView {
+                                            CategorySection(
+                                                muscleGroup: selectedMuscleGroup,
+                                                selectedExercises: $selectedExercises,
+                                                expandedSections: $expandedSections,
+                                                searchQuery: searchQuery,
+                                                selectedEquipment: selectedEquipment
+                                            )
+                                            .padding(.bottom, 140) // Extra space for floating button
+                                        }
                                     }
                                 }
                             }
@@ -230,30 +266,51 @@ struct WorkoutCreatorView: View {
                 if canStartWorkout {
                     VStack {
                         Spacer()
-                        Button(action: startWorkout) {
-                            HStack {
-                                if isCreatingWorkout {
-                                    SwiftUI.ProgressView()
-                                        .scaleEffect(0.8)
-                                        .tint(.white)
-                                } else {
-                                    Image(systemName: "play.fill")
-                                        .font(.title3)
+                        
+                        // Background overlay for better button visibility
+                        VStack(spacing: 0) {
+                            // Gradient overlay
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(.systemBackground).opacity(0),
+                                    Color(.systemBackground).opacity(0.8),
+                                    Color(.systemBackground)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 40)
+                            
+                            // Button area with solid background
+                            VStack {
+                                Button(action: startWorkout) {
+                                    HStack {
+                                        if isCreatingWorkout {
+                                            SwiftUI.ProgressView()
+                                                .scaleEffect(0.8)
+                                                .tint(.white)
+                                        } else {
+                                            Image(systemName: "play.fill")
+                                                .font(.system(size: 18))
+                                        }
+                                        Text(isCreatingWorkout ? "Starting..." : "Start \(generatedWorkoutName)")
+                                            .font(.system(size: 17, weight: .semibold))
+                                    }
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(Color.accentRed)
+                                    .cornerRadius(12)
+                                    .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
                                 }
-                                Text(isCreatingWorkout ? "Starting..." : "Start \(generatedWorkoutName)")
-                                    .font(.system(size: 17, weight: .semibold))
+                                .disabled(isCreatingWorkout)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 40) // Safe area bottom padding
                             }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.accentRed)
-                            .cornerRadius(12)
-                            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            .background(Color(.systemBackground))
                         }
-                        .disabled(isCreatingWorkout)
-                        .padding(.horizontal)
-                        .padding(.bottom)
                     }
+                    .zIndex(1000) // Ensure button is always on top
                 }
             }
                 .navigationBarTitleDisplayMode(.inline)
@@ -263,6 +320,14 @@ struct WorkoutCreatorView: View {
                             dismiss()
                         }
                         .font(.system(size: 17, weight: .medium))
+                    }
+                }
+                .onChange(of: selectedMuscleGroups) { newValue in
+                    // Auto-select first tab when muscle groups change
+                    if !newValue.isEmpty && (selectedMuscleGroupTab.isEmpty || !newValue.contains(selectedMuscleGroupTab)) {
+                        selectedMuscleGroupTab = newValue.sorted().first ?? ""
+                    } else if newValue.isEmpty {
+                        selectedMuscleGroupTab = ""
                     }
                 }
                 .sheet(isPresented: $showingClassLogger) {
@@ -333,38 +398,32 @@ struct WorkoutCreatorView: View {
 struct MuscleGroupRow: View {
     let muscleGroup: MuscleGroup
     let isSelected: Bool
-    let exerciseCount: Int
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
-                // Selection indicator
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .primary : Color(.systemGray3))
-                
-                // Muscle group name
+            HStack {
                 Text(muscleGroup.name)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.primary)
+                    .font(.system(size: 17, weight: isSelected ? .semibold : .medium))
+                    .foregroundColor(isSelected ? .primary : .primary.opacity(0.8))
                 
                 Spacer()
                 
-                // Exercise count
-                Text("\(exerciseCount)")
-                    .font(.system(size: 15))
-                    .foregroundColor(.secondary)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.accentRed)
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemGray6))
+                    .fill(isSelected ? Color(.systemGray6) : Color(.systemGray6).opacity(0.5))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.primary : Color.clear, lineWidth: 1)
+                    .stroke(isSelected ? Color.accentRed.opacity(0.3) : Color.clear, lineWidth: 1)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -413,36 +472,50 @@ struct CategorySection: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Muscle Group Header
-            HStack {
-                Text(muscleGroup.name)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.primary)
-                Text("(\(filteredExercises.count))")
-                    .font(.system(size: 17))
+        VStack(alignment: .leading, spacing: 8) {
+            // Exercise count
+            if filteredExercises.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    
+                    Text("No exercises found")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    if !searchQuery.isEmpty {
+                        Text("Try adjusting your search or filters")
+                            .font(.system(size: 15))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                Text("\(filteredExercises.count) exercises")
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundColor(.secondary)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
                 
-                Spacer()
-            }
-            .padding(.horizontal)
-            
-            // Exercise List
-            VStack(spacing: 8) {
-                ForEach(filteredExercises, id: \.id) { exercise in
-                    CleanExerciseCard(
-                        exercise: exercise,
-                        isSelected: selectedExercises.contains(exercise.id)
-                    ) {
-                        if selectedExercises.contains(exercise.id) {
-                            selectedExercises.remove(exercise.id)
-                        } else {
-                            selectedExercises.insert(exercise.id)
+                // Exercise List
+                VStack(spacing: 8) {
+                    ForEach(filteredExercises, id: \.id) { exercise in
+                        CleanExerciseCard(
+                            exercise: exercise,
+                            isSelected: selectedExercises.contains(exercise.id)
+                        ) {
+                            if selectedExercises.contains(exercise.id) {
+                                selectedExercises.remove(exercise.id)
+                            } else {
+                                selectedExercises.insert(exercise.id)
+                            }
                         }
                     }
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
         }
     }
 }
@@ -489,3 +562,4 @@ struct CleanExerciseCard: View {
         .buttonStyle(PlainButtonStyle())
     }
 }
+
