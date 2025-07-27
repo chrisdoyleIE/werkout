@@ -9,6 +9,7 @@ struct LiveWorkoutView: View {
     @State private var weightInput: String = ""
     @State private var repsInput: String = ""
     @State private var durationInput: String = ""
+    @State private var wentToFailure: Bool = false
     @State private var lastWorkoutSets: [WorkoutSet] = []
     @State private var showingFinishConfirmation = false
     
@@ -55,6 +56,13 @@ struct LiveWorkoutView: View {
                         }
                         .padding(.horizontal, 16)
                     }
+                    
+                    // Visual separator between tabs and content
+                    Rectangle()
+                        .fill(Color(.systemGray4))
+                        .frame(height: 1)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
                 }
             }
             .padding(.horizontal, 16)
@@ -64,12 +72,6 @@ struct LiveWorkoutView: View {
             if let currentExercise = activeWorkout.currentExercise {
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Exercise name
-                        Text(currentExercise.exercise.name)
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .padding(.top, 4)
-                            .id(currentExercise.exercise.id)
                         
                         // Last workout data - full display
                         if !lastWorkoutSets.isEmpty {
@@ -167,55 +169,6 @@ struct LiveWorkoutView: View {
                                 }
                             }
                             
-                            // Manual Rest Timer Controls (when not running)
-                            if restTimeRemaining == 0 {
-                                VStack(spacing: 8) {
-                                    Text("Start Rest Timer")
-                                        .font(.system(size: 17, weight: .medium))
-                                    
-                                    HStack(spacing: 12) {
-                                        Button("1m") {
-                                            startRestTimer(duration: 60)
-                                        }
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color(.systemGray6))
-                                        .foregroundColor(.primary)
-                                        .cornerRadius(8)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color(.systemGray4), lineWidth: 1)
-                                        )
-                                        
-                                        Button("2m") {
-                                            startRestTimer(duration: 120)
-                                        }
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color(.systemGray6))
-                                        .foregroundColor(.primary)
-                                        .cornerRadius(8)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color(.systemGray4), lineWidth: 1)
-                                        )
-                                        
-                                        Button("3m") {
-                                            startRestTimer(duration: 180)
-                                        }
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color(.systemGray6))
-                                        .foregroundColor(.primary)
-                                        .cornerRadius(8)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color(.systemGray4), lineWidth: 1)
-                                        )
-                                    }
-                                }
-                                .padding(.top, 8)
-                            }
                         }
                         .padding()
                         .background(Color(.systemGray6))
@@ -275,17 +228,19 @@ struct LiveWorkoutView: View {
         activeWorkout.addSet(
             exerciseId: currentExercise.exercise.id,
             reps: reps,
-            weight: weight
+            weight: weight,
+            wentToFailure: wentToFailure
         )
         
         clearInputs()
-        startRestTimer(duration: 120) // Auto-start rest timer
+        startRestTimer(duration: 90) // Auto-start rest timer
     }
     
     private func clearInputs() {
         weightInput = ""
         repsInput = ""
         durationInput = ""
+        wentToFailure = false
     }
     
     private func addBodyweightSet() {
@@ -298,7 +253,8 @@ struct LiveWorkoutView: View {
         
         activeWorkout.addBodyweightSet(
             exerciseId: currentExercise.exercise.id,
-            reps: reps
+            reps: reps,
+            wentToFailure: wentToFailure
         )
         
         clearInputs()
@@ -362,24 +318,33 @@ struct LiveWorkoutView: View {
     }
     
     private func formatSetDisplay(_ set: WorkoutSet) -> String {
+        var display = ""
+        
         if let weight = set.weightKg, let reps = set.reps {
             // Weight-based exercise
-            return "\(String(format: "%.1f", weight))kg × \(reps)"
+            display = "\(String(format: "%.1f", weight))kg × \(reps)"
         } else if let reps = set.reps {
             // Bodyweight exercise
-            return "\(reps) reps"
+            display = "\(reps) reps"
         } else if let duration = set.durationSeconds {
             // Timed exercise
             let minutes = duration / 60
             let seconds = duration % 60
             if minutes > 0 {
-                return "\(minutes)m \(seconds)s"
+                display = "\(minutes)m \(seconds)s"
             } else {
-                return "\(seconds)s"
+                display = "\(seconds)s"
             }
         } else {
-            return "Unknown"
+            display = "Unknown"
         }
+        
+        // Add failure indicator
+        if set.wentToFailure {
+            display += " 🔥"
+        }
+        
+        return display
     }
     
     private func loadLastWorkoutData() {
@@ -440,6 +405,22 @@ struct LiveWorkoutView: View {
                         .keyboardType(.numberPad)
                         .font(.system(size: 17))
                 }
+                
+                // Failure toggle - flame icon
+                VStack(alignment: .center, spacing: 8) {
+                    Text("Failure")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Button(action: {
+                        wentToFailure.toggle()
+                    }) {
+                        Image(systemName: wentToFailure ? "flame.circle.fill" : "flame.circle")
+                            .font(.system(size: 24))
+                            .foregroundColor(wentToFailure ? .accentRed : .secondary.opacity(0.5))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
             }
             
             Button(action: addSet) {
@@ -462,15 +443,33 @@ struct LiveWorkoutView: View {
     @ViewBuilder
     private func bodyweightExerciseInput() -> some View {
         VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Reps")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Reps")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    TextField("0", text: $repsInput)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.numberPad)
+                        .font(.system(size: 17))
+                }
                 
-                TextField("0", text: $repsInput)
-                    .textFieldStyle(.roundedBorder)
-                    .keyboardType(.numberPad)
-                    .font(.system(size: 17))
+                // Failure toggle - flame icon
+                VStack(alignment: .center, spacing: 8) {
+                    Text("Failure")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Button(action: {
+                        wentToFailure.toggle()
+                    }) {
+                        Image(systemName: wentToFailure ? "flame.circle.fill" : "flame.circle")
+                            .font(.system(size: 24))
+                            .foregroundColor(wentToFailure ? .accentRed : .secondary.opacity(0.5))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
             }
             
             Button(action: addBodyweightSet) {

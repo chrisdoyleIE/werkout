@@ -927,24 +927,33 @@ struct ExerciseDetailSection: View {
     }
     
     private func formatSetDisplay(_ set: WorkoutSet) -> String {
+        var display = ""
+        
         if let weight = set.weightKg, let reps = set.reps {
             // Weight-based exercise
-            return "\(String(format: "%.1f", weight))kg × \(reps)"
+            display = "\(String(format: "%.1f", weight))kg × \(reps)"
         } else if let reps = set.reps {
             // Bodyweight exercise
-            return "\(reps) reps"
+            display = "\(reps) reps"
         } else if let duration = set.durationSeconds {
             // Timed exercise
             let minutes = duration / 60
             let seconds = duration % 60
             if minutes > 0 {
-                return "\(minutes)m \(seconds)s"
+                display = "\(minutes)m \(seconds)s"
             } else {
-                return "\(seconds)s"
+                display = "\(seconds)s"
             }
         } else {
-            return "Unknown"
+            display = "Unknown"
         }
+        
+        // Add failure indicator
+        if set.wentToFailure {
+            display += " 🔥"
+        }
+        
+        return display
     }
 }
 

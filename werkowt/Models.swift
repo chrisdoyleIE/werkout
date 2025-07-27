@@ -87,7 +87,7 @@ class ActiveWorkout: ObservableObject {
         }
     }
     
-    func addSet(exerciseId: String, reps: Int, weight: Double) {
+    func addSet(exerciseId: String, reps: Int, weight: Double, wentToFailure: Bool = false) {
         guard let sessionId = session?.id else { return }
         
         let setNumber = (exercises.first { $0.exercise.id == exerciseId }?.sets.count ?? 0) + 1
@@ -97,13 +97,14 @@ class ActiveWorkout: ObservableObject {
             exerciseId: exerciseId,
             setNumber: setNumber,
             reps: reps,
-            weightKg: weight
+            weightKg: weight,
+            wentToFailure: wentToFailure
         )
         
         addSetToExercise(newSet)
     }
     
-    func addBodyweightSet(exerciseId: String, reps: Int) {
+    func addBodyweightSet(exerciseId: String, reps: Int, wentToFailure: Bool = false) {
         guard let sessionId = session?.id else { return }
         
         let setNumber = (exercises.first { $0.exercise.id == exerciseId }?.sets.count ?? 0) + 1
@@ -112,13 +113,14 @@ class ActiveWorkout: ObservableObject {
             workoutSessionId: sessionId,
             exerciseId: exerciseId,
             setNumber: setNumber,
-            reps: reps
+            reps: reps,
+            wentToFailure: wentToFailure
         )
         
         addSetToExercise(newSet)
     }
     
-    func addTimedSet(exerciseId: String, durationSeconds: Int) {
+    func addTimedSet(exerciseId: String, durationSeconds: Int, wentToFailure: Bool = false) {
         guard let sessionId = session?.id else { return }
         
         let setNumber = (exercises.first { $0.exercise.id == exerciseId }?.sets.count ?? 0) + 1
@@ -127,7 +129,8 @@ class ActiveWorkout: ObservableObject {
             workoutSessionId: sessionId,
             exerciseId: exerciseId,
             setNumber: setNumber,
-            durationSeconds: durationSeconds
+            durationSeconds: durationSeconds,
+            wentToFailure: wentToFailure
         )
         
         addSetToExercise(newSet)

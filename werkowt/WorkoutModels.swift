@@ -29,10 +29,11 @@ struct WorkoutSet: Codable, Identifiable {
     let weightKg: Double?       // Optional for bodyweight/timed exercises  
     let durationSeconds: Int?   // For timed exercises
     let restSeconds: Int?
+    let wentToFailure: Bool     // Whether user reached muscular failure
     let completedAt: Date
     
     init(id: UUID, workoutSessionId: UUID, exerciseId: String, setNumber: Int, 
-         reps: Int?, weightKg: Double?, durationSeconds: Int?, restSeconds: Int?, completedAt: Date) {
+         reps: Int?, weightKg: Double?, durationSeconds: Int?, restSeconds: Int?, wentToFailure: Bool = false, completedAt: Date) {
         self.id = id
         self.workoutSessionId = workoutSessionId
         self.exerciseId = exerciseId
@@ -41,6 +42,7 @@ struct WorkoutSet: Codable, Identifiable {
         self.weightKg = weightKg
         self.durationSeconds = durationSeconds
         self.restSeconds = restSeconds
+        self.wentToFailure = wentToFailure
         self.completedAt = completedAt
     }
     
@@ -53,29 +55,30 @@ struct WorkoutSet: Codable, Identifiable {
         case weightKg = "weight_kg"
         case durationSeconds = "duration_seconds"
         case restSeconds = "rest_seconds"
+        case wentToFailure = "went_to_failure"
         case completedAt = "completed_at"
     }
     
     // Convenience initializers for different exercise types
     static func weightSet(id: UUID = UUID(), workoutSessionId: UUID, exerciseId: String, 
-                         setNumber: Int, reps: Int, weightKg: Double) -> WorkoutSet {
+                         setNumber: Int, reps: Int, weightKg: Double, wentToFailure: Bool = false) -> WorkoutSet {
         WorkoutSet(id: id, workoutSessionId: workoutSessionId, exerciseId: exerciseId,
                   setNumber: setNumber, reps: reps, weightKg: weightKg, 
-                  durationSeconds: nil, restSeconds: nil, completedAt: Date())
+                  durationSeconds: nil, restSeconds: nil, wentToFailure: wentToFailure, completedAt: Date())
     }
     
     static func bodyweightSet(id: UUID = UUID(), workoutSessionId: UUID, exerciseId: String,
-                             setNumber: Int, reps: Int) -> WorkoutSet {
+                             setNumber: Int, reps: Int, wentToFailure: Bool = false) -> WorkoutSet {
         WorkoutSet(id: id, workoutSessionId: workoutSessionId, exerciseId: exerciseId,
                   setNumber: setNumber, reps: reps, weightKg: nil,
-                  durationSeconds: nil, restSeconds: nil, completedAt: Date())
+                  durationSeconds: nil, restSeconds: nil, wentToFailure: wentToFailure, completedAt: Date())
     }
     
     static func timedSet(id: UUID = UUID(), workoutSessionId: UUID, exerciseId: String,
-                        setNumber: Int, durationSeconds: Int) -> WorkoutSet {
+                        setNumber: Int, durationSeconds: Int, wentToFailure: Bool = false) -> WorkoutSet {
         WorkoutSet(id: id, workoutSessionId: workoutSessionId, exerciseId: exerciseId,
                   setNumber: setNumber, reps: nil, weightKg: nil,
-                  durationSeconds: durationSeconds, restSeconds: nil, completedAt: Date())
+                  durationSeconds: durationSeconds, restSeconds: nil, wentToFailure: wentToFailure, completedAt: Date())
     }
 }
 

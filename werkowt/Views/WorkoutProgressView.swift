@@ -581,17 +581,19 @@ struct ExerciseProgressChart: View {
                 return nil
             }
             
+            let failureIndicator = set.wentToFailure ? " 🔥" : ""
+            
             if let weight = set.weightKg, let reps = set.reps {
                 // For weight exercises, show estimated 1RM
                 let estimated1RM = weight * (1 + Double(reps) / 30.0)
-                return ProgressDataPoint(date: date, value: estimated1RM, label: "\(String(format: "%.1f", weight))kg×\(reps)")
+                return ProgressDataPoint(date: date, value: estimated1RM, label: "\(String(format: "%.1f", weight))kg×\(reps)\(failureIndicator)")
             } else if let reps = set.reps {
                 // For bodyweight exercises, show reps
-                return ProgressDataPoint(date: date, value: Double(reps), label: "\(reps) reps")
+                return ProgressDataPoint(date: date, value: Double(reps), label: "\(reps) reps\(failureIndicator)")
             } else if let duration = set.durationSeconds {
                 // For timed exercises, show duration in minutes
                 let minutes = Double(duration) / 60.0
-                return ProgressDataPoint(date: date, value: minutes, label: "\(duration)s")
+                return ProgressDataPoint(date: date, value: minutes, label: "\(duration)s\(failureIndicator)")
             }
             
             return nil
