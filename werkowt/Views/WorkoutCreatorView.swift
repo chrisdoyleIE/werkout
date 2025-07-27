@@ -19,8 +19,8 @@ struct WorkoutCreatorView: View {
     @State private var selectedMuscleGroupTab: String = ""
     
     var body: some View {
-        NavigationView {
-            ZStack(alignment: .bottom) {
+        ZStack(alignment: .bottom) {
+            NavigationView {
                 ScrollView {
                     VStack(spacing: 24) {
                         // Header
@@ -108,8 +108,11 @@ struct WorkoutCreatorView: View {
                             .padding(.horizontal)
                         }
                         
-                        // Muscle Group Selection
-                        VStack(spacing: 8) {
+                        // Muscle Group Selection - Two Column Layout
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8)
+                        ], spacing: 8) {
                             ForEach(exerciseDataManager.muscleGroups, id: \.id) { muscleGroup in
                                 MuscleGroupRow(
                                     muscleGroup: muscleGroup,
@@ -130,8 +133,20 @@ struct WorkoutCreatorView: View {
                             VStack(alignment: .leading, spacing: 0) {
                                 // Choose Your Exercises header with Clear All
                                 HStack {
-                                    Text("Choose Your Exercises")
-                                        .font(.system(size: 20, weight: .semibold))
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Choose Your Exercises")
+                                            .font(.system(size: 20, weight: .semibold))
+                                        
+                                        if selectedExercises.isEmpty {
+                                            Text("Tap exercises below to add them to your workout")
+                                                .font(.system(size: 13))
+                                                .foregroundColor(.secondary)
+                                        } else {
+                                            Text("\(selectedExercises.count) exercise\(selectedExercises.count == 1 ? "" : "s") selected")
+                                                .font(.system(size: 13))
+                                                .foregroundColor(.accentRed)
+                                        }
+                                    }
                                     
                                     Spacer()
                                     
@@ -260,10 +275,36 @@ struct WorkoutCreatorView: View {
                                 .padding(.horizontal)
                         }
                     }
+                    .padding(.bottom, 120) // Ensure space for floating button
                 }
-                
-                // Floating Start Button - positioned outside ScrollView
-                if canStartWorkout {
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                        .font(.system(size: 17, weight: .medium))
+                    }
+                }
+                .onChange(of: selectedMuscleGroups) { newValue in
+                    // Auto-select first tab when muscle groups change
+                    if !newValue.isEmpty && (selectedMuscleGroupTab.isEmpty || !newValue.contains(selectedMuscleGroupTab)) {
+                        selectedMuscleGroupTab = newValue.sorted().first ?? ""
+                    } else if newValue.isEmpty {
+                        selectedMuscleGroupTab = ""
+                    }
+                }
+                .sheet(isPresented: $showingClassLogger) {
+                    QuickClassLoggerView(onComplete: {
+                        // Dismiss the WorkoutCreatorView after gym class is logged
+                        dismiss()
+                    })
+                    .environmentObject(workoutDataManager)
+                }
+            }
+            
+            // Floating Start Button - show when muscle groups selected, enable when exercises selected
+            if !selectedMuscleGroups.isEmpty {
                     VStack {
                         Spacer()
                         
@@ -293,17 +334,18 @@ struct WorkoutCreatorView: View {
                                             Image(systemName: "play.fill")
                                                 .font(.system(size: 18))
                                         }
-                                        Text(isCreatingWorkout ? "Starting..." : "Start \(generatedWorkoutName)")
+                                        Text(isCreatingWorkout ? "Starting..." : 
+                                             selectedExercises.isEmpty ? "Select exercises to start" : "Start \(generatedWorkoutName)")
                                             .font(.system(size: 17, weight: .semibold))
                                     }
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 16)
-                                    .background(Color.accentRed)
+                                    .background(selectedExercises.isEmpty ? Color.gray : Color.accentRed)
                                     .cornerRadius(12)
                                     .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
                                 }
-                                .disabled(isCreatingWorkout)
+                                .disabled(isCreatingWorkout || selectedExercises.isEmpty)
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 40) // Safe area bottom padding
                             }
@@ -312,32 +354,7 @@ struct WorkoutCreatorView: View {
                     }
                     .zIndex(1000) // Ensure button is always on top
                 }
-            }
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                        .font(.system(size: 17, weight: .medium))
-                    }
-                }
-                .onChange(of: selectedMuscleGroups) { newValue in
-                    // Auto-select first tab when muscle groups change
-                    if !newValue.isEmpty && (selectedMuscleGroupTab.isEmpty || !newValue.contains(selectedMuscleGroupTab)) {
-                        selectedMuscleGroupTab = newValue.sorted().first ?? ""
-                    } else if newValue.isEmpty {
-                        selectedMuscleGroupTab = ""
-                    }
-                }
-                .sheet(isPresented: $showingClassLogger) {
-                    QuickClassLoggerView(onComplete: {
-                        // Dismiss the WorkoutCreatorView after gym class is logged
-                        dismiss()
-                    })
-                    .environmentObject(workoutDataManager)
-                }
-            }
+        }
     }
     
     // MARK: - Private Methods
