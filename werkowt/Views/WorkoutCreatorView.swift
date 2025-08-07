@@ -392,6 +392,8 @@ struct WorkoutCreatorView: View {
     private func startWorkout() {
         let exercises = selectedExercises.compactMap { exerciseDataManager.getExercise(by: $0) }
         
+        Logger.debug("Starting workout: '\(generatedWorkoutName)' with \(exercises.count) exercises", category: Logger.workout)
+        
         isCreatingWorkout = true
         errorMessage = ""
         
@@ -399,10 +401,12 @@ struct WorkoutCreatorView: View {
             do {
                 try await activeWorkout.startWorkout(name: generatedWorkoutName, exercises: exercises)
                 
+                Logger.debug("Workout started successfully, setting isCreatingWorkout = false", category: Logger.workout)
                 await MainActor.run {
                     isCreatingWorkout = false
                 }
             } catch {
+                Logger.error("Failed to start workout: \(error.localizedDescription)", category: Logger.workout)
                 await MainActor.run {
                     isCreatingWorkout = false
                     errorMessage = "Failed to create workout: \(error.localizedDescription)"

@@ -161,7 +161,7 @@ struct CustomTabView: View {
                         
                         ActionMenuItem(
                             icon: "magnifyingglass",
-                            label: "Search Food",
+                            label: "Log Food",
                             isPrimary: false,
                             action: {
                                 showingManualSearch = true

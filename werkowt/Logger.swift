@@ -8,6 +8,7 @@ struct Logger {
     static let workout = OSLog(subsystem: subsystem, category: "workout")
     static let auth = OSLog(subsystem: subsystem, category: "auth")
     static let data = OSLog(subsystem: subsystem, category: "data")
+    static let food = OSLog(subsystem: subsystem, category: "food")
     
     static func log(_ message: String, category: OSLog = general, type: OSLogType = .default) {
         os_log("%@", log: category, type: type, message)

@@ -188,7 +188,11 @@ struct LiveWorkoutView: View {
             }
         }
         .onAppear {
+            Logger.debug("LiveWorkoutView: onAppear - activeWorkout.isActive: \(activeWorkout.isActive), exercises: \(activeWorkout.exercises.count)", category: Logger.workout)
             loadLastWorkoutData()
+        }
+        .onDisappear {
+            Logger.debug("LiveWorkoutView: onDisappear - activeWorkout.isActive: \(activeWorkout.isActive)", category: Logger.workout)
         }
         .onChange(of: activeWorkout.currentExerciseIndex) { _ in
             loadLastWorkoutData()
@@ -366,6 +370,7 @@ struct LiveWorkoutView: View {
     }
     
     private func finishWorkout() {
+        Logger.debug("LiveWorkoutView: finishWorkout called, dismissing view", category: Logger.workout)
         activeWorkout.finishWorkout()
         dismiss()
     }

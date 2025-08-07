@@ -16,14 +16,12 @@ struct ManualFoodSearchView: View {
     @State private var showingMealDetail = false
     @State private var showingFoodCreator = false
     @State private var showingMealCreator = false
-    @State private var showingPhotoCapture = false
-    @State private var capturedPhotoReference: UIImage?
     @State private var isLoading = false
     
     private let searchDebouncer = Debouncer()
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 // Search bar
                 HStack {
@@ -108,17 +106,14 @@ struct ManualFoodSearchView: View {
                                 title: "Can't find it?",
                                 items: {
                                     VStack(spacing: 8) {
-                                        CreateFoodOptionsRow(
-                                            foodName: searchText,
-                                            onManualCreate: {
-                                                showingFoodCreator = true
-                                            },
-                                            onCameraCreate: {
-                                                showingPhotoCapture = true
-                                            }
-                                        )
+                                        CreateFoodRow(foodName: searchText) {
+                                            Logger.debug("ManualFoodSearch: Create New Food tapped for: '\(searchText)'", category: Logger.food)
+                                            Logger.debug("ManualFoodSearch: Presenting FoodCreatorView with searchText: '\(searchText)'", category: Logger.food)
+                                            showingFoodCreator = true
+                                        }
                                         
                                         CreateMealRow {
+                                            Logger.debug("ManualFoodSearch: Create Meal tapped", category: Logger.food)
                                             showingMealCreator = true
                                         }
                                     }
@@ -188,12 +183,10 @@ struct ManualFoodSearchView: View {
         .sheet(isPresented: $showingFoodCreator) {
             FoodCreatorView(
                 initialFoodName: searchText.isEmpty ? nil : searchText,
-                capturedPhotoReference: capturedPhotoReference,
                 onFoodSaved: { finalFoodName in
+                    Logger.debug("ManualFoodSearch: Food saved with name: '\(finalFoodName)'", category: Logger.food)
                     // Update search text with the final food name
                     searchText = finalFoodName
-                    // Clear captured photo after use
-                    capturedPhotoReference = nil
                     // Refresh search results to show the newly created food
                     Task {
                         await performSearch(query: finalFoodName)
@@ -210,16 +203,6 @@ struct ManualFoodSearchView: View {
                     Task {
                         await loadRecentItems()
                     }
-                }
-            )
-        }
-        .sheet(isPresented: $showingPhotoCapture) {
-            PhotoFoodCaptureView(
-                selectedMealType: selectedMealType,
-                onImageCaptured: { image in
-                    capturedPhotoReference = image
-                    showingPhotoCapture = false
-                    showingFoodCreator = true
                 }
             )
         }
@@ -251,21 +234,26 @@ struct ManualFoodSearchView: View {
     }
     
     private func loadRecentItems() async {
+        Logger.debug("ManualFoodSearch: loadRecentItems started", category: Logger.food)
         do {
             let items = try await supabaseService.getRecentFoodsAndMeals(
                 days: 7,
                 mealType: nil
             )
+            Logger.debug("ManualFoodSearch: Loaded \(items.count) recent items", category: Logger.food)
             await MainActor.run {
                 recentItems = items
             }
         } catch {
-            print("Error loading recent items: \(error)")
+            Logger.error("ManualFoodSearch: Error loading recent items: \(error.localizedDescription)", category: Logger.food)
         }
     }
     
     private func performSearch(query: String) async {
+        Logger.debug("ManualFoodSearch: performSearch called with query: '\(query)'", category: Logger.food)
+        
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            Logger.debug("ManualFoodSearch: Empty query, clearing results", category: Logger.food)
             await MainActor.run {
                 searchResults = []
                 isSearching = false
@@ -279,16 +267,17 @@ struct ManualFoodSearchView: View {
         
         do {
             let results = try await supabaseService.searchFoods(query: query, limit: 20)
+            Logger.debug("ManualFoodSearch: Found \(results.count) search results for query: '\(query)'", category: Logger.food)
             await MainActor.run {
                 searchResults = results
                 isSearching = false
             }
         } catch {
+            Logger.error("ManualFoodSearch: Search error for query '\(query)': \(error.localizedDescription)", category: Logger.food)
             await MainActor.run {
                 searchResults = []
                 isSearching = false
             }
-            print("Search error: \(error)")
         }
     }
     
@@ -654,7 +643,7 @@ struct QuantityInputView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
                 // Food info
                 VStack(spacing: 12) {
@@ -808,69 +797,6 @@ extension Date {
     }
 }
 
-struct CreateFoodOptionsRow: View {
-    let foodName: String
-    let onManualCreate: () -> Void
-    let onCameraCreate: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // Camera option
-            Button(action: onCameraCreate) {
-                HStack(spacing: 8) {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.primary)
-                        .frame(width: 24)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Take Photo")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary)
-                        
-                        Text("Capture image")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            // Manual option  
-            Button(action: onManualCreate) {
-                HStack(spacing: 8) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 16))
-                        .foregroundColor(.primary)
-                        .frame(width: 24)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Manual Entry")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary)
-                        
-                        Text("Enter details")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-            }
-            .buttonStyle(PlainButtonStyle())
-        }
-    }
-}
 
 
 #Preview {

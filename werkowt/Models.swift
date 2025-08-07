@@ -48,16 +48,21 @@ class ActiveWorkout: ObservableObject {
     }
     
     func startWorkout(name: String, exercises: [Exercise]) async throws {
+        Logger.debug("ActiveWorkout.startWorkout called: '\(name)' with \(exercises.count) exercises", category: Logger.workout)
+        
         guard let userId = await AuthManager.shared.userId else {
+            Logger.error("ActiveWorkout.startWorkout failed: user not authenticated", category: Logger.workout)
             throw WorkoutError.notAuthenticated
         }
         
         guard !exercises.isEmpty else {
+            Logger.error("ActiveWorkout.startWorkout failed: no exercises selected", category: Logger.workout)
             throw WorkoutError.noExercisesSelected
         }
         
         do {
             let session = try await WorkoutDataManager.shared.createWorkoutSession(name: name)
+            Logger.debug("Created workout session successfully, setting isActive = true", category: Logger.workout)
             
             await MainActor.run {
                 self.session = session
@@ -65,9 +70,11 @@ class ActiveWorkout: ObservableObject {
                 self.currentExerciseIndex = 0
                 self.startTime = Date()
                 self.isActive = true
+                Logger.debug("ActiveWorkout state updated: isActive = \(self.isActive)", category: Logger.workout)
             }
             
         } catch {
+            Logger.error("Failed to create workout session, creating local session: \(error)", category: Logger.workout)
             await MainActor.run {
                 self.session = WorkoutSession(
                     id: UUID(),
@@ -83,6 +90,7 @@ class ActiveWorkout: ObservableObject {
                 self.currentExerciseIndex = 0
                 self.startTime = Date()
                 self.isActive = true
+                Logger.debug("ActiveWorkout state updated (fallback): isActive = \(self.isActive)", category: Logger.workout)
             }
         }
     }
@@ -200,7 +208,11 @@ class ActiveWorkout: ObservableObject {
     }
     
     func finishWorkout() {
-        guard let session = self.session else { return }
+        Logger.debug("ActiveWorkout.finishWorkout called", category: Logger.workout)
+        guard let session = self.session else { 
+            Logger.debug("ActiveWorkout.finishWorkout: no session found, returning", category: Logger.workout)
+            return 
+        }
         
         let endTime = Date()
         let duration = Int(endTime.timeIntervalSince(startTime ?? endTime) / 60)
@@ -214,6 +226,7 @@ class ActiveWorkout: ObservableObject {
             }
         }
         
+        Logger.debug("ActiveWorkout.finishWorkout: clearing state and setting isActive = false", category: Logger.workout)
         self.session = nil
         self.exercises = []
         self.isActive = false

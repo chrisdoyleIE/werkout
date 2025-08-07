@@ -1,6 +1,14 @@
 import SwiftUI
+import PhotosUI
 
-// MARK: - Food Unit Definition
+// MARK: - Enums and Type Definitions
+
+enum NutritionSource {
+    case nutritionLabel  // PhotosPicker for nutrition label
+    case webLookup      // AI/database search
+    case manual         // User enters manually
+}
+
 enum FoodUnit: String, CaseIterable {
     case grams = "g"
     case ounces = "oz"
@@ -75,63 +83,90 @@ struct FoodCreatorView: View {
     @State private var isSaving = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
-    @State private var capturedPhotoReference: UIImage?
     
     // Auto-estimation debouncer
     @State private var estimationTask: Task<Void, Never>?
     
     // Progressive flow state
-    @State private var currentStep: CreationStep = .foodName
+    @State private var currentStep: CreationStep = .foodDetails
+    @State private var selectedNutritionSource: NutritionSource = .webLookup
     @State private var showingBrandPrompt = false
     
     enum CreationStep {
-        case foodName
-        case brandAndDetails
+        case foodDetails
         case servingAndNutrition
     }
     
-    init(initialFoodName: String? = nil, capturedPhotoReference: UIImage? = nil, onFoodSaved: ((String) -> Void)? = nil) {
+    // PhotosPicker states
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var capturedImage: UIImage?
+    @State private var isProcessingPhoto = false
+    @State private var showPhotosPicker = false
+    
+    init(initialFoodName: String? = nil, onFoodSaved: ((String) -> Void)? = nil) {
         self.initialFoodName = initialFoodName
         self.onFoodSaved = onFoodSaved
-        self._capturedPhotoReference = State(initialValue: capturedPhotoReference)
     }
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
+                    // Step Progress Indicator
+                    StepProgressView(currentStep: currentStep)
+                    
                     // Progressive Flow Content
                     switch currentStep {
-                    case .foodName:
-                        FoodNameStep(
-                            foodName: $foodName,
-                            isEstimating: $isEstimatingWithAI,
-                            capturedPhotoReference: capturedPhotoReference,
-                            onNext: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    currentStep = .brandAndDetails
-                                }
-                            }
-                        )
-                        
-                    case .brandAndDetails:
-                        BrandDetailsStep(
+                    case .foodDetails:
+                        FoodDetailsStep(
                             foodName: $foodName,
                             brandName: $brandName,
-                            useAIEstimation: $useAIEstimation,
-                            isAIEstimated: $isAIEstimated,
-                            aiConfidence: $aiConfidence,
-                            showingFixPanel: $showingFixPanel,
+                            selectedNutritionSource: $selectedNutritionSource,
+                            selectedPhotoItem: $selectedPhotoItem,
+                            capturedImage: capturedImage,
+                            isProcessingPhoto: $isProcessingPhoto,
                             isEstimating: $isEstimatingWithAI,
                             isLoadingServingSuggestion: $isLoadingServingSuggestion,
+                            showPhotosPicker: $showPhotosPicker,
                             onNext: {
                                 Task {
+                                    Logger.debug("FoodCreator: Continue tapped with source: \(selectedNutritionSource)", category: Logger.food)
+                                    
+                                    // Handle nutrition label scanning - open camera but don't return early
+                                    if selectedNutritionSource == .nutritionLabel && capturedImage == nil {
+                                        Logger.debug("FoodCreator: Opening camera for nutrition label capture", category: Logger.food)
+                                        await MainActor.run {
+                                            showPhotosPicker = true
+                                        }
+                                        // Don't return early - user needs to capture photo first, then we'll progress
+                                        Logger.debug("FoodCreator: Camera opened, waiting for photo capture before proceeding", category: Logger.food)
+                                        return
+                                    }
+                                    
+                                    // If we have a captured image for nutrition label, proceed normally
+                                    if selectedNutritionSource == .nutritionLabel && capturedImage != nil {
+                                        Logger.debug("FoodCreator: Photo already captured, proceeding to next step", category: Logger.food)
+                                    }
+                                    
+                                    // Continue with processing
+                                    Logger.debug("FoodCreator: Moving from foodDetails to servingAndNutrition step", category: Logger.food)
+                                    
                                     // Always get AI serving size suggestion
                                     await suggestServingSizeFromAI()
                                     
-                                    // Then estimate nutrition if requested
-                                    if useAIEstimation {
-                                        await estimateWithAI()
+                                    // Handle nutrition source logic
+                                    switch selectedNutritionSource {
+                                    case .nutritionLabel:
+                                        if capturedImage != nil {
+                                            await estimateWithAI() // Process label with Claude
+                                            Logger.debug("FoodCreator: Processed nutrition label with AI", category: Logger.food)
+                                        }
+                                    case .webLookup:
+                                        await estimateWithAI() // Search databases with Claude
+                                        Logger.debug("FoodCreator: Searched databases with AI", category: Logger.food)
+                                    case .manual:
+                                        Logger.debug("FoodCreator: Manual entry selected, skipping AI estimation", category: Logger.food)
+                                        // Skip AI estimation, user will enter manually
                                     }
                                     
                                     await MainActor.run {
@@ -139,11 +174,6 @@ struct FoodCreatorView: View {
                                             currentStep = .servingAndNutrition
                                         }
                                     }
-                                }
-                            },
-                            onBack: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    currentStep = .foodName
                                 }
                             }
                         )
@@ -154,6 +184,9 @@ struct FoodCreatorView: View {
                             showingServingSizePicker: $showingServingSizePicker,
                             servingSizeManager: servingSizeManager,
                             foodName: foodName,
+                            brandName: brandName,
+                            selectedNutritionSource: selectedNutritionSource,
+                            capturedImage: capturedImage,
                             calories: $calories,
                             protein: $protein,
                             carbs: $carbs,
@@ -170,7 +203,7 @@ struct FoodCreatorView: View {
                             },
                             onBack: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
-                                    currentStep = .brandAndDetails
+                                    currentStep = .foodDetails
                                 }
                             },
                             onSave: {
@@ -192,7 +225,6 @@ struct FoodCreatorView: View {
                         dismiss()
                     }
                 }
-                
             }
             .alert("Error", isPresented: $showingAlert) {
                 Button("OK", role: .cancel) { }
@@ -216,13 +248,90 @@ struct FoodCreatorView: View {
                     servingSizeManager: servingSizeManager
                 )
             }
+            .sheet(isPresented: $showPhotosPicker) {
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    CameraView(selectedImage: $capturedImage)
+                } else {
+                    PhotoLibraryFallbackView(selectedPhotoItem: $selectedPhotoItem)
+                }
+            }
         }
         .onAppear {
+            Logger.debug("FoodCreator: View appeared with initialFoodName: '\(initialFoodName ?? "nil")'", category: Logger.food)
             if let initialName = initialFoodName {
                 foodName = initialName
                 selectedServingSize = ServingSize.suggestedDefaultServing(for: initialName, foodCategory: nil)
-                // Skip to brand step if we have initial food name
-                currentStep = .brandAndDetails
+                Logger.debug("FoodCreator: Pre-filled food name, staying on foodDetails step", category: Logger.food)
+            }
+        }
+        .onChange(of: selectedPhotoItem) { _, newValue in
+            Logger.debug("FoodCreator: selectedPhotoItem changed, newValue: \(newValue != nil)", category: Logger.food)
+            
+            guard let newValue = newValue else {
+                Logger.debug("FoodCreator: selectedPhotoItem is nil, clearing capturedImage", category: Logger.food)
+                capturedImage = nil
+                return
+            }
+            
+            isProcessingPhoto = true
+            Logger.debug("FoodCreator: Starting photo processing", category: Logger.food)
+            
+            Task {
+                do {
+                    Logger.debug("FoodCreator: Loading transferable data from PhotosPickerItem", category: Logger.food)
+                    
+                    if let data = try await newValue.loadTransferable(type: Data.self) {
+                        Logger.debug("FoodCreator: Successfully loaded data, size: \(data.count) bytes", category: Logger.food)
+                        
+                        if let image = UIImage(data: data) {
+                            Logger.debug("FoodCreator: Successfully created UIImage from data", category: Logger.food)
+                            
+                            await MainActor.run {
+                                capturedImage = image
+                                isProcessingPhoto = false
+                                Logger.debug("FoodCreator: Image set, processing complete", category: Logger.food)
+                                
+                                // Auto-set nutrition source to nutrition label when photo is captured
+                                selectedNutritionSource = .nutritionLabel
+                                Logger.debug("FoodCreator: Auto-set nutrition source to nutrition label", category: Logger.food)
+                                
+                                // Auto-populate food name if empty and we have initial name
+                                if foodName.isEmpty && initialFoodName?.isEmpty == false {
+                                    foodName = initialFoodName ?? ""
+                                    Logger.debug("FoodCreator: Pre-filled food name: \(foodName)", category: Logger.food)
+                                }
+                                
+                                // Automatically progress to next step after photo is captured from fallback library
+                                Logger.debug("FoodCreator: Auto-progressing to nutrition step after photo capture from library", category: Logger.food)
+                                progressToNutritionStep()
+                            }
+                        } else {
+                            Logger.error("FoodCreator: Failed to create UIImage from data", category: Logger.food)
+                            await MainActor.run {
+                                isProcessingPhoto = false
+                            }
+                        }
+                    } else {
+                        Logger.error("FoodCreator: Failed to load transferable data from PhotosPickerItem", category: Logger.food)
+                        await MainActor.run {
+                            isProcessingPhoto = false
+                        }
+                    }
+                } catch {
+                    Logger.error("FoodCreator: Error processing photo: \(error.localizedDescription)", category: Logger.food)
+                    await MainActor.run {
+                        isProcessingPhoto = false
+                    }
+                }
+            }
+        }
+        .onChange(of: capturedImage) { _, newImage in
+            Logger.debug("FoodCreator: capturedImage changed, newImage exists: \(newImage != nil)", category: Logger.food)
+            
+            // If we got an image from the camera and we're scanning nutrition label, progress to next step
+            if newImage != nil && selectedNutritionSource == .nutritionLabel && currentStep == .foodDetails {
+                Logger.debug("FoodCreator: Photo captured from camera, auto-progressing to nutrition step", category: Logger.food)
+                progressToNutritionStep()
             }
         }
     }
@@ -265,6 +374,38 @@ struct FoodCreatorView: View {
         }
     }
     
+    // MARK: - Helper Functions
+    
+    private func progressToNutritionStep() {
+        Task {
+            Logger.debug("FoodCreator: Moving from foodDetails to servingAndNutrition step after photo capture", category: Logger.food)
+            
+            // Always get AI serving size suggestion
+            await suggestServingSizeFromAI()
+            
+            // Handle nutrition source logic
+            switch selectedNutritionSource {
+            case .nutritionLabel:
+                if capturedImage != nil {
+                    await estimateWithAI() // Process label with Claude
+                    Logger.debug("FoodCreator: Processed nutrition label with AI", category: Logger.food)
+                }
+            case .webLookup:
+                await estimateWithAI() // Search databases with Claude
+                Logger.debug("FoodCreator: Searched databases with AI", category: Logger.food)
+            case .manual:
+                Logger.debug("FoodCreator: Manual entry selected, skipping AI estimation", category: Logger.food)
+                // Keep existing nutrition values or defaults
+            }
+            
+            await MainActor.run {
+                currentStep = .servingAndNutrition
+                showPhotosPicker = false // Ensure picker is dismissed
+                Logger.debug("FoodCreator: Successfully moved to servingAndNutrition step", category: Logger.food)
+            }
+        }
+    }
+    
     // MARK: - Nutrition estimation
     
     private func reEstimateWithFeedback() async {
@@ -283,11 +424,26 @@ struct FoodCreatorView: View {
         }
         
         do {
-            let nutrition = try await ClaudeAPIClient.shared.estimateNutrition(
-                foodName: foodName,
-                brand: brandName.isEmpty ? nil : brandName,
-                userFeedback: userFeedback
-            )
+            let nutrition: NutritionInfo
+            
+            // Handle different nutrition sources
+            if selectedNutritionSource == .nutritionLabel, let image = capturedImage {
+                // Process nutrition label image with Claude (no web search)
+                Logger.debug("FoodCreator: Processing nutrition label with Claude", category: Logger.food)
+                nutrition = try await ClaudeAPIClient.shared.estimateNutritionFromLabel(
+                    image: image,
+                    foodName: foodName,
+                    brand: brandName.isEmpty ? nil : brandName
+                )
+            } else {
+                // Search databases with Claude (with web search enabled)
+                Logger.debug("FoodCreator: Searching databases with Claude", category: Logger.food)
+                nutrition = try await ClaudeAPIClient.shared.estimateNutrition(
+                    foodName: foodName,
+                    brand: brandName.isEmpty ? nil : brandName,
+                    userFeedback: userFeedback
+                )
+            }
             
             await MainActor.run {
                 // Calculate values for the serving size
@@ -298,7 +454,7 @@ struct FoodCreatorView: View {
                 fat = String(format: "%.1f", nutrition.fat * multiplier)
                 
                 isAIEstimated = true
-                aiConfidence = 0.9 // Default confidence, could be extracted from API response
+                aiConfidence = selectedNutritionSource == .nutritionLabel ? 0.95 : 0.85 // Higher confidence for label
                 isEstimatingWithAI = false
             }
         } catch {
@@ -312,15 +468,19 @@ struct FoodCreatorView: View {
     }
     
     private func saveFood() {
+        Logger.debug("FoodCreator: saveFood called with name: '\(foodName)', brand: '\(brandName)'", category: Logger.food)
+        
         guard let caloriesValue = Double(calories),
               let proteinValue = Double(protein),
               let carbsValue = Double(carbs),
               let fatValue = Double(fat) else {
+            Logger.error("FoodCreator: Invalid nutrition values - calories: '\(calories)', protein: '\(protein)', carbs: '\(carbs)', fat: '\(fat)'", category: Logger.food)
             alertMessage = "Please enter valid numbers for all nutrition values"
             showingAlert = true
             return
         }
         
+        Logger.debug("FoodCreator: Valid nutrition values confirmed, starting save process", category: Logger.food)
         isSaving = true
         
         Task {
@@ -339,14 +499,18 @@ struct FoodCreatorView: View {
                     servingSizeGrams: selectedServingSize.gramsEquivalent
                 )
                 
+                Logger.debug("FoodCreator: Calling supabaseService.createFoodItem", category: Logger.food)
                 try await supabaseService.createFoodItem(foodItem)
                 
+                Logger.debug("FoodCreator: Food item saved successfully", category: Logger.food)
                 await MainActor.run {
                     // Call completion callback with the final food name
                     onFoodSaved?(foodName)
+                    Logger.debug("FoodCreator: Calling onFoodSaved callback and dismissing", category: Logger.food)
                     dismiss()
                 }
             } catch {
+                Logger.error("FoodCreator: Failed to save food: \(error.localizedDescription)", category: Logger.food)
                 await MainActor.run {
                     alertMessage = "Failed to save food: \(error.localizedDescription)"
                     showingAlert = true
@@ -983,102 +1147,17 @@ struct QuantityEditSheet: View {
 
 // MARK: - Progressive Flow Steps
 
-struct FoodNameStep: View {
-    @Binding var foodName: String
-    @Binding var isEstimating: Bool
-    let capturedPhotoReference: UIImage?
-    let onNext: () -> Void
-    
-    private var isValidFoodName: Bool {
-        let trimmedName = foodName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedName.count >= 2 && !trimmedName.allSatisfy { $0.isWhitespace }
-    }
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("What are you eating?")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
-                
-                // Photo reference section
-                if let photo = capturedPhotoReference {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Photo Reference")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.secondary)
-                        
-                        Image(uiImage: photo)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 100)
-                            .cornerRadius(8)
-                            .clipped()
-                    }
-                }
-                
-                // Food name input
-                TextField("Enter food name", text: $foodName)
-                    .font(.system(size: 18, weight: .medium))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                
-                Text("Enter the full name of the food for better accuracy (e.g., 'Granny Smith Apple' instead of 'Apple')")
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                
-                if isEstimating {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Looking up nutrition information...")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                    .padding(.top, 8)
-                }
-            }
-            .padding(24)
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color(.systemGray5), lineWidth: 0.5)
-            )
-            
-            Button(action: onNext) {
-                HStack {
-                    Text("Continue")
-                        .font(.system(size: 16, weight: .semibold))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(isValidFoodName ? Color.primary : Color(.systemGray4))
-                .cornerRadius(12)
-            }
-            .disabled(!isValidFoodName)
-        }
-    }
-}
-
-struct BrandDetailsStep: View {
+struct FoodDetailsStep: View {
     @Binding var foodName: String
     @Binding var brandName: String
-    @Binding var useAIEstimation: Bool
-    @Binding var isAIEstimated: Bool
-    @Binding var aiConfidence: Double
-    @Binding var showingFixPanel: Bool
+    @Binding var selectedNutritionSource: NutritionSource
+    @Binding var selectedPhotoItem: PhotosPickerItem?
+    let capturedImage: UIImage?
+    @Binding var isProcessingPhoto: Bool
     @Binding var isEstimating: Bool
     @Binding var isLoadingServingSuggestion: Bool
+    @Binding var showPhotosPicker: Bool
     let onNext: () -> Void
-    let onBack: () -> Void
     
     private var isValidFoodName: Bool {
         let trimmedName = foodName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1088,68 +1167,101 @@ struct BrandDetailsStep: View {
     var body: some View {
         VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Help us be more accurate")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                // Header
+                Text("What are you eating?")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                // Food name and brand inputs
+                VStack(spacing: 12) {
+                    TextField("Enter food name", text: $foodName)
+                        .font(.system(size: 18, weight: .medium))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                    
+                    TextField("Brand name (optional)", text: $brandName)
+                        .font(.system(size: 18, weight: .medium))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                }
+                
+                Text("Enter the full name for better accuracy (e.g., 'Honey Nut Cheerios' vs just 'Cereal')")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                // Nutrition source selection
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("How should we get nutrition info?")
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.primary)
                     
-                    Text("Adding a brand helps us find the exact nutrition information for your food")
-                        .font(.system(size: 16))
-                        .foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.33))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                
-                TextField("Food name", text: $foodName)
-                    .font(.system(size: 18, weight: .medium))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                
-                TextField("Brand name (optional)", text: $brandName)
-                    .font(.system(size: 18, weight: .medium))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-                
-                // AI Estimation Toggle
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "wand.and.stars.inverse")
-                            .font(.system(size: 20))
-                            .foregroundColor(useAIEstimation ? Color.purple : Color(.systemGray3))
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("AI Nutrition Estimation")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.primary)
-                            
-                            Text("Automatically estimate nutrition values")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Toggle("", isOn: $useAIEstimation)
-                            .toggleStyle(SwitchToggleStyle(tint: Color.purple))
-                            .scaleEffect(0.9)
+                    // Nutrition Label Option
+                    nutritionSourceButton(
+                        source: .nutritionLabel,
+                        icon: "camera.viewfinder",
+                        title: "Scan nutrition label",
+                        subtitle: "Take a photo of the nutrition facts panel",
+                        isSelected: selectedNutritionSource == .nutritionLabel
+                    ) {
+                        Logger.debug("FoodDetailsStep: Nutrition label source selected", category: Logger.food)
+                        selectedNutritionSource = .nutritionLabel
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
                     
-                    if !useAIEstimation {
-                        Text("You'll enter nutrition values manually in the next step")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 4)
+                    // Show captured image preview when nutrition label is selected and image exists
+                    if selectedNutritionSource == .nutritionLabel, let photo = capturedImage {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Captured Nutrition Label")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
+                            
+                            Image(uiImage: photo)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 120)
+                                .cornerRadius(12)
+                                .clipped()
+                            
+                            Button("Remove Photo") {
+                                Logger.debug("FoodDetailsStep: Removing captured photo", category: Logger.food)
+                                selectedPhotoItem = nil
+                            }
+                            .font(.system(size: 14))
+                            .foregroundColor(.red)
+                        }
+                        .padding(.leading, 24)
+                    }
+                    
+                    // Web Lookup Option
+                    nutritionSourceButton(
+                        source: .webLookup,
+                        icon: "magnifyingglass.circle",
+                        title: "Auto-search databases",
+                        subtitle: "We'll find nutrition info online automatically",
+                        isSelected: selectedNutritionSource == .webLookup
+                    ) {
+                        Logger.debug("FoodDetailsStep: Web lookup source selected", category: Logger.food)
+                        selectedNutritionSource = .webLookup
+                    }
+                    
+                    // Manual Entry Option
+                    nutritionSourceButton(
+                        source: .manual,
+                        icon: "square.and.pencil",
+                        title: "Enter manually",
+                        subtitle: "Type in the nutrition values yourself",
+                        isSelected: selectedNutritionSource == .manual
+                    ) {
+                        Logger.debug("FoodDetailsStep: Manual entry source selected", category: Logger.food)
+                        selectedNutritionSource = .manual
                     }
                 }
                 
-                // Serving size prediction status
+                // Status indicators
                 if isLoadingServingSuggestion {
                     HStack {
                         ProgressView()
@@ -1159,43 +1271,16 @@ struct BrandDetailsStep: View {
                             .foregroundColor(.secondary)
                         Spacer()
                     }
-                    .padding(.top, 8)
                 }
                 
-                // AI Status (only show when AI estimation is enabled)
-                if useAIEstimation {
-                    if isEstimating {
-                        HStack {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Re-estimating with brand information...")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                        }
-                    } else if isAIEstimated {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Nutrition estimated")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.primary)
-                            
-                            Text("(\(Int(aiConfidence * 100))% confidence)")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                            
-                            Button("Adjust") {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showingFixPanel.toggle()
-                                }
-                            }
+                if isEstimating && selectedNutritionSource == .webLookup {
+                    HStack {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Looking up nutrition information...")
                             .font(.system(size: 14))
-                            .foregroundColor(.blue)
-                        }
-                        .padding(.top, 8)
+                            .foregroundColor(.secondary)
+                        Spacer()
                     }
                 }
             }
@@ -1207,53 +1292,117 @@ struct BrandDetailsStep: View {
                     .stroke(Color(.systemGray5), lineWidth: 0.5)
             )
             
-            HStack(spacing: 12) {
-                Button(action: onBack) {
-                    HStack {
-                        Image(systemName: "arrow.left")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Back")
+            // Continue button
+            Button(action: onNext) {
+                HStack {
+                    if isEstimating || isLoadingServingSuggestion {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .foregroundColor(.white)
+                        Text(isLoadingServingSuggestion ? "Suggesting serving size..." : buttonLoadingText)
                             .font(.system(size: 16, weight: .semibold))
+                    } else {
+                        Text(buttonText)
+                            .font(.system(size: 16, weight: .semibold))
+                        Image(systemName: buttonIcon)
+                            .font(.system(size: 14, weight: .semibold))
                     }
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(isValidFoodName && !isEstimating && !isLoadingServingSuggestion ? Color.primary : Color(.systemGray4))
+                .cornerRadius(12)
+            }
+            .disabled(!isValidFoodName || isEstimating || isLoadingServingSuggestion)
+        }
+    }
+    
+    private func nutritionSourceButton(
+        source: NutritionSource,
+        icon: String,
+        title: String,
+        subtitle: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                // Radio button indicator
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? Color.primary : Color(.systemGray3))
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 
-                Button(action: onNext) {
-                    HStack {
-                        if isEstimating || isLoadingServingSuggestion {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .foregroundColor(.white)
-                            Text(isLoadingServingSuggestion ? "Suggesting serving size..." : "Getting nutrition info...")
-                                .font(.system(size: 16, weight: .semibold))
-                        } else {
-                            Text(useAIEstimation ? "Estimate & Continue" : "Continue")
-                                .font(.system(size: 16, weight: .semibold))
-                            Image(systemName: useAIEstimation ? "wand.and.stars" : "arrow.right")
-                                .font(.system(size: 14, weight: .semibold))
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(isValidFoodName && !isEstimating && !isLoadingServingSuggestion ? Color.primary : Color(.systemGray4))
-                    .cornerRadius(12)
-                }
-                .disabled(!isValidFoodName || isEstimating || isLoadingServingSuggestion)
+                Spacer()
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.primary.opacity(0.05) : Color(.systemGray6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.primary.opacity(0.3) : Color.clear, lineWidth: 1)
+            )
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var buttonText: String {
+        switch selectedNutritionSource {
+        case .nutritionLabel:
+            return capturedImage != nil ? "Process Label" : "Open Camera"
+        case .webLookup:
+            return "Search & Continue"
+        case .manual:
+            return "Continue"
+        }
+    }
+    
+    private var buttonIcon: String {
+        switch selectedNutritionSource {
+        case .nutritionLabel:
+            return capturedImage != nil ? "camera.viewfinder" : "camera"
+        case .webLookup:
+            return "magnifyingglass.circle"
+        case .manual:
+            return "arrow.right"
+        }
+    }
+    
+    private var buttonLoadingText: String {
+        switch selectedNutritionSource {
+        case .nutritionLabel:
+            return "Reading nutrition label..."
+        case .webLookup:
+            return "Searching databases..."
+        case .manual:
+            return "Preparing..."
         }
     }
 }
+
 
 struct ServingNutritionStep: View {
     @Binding var selectedServingSize: ServingSize
     @Binding var showingServingSizePicker: Bool
     @ObservedObject var servingSizeManager: ServingSizeManager
     let foodName: String
+    let brandName: String
+    let selectedNutritionSource: NutritionSource
+    let capturedImage: UIImage?
     @Binding var calories: String
     @Binding var protein: String
     @Binding var carbs: String
@@ -1269,6 +1418,9 @@ struct ServingNutritionStep: View {
     
     var body: some View {
         VStack(spacing: 24) {
+            // Nutrition Source Info Card
+            nutritionSourceInfoCard
+            
             // Serving Size Card
             SmartServingCard(
                 selectedServingSize: $selectedServingSize,
@@ -1277,18 +1429,18 @@ struct ServingNutritionStep: View {
                 foodName: foodName
             )
             
-            // Nutrition Card
+            // Nutrition Card (adapted based on source)
             NutritionCard(
                 calories: $calories,
                 protein: $protein,
                 carbs: $carbs,
                 fat: $fat,
                 selectedServingSize: selectedServingSize,
-                isAIEstimated: isAIEstimated
+                isAIEstimated: isAIEstimated && selectedNutritionSource == .webLookup
             )
             
-            // Fix Panel (expandable)
-            if showingFixPanel {
+            // Fix Panel (only show for web lookup)
+            if showingFixPanel && selectedNutritionSource == .webLookup {
                 FixFeedbackPanel(
                     userFeedback: $userFeedback,
                     isEstimating: $isEstimating,
@@ -1330,14 +1482,96 @@ struct ServingNutritionStep: View {
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
+                    .padding(.vertical, 16)
                     .background((!foodName.isEmpty && !calories.isEmpty && !isSaving) ? Color.primary : Color(.systemGray4))
-                    .cornerRadius(16)
+                    .cornerRadius(12)
                 }
-                .frame(maxWidth: .infinity, maxHeight: 56)
                 .disabled(foodName.isEmpty || calories.isEmpty || isSaving)
             }
         }
+    }
+    
+    private var nutritionSourceInfoCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: sourceIcon)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(sourceColor)
+                    .frame(width: 32)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sourceTitle)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text(sourceDescription)
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                
+                Spacer()
+            }
+            
+            // Show captured image for nutrition label
+            if selectedNutritionSource == .nutritionLabel, let image = capturedImage {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Captured Label")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 80)
+                        .cornerRadius(8)
+                        .clipped()
+                }
+            }
+        }
+        .padding(16)
+        .background(sourceBackgroundColor)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(sourceColor.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private var sourceIcon: String {
+        switch selectedNutritionSource {
+        case .nutritionLabel: return "camera.viewfinder"
+        case .webLookup: return "magnifyingglass"
+        case .manual: return "pencil"
+        }
+    }
+    
+    private var sourceTitle: String {
+        switch selectedNutritionSource {
+        case .nutritionLabel: return "From Nutrition Label"
+        case .webLookup: return "From Web Search"
+        case .manual: return "Manual Entry"
+        }
+    }
+    
+    private var sourceDescription: String {
+        switch selectedNutritionSource {
+        case .nutritionLabel: return "Values detected from your nutrition label photo"
+        case .webLookup: return "Values found in nutrition databases"
+        case .manual: return "You're entering all values manually"
+        }
+    }
+    
+    private var sourceColor: Color {
+        switch selectedNutritionSource {
+        case .nutritionLabel: return Color.green
+        case .webLookup: return Color.blue
+        case .manual: return Color.orange
+        }
+    }
+    
+    private var sourceBackgroundColor: Color {
+        return sourceColor.opacity(0.05)
     }
 }
 
@@ -2063,6 +2297,56 @@ struct ServingSizeRow: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Step Progress Indicator
+struct StepProgressView: View {
+    let currentStep: FoodCreatorView.CreationStep
+    
+    private var currentStepNumber: Int {
+        switch currentStep {
+        case .foodDetails: return 1
+        case .servingAndNutrition: return 2
+        }
+    }
+    
+    private var stepTitle: String {
+        switch currentStep {
+        case .foodDetails: return "Food Details"
+        case .servingAndNutrition: return "Nutrition"
+        }
+    }
+    
+    var body: some View {
+        HStack {
+            ForEach(1...2, id: \.self) { stepNumber in
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(stepNumber <= currentStepNumber ? Color.blue : Color(.systemGray4))
+                        .frame(width: 8, height: 8)
+                    
+                    if stepNumber < 2 {
+                        Rectangle()
+                            .fill(stepNumber < currentStepNumber ? Color.blue : Color(.systemGray4))
+                            .frame(height: 2)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("Step \(currentStepNumber) of 2")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                Text(stepTitle)
+                    .font(.system(size: 10, weight: .regular))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal)
     }
 }
 

@@ -19,7 +19,6 @@ struct HomeView: View {
     @Binding var showingWorkoutCreator: Bool
     @Binding var showingAddWeight: Bool
     
-    @State private var showingLiveWorkout = false
     @State private var showingSettings = false
     @State private var selectedSession: WorkoutSession?
     @State private var selectedDayForDetail: Date?
@@ -330,21 +329,17 @@ struct HomeView: View {
             }
         }
         .onChange(of: activeWorkout.isActive) { _, isActive in
+            Logger.debug("HomeView: activeWorkout.isActive changed to \(isActive)", category: Logger.workout)
             if isActive {
+                Logger.debug("HomeView: Closing workout creator", category: Logger.workout)
                 showingWorkoutCreator = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    showingLiveWorkout = true
-                }
             }
         }
-        .fullScreenCover(isPresented: $showingLiveWorkout) {
+        .fullScreenCover(isPresented: $activeWorkout.isActive) {
             LiveWorkoutView()
                 .environmentObject(activeWorkout)
                 .environmentObject(workoutDataManager)
                 .environmentObject(ExerciseDataManager.shared)
-                .onDisappear {
-                    showingLiveWorkout = false
-                }
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
