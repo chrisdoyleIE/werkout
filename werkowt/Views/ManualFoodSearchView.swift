@@ -1,11 +1,10 @@
 import SwiftUI
 
 struct ManualFoodSearchView: View {
-    let selectedMealType: MealType
-    
     @StateObject private var supabaseService = SupabaseService.shared
     @Environment(\.dismiss) private var dismiss
     
+    @State private var selectedMealType: MealType = ManualFoodSearchView.mealTypeForCurrentTime()
     @State private var searchText = ""
     @State private var recentItems: [RecentFoodItem] = []
     @State private var searchResults: [FoodItem] = []
@@ -19,6 +18,20 @@ struct ManualFoodSearchView: View {
     @State private var isLoading = false
     
     private let searchDebouncer = Debouncer()
+    
+    private static func mealTypeForCurrentTime() -> MealType {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5...10:
+            return .breakfast
+        case 11...15:
+            return .lunch
+        case 16...21:
+            return .dinner
+        default:
+            return .snack
+        }
+    }
     
     var body: some View {
         NavigationStack {
@@ -53,6 +66,44 @@ struct ManualFoodSearchView: View {
                 .background(Color(.systemGray6))
                 .cornerRadius(12)
                 .padding()
+                
+                // Meal type picker
+                VStack(spacing: 12) {
+                    HStack {
+                        Text("Add to:")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    
+                    // 2x2 Grid for better spacing
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 8),
+                        GridItem(.flexible(), spacing: 8)
+                    ], spacing: 8) {
+                        ForEach(MealType.allCases, id: \.self) { mealType in
+                            Button(action: {
+                                selectedMealType = mealType
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: mealType.icon)
+                                        .font(.system(size: 14))
+                                    Text(mealType.displayName)
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(selectedMealType == mealType ? Color.primary : Color(.systemGray5))
+                                .foregroundColor(selectedMealType == mealType ? .white : .primary)
+                                .cornerRadius(12)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
                 
                 ScrollView {
                     VStack(spacing: 0) {
@@ -601,41 +652,46 @@ struct QuantityInputView: View {
     let onSave: (Double) -> Void
     
     @Environment(\.dismiss) private var dismiss
-    @State private var quantity: String = ""
-    @State private var selectedUnit: WeightUnit = .grams
+    @State private var selectedServingSize: MasterServingSize?
+    @State private var customAmount: String = ""
+    @State private var showingCustomInput = false
     @FocusState private var isTextFieldFocused: Bool
     
-    enum WeightUnit: String, CaseIterable {
-        case grams = "g"
-        case ounces = "oz"
-        case pounds = "lbs"
+    private var foodType: FoodType {
+        return FoodType.classify(foodName: food.name)
+    }
+    
+    private var availableServingSizes: [MasterServingSize] {
+        var servings: [MasterServingSize] = []
         
-        var conversionToGrams: Double {
-            switch self {
-            case .grams:
-                return 1.0
-            case .ounces:
-                return 28.3495
-            case .pounds:
-                return 453.592
+        // 1. Add Claude's prediction if available (highest priority)
+        if let claudeServing = food.servingSizeName,
+           let masterSize = MasterServingSize(rawValue: claudeServing) {
+            servings.append(masterSize)
+        }
+        
+        // 2. Add contextually appropriate serving sizes for this food type
+        let preferMetric = true // TODO: Could be based on user preference or nutrition label units
+        let contextualSuggestions = MasterServingSize.contextualSuggestions(for: foodType, preferMetric: preferMetric)
+        
+        // Only add contextual suggestions that aren't already in the list (avoid duplicates)
+        for suggestion in contextualSuggestions {
+            if !servings.contains(suggestion) {
+                servings.append(suggestion)
             }
         }
         
-        var displayName: String {
-            switch self {
-            case .grams:
-                return "Grams"
-            case .ounces:
-                return "Ounces"
-            case .pounds:
-                return "Pounds"
-            }
-        }
+        // Limit to top 6 options to keep UI clean
+        return Array(servings.prefix(6))
     }
     
     private var quantityInGrams: Double {
-        guard let value = Double(quantity) else { return 0 }
-        return value * selectedUnit.conversionToGrams
+        if showingCustomInput {
+            guard let value = Double(customAmount) else { return 0 }
+            return value
+        } else {
+            return selectedServingSize?.gramsEquivalent ?? 0
+        }
     }
     
     private var calculatedNutrition: NutritionInfo {
@@ -662,24 +718,95 @@ struct QuantityInputView: View {
                     Text("How much did you eat?")
                         .font(.headline)
                     
-                    HStack {
-                        TextField("Amount", text: $quantity)
-                            .keyboardType(.decimalPad)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .focused($isTextFieldFocused)
-                        
-                        Picker("Unit", selection: $selectedUnit) {
-                            ForEach(WeightUnit.allCases, id: \.self) { unit in
-                                Text(unit.displayName).tag(unit)
+                    if showingCustomInput {
+                        // Custom gram input
+                        VStack(spacing: 12) {
+                            HStack {
+                                TextField("Amount in grams", text: $customAmount)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .focused($isTextFieldFocused)
+                                Text("g")
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Button("Choose from serving sizes") {
+                                showingCustomInput = false
+                                selectedServingSize = availableServingSizes.first
+                            }
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                        }
+                    } else {
+                        // Serving size selection
+                        VStack(spacing: 12) {
+                            Menu {
+                                ForEach(availableServingSizes, id: \.self) { serving in
+                                    Button(action: {
+                                        selectedServingSize = serving
+                                    }) {
+                                        HStack {
+                                            Text(serving.displayName)
+                                            if serving.rawValue == food.servingSizeName {
+                                                Text("✨")
+                                                    .font(.caption)
+                                            }
+                                            Spacer()
+                                            Text("\(String(format: "%.0f", serving.gramsEquivalent))g")
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                }
+                                
+                                Divider()
+                                
+                                Button("Custom amount...") {
+                                    showingCustomInput = true
+                                }
+                            } label: {
+                                HStack {
+                                    if let serving = selectedServingSize {
+                                        Text(serving.displayName)
+                                            .foregroundColor(.primary)
+                                        if serving.rawValue == food.servingSizeName {
+                                            Text("✨")
+                                                .font(.caption)
+                                        }
+                                    } else {
+                                        Text("Select serving size")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
+                            
+                            // Show Claude's suggestion indicator and weight
+                            if let serving = selectedServingSize {
+                                HStack {
+                                    if serving.rawValue == food.servingSizeName {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "wand.and.stars")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.primary)
+                                            Text("Claude's suggestion")
+                                                .font(.caption)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.primary)
+                                        }
+                                    }
+                                    Spacer()
+                                    Text("= \(String(format: "%.0f", serving.gramsEquivalent))g")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
-                        .pickerStyle(MenuPickerStyle())
-                    }
-                    
-                    if quantityInGrams > 0 {
-                        Text("= \(String(format: "%.1f", quantityInGrams))g")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     }
                 }
                 
@@ -751,7 +878,8 @@ struct QuantityInputView: View {
                 }
             }
             .onAppear {
-                isTextFieldFocused = true
+                // Default to first available serving size (Claude's prediction if available)
+                selectedServingSize = availableServingSizes.first
             }
         }
     }
@@ -800,5 +928,5 @@ extension Date {
 
 
 #Preview {
-    ManualFoodSearchView(selectedMealType: .lunch)
+    ManualFoodSearchView()
 }

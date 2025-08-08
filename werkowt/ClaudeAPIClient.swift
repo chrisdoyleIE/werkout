@@ -408,6 +408,11 @@ extension ClaudeAPIClient {
     }
     
     func estimateNutritionFromLabel(image: UIImage, foodName: String, brand: String? = nil) async throws -> NutritionInfo {
+        let rawData = try await extractRawNutritionFromLabel(image: image, foodName: foodName, brand: brand)
+        return rawData.nutrition
+    }
+    
+    func extractRawNutritionFromLabel(image: UIImage, foodName: String, brand: String? = nil) async throws -> RawNutritionData {
         guard let url = URL(string: baseURL) else {
             throw ClaudeAPIError.invalidURL
         }
@@ -432,30 +437,62 @@ extension ClaudeAPIClient {
         
         let brandText = brand.map { " (brand: \($0))" } ?? ""
         
-        let prompt = """
-        I need you to extract nutrition information from this nutrition label photo for: \(foodName)\(brandText)
+        // Get the complete list of valid serving sizes
+        let validServingSizes = MasterServingSize.allCases.map { $0.rawValue }.joined(separator: ", ")
         
-        Please analyze the nutrition facts panel visible in the image and extract the nutrition values per 100g.
+        let prompt = """
+        I need you to extract nutrition information AND suggest an appropriate serving size from this nutrition label photo for: \(foodName)\(brandText)
+        
+        Please analyze the nutrition facts panel, extract the nutrition data, convert to per-100g values, AND suggest a realistic serving size based on the food type and package context.
         
         IMPORTANT: Do NOT use web search tools. Only use information visible in the image.
         
-        If the label shows nutrition per serving, please calculate the per-100g values using the serving size information.
-        
-        REQUIRED JSON FORMAT (always return this structure):
+        REQUIRED JSON FORMAT (always return this exact structure):
         {
-            "calories": 165.0,
-            "protein": 31.0,
-            "carbs": 0.0,
-            "fat": 3.6,
-            "fiber": 0.0,
-            "sugar": 0.0,
-            "sodium": 74.0,
+            "nutrition": {
+                "calories": 560.0,
+                "protein": 20.9,
+                "carbs": 28.0,
+                "fat": 45.3,
+                "fiber": 10.6,
+                "sugar": 5.8,
+                "sodium": 1.0
+            },
+            "originalUnit": "100g",
+            "originalServingSize": null,
+            "suggestedServingSize": "handful",
+            "suggestedServingGrams": 30.0,
             "confidence": 0.95,
-            "sources": "Nutrition label from photo"
+            "source": "Nutrition label from photo"
         }
         
-        All nutrition values must be per 100 grams. Use decimal numbers only.
-        Confidence score: 0.9-0.95 for clear labels, 0.6-0.8 for partially visible labels.
+        Field explanations:
+        - "nutrition": All values must be normalized to per 100g (calculate if needed)
+        - "originalUnit": What the label shows ("100g", "100ml", "per packet", "per serving")
+        - "originalServingSize": If label shows serving size in grams (e.g., 30), put that number here
+        - "suggestedServingSize": MUST be one of these exact values: \(validServingSizes)
+        - "suggestedServingGrams": Realistic serving size in grams for typical consumption
+        - "confidence": 0.9-0.95 for clear labels, 0.6-0.8 for partially visible
+        - "source": Always "Nutrition label from photo"
+        
+        SERVING SIZE SELECTION RULES:
+        1. ONLY use serving sizes from this exact list: \(validServingSizes)
+        2. Choose the most contextually appropriate option for the food type
+        3. Consider label units: metric labels → prefer contextual then metric options, imperial labels → prefer contextual then imperial options
+        4. Food type guidelines:
+           * Nuts/seeds: "handful" (preferred), then "1oz", "2oz" (imperial) or "25g", "30g" (metric)
+           * Bread/baked goods: "slice" (preferred), then "1oz", "2oz" (imperial) or "25g", "50g" (metric)
+           * Liquids/beverages: "cup", "glass", "bottle", then "8 fl oz", "12 fl oz" (imperial) or "200ml", "250ml" (metric)
+           * Cereal/pasta/rice: "bowl", "portion", then "3oz", "4oz" (imperial) or "75g", "100g" (metric)
+           * Fruits: "piece", "small", "medium", "large", then weight options
+           * Meat/fish: "portion", "serving", then "4oz", "6oz" (imperial) or "100g", "150g" (metric)
+           * Snacks: "bag", "packet", "portion", then "1oz", "2oz" (imperial) or "25g", "30g" (metric)
+        5. Default fallback: "portion" for unknown foods
+        
+        Unit consistency examples:
+        - Metric label ("per 100g"): pistachios → "handful" (best), "30g" (fallback)
+        - Imperial context: pistachios → "handful" (best), "1oz" (fallback)
+        - Liquid (any): milk → "cup" (best), "8 fl oz" or "250ml" (fallback based on region)
         """
         
         let body: [String: Any] = [
@@ -523,7 +560,7 @@ extension ClaudeAPIClient {
             print("🔄 Providing fallback nutrition estimate for: \(foodName)")
             
             // Fallback: return reasonable default estimates with lower confidence
-            return NutritionInfo(
+            let fallbackNutrition = NutritionInfo(
                 calories: 200,  // Higher default for processed foods
                 protein: 8,
                 carbs: 25,
@@ -531,6 +568,15 @@ extension ClaudeAPIClient {
                 fiber: 3,
                 sugar: 8,
                 sodium: 200
+            )
+            return RawNutritionData(
+                nutrition: fallbackNutrition,
+                originalUnit: "100g",
+                originalServingSize: nil,
+                suggestedServingSize: nil,
+                suggestedServingGrams: nil,
+                confidence: 0.3,
+                source: "Fallback estimate (label unreadable)"
             )
         }
         
@@ -541,7 +587,7 @@ extension ClaudeAPIClient {
                 print("🔄 Providing fallback nutrition estimate for: \(foodName)")
                 
                 // Fallback: return reasonable default estimates
-                return NutritionInfo(
+                let fallbackNutrition = NutritionInfo(
                     calories: 200,
                     protein: 8,
                     carbs: 25,
@@ -550,23 +596,49 @@ extension ClaudeAPIClient {
                     sugar: 8,
                     sodium: 200
                 )
+                return RawNutritionData(
+                    nutrition: fallbackNutrition,
+                    originalUnit: "100g",
+                    originalServingSize: nil,
+                    suggestedServingSize: nil,
+                    suggestedServingGrams: nil,
+                    confidence: 0.3,
+                    source: "Fallback estimate (parsing failed)"
+                )
             }
             
-            return NutritionInfo(
-                calories: (nutritionDict["calories"] as? Double) ?? 200,
-                protein: (nutritionDict["protein"] as? Double) ?? 8,
-                carbs: (nutritionDict["carbs"] as? Double) ?? 25,
-                fat: (nutritionDict["fat"] as? Double) ?? 8,
-                fiber: (nutritionDict["fiber"] as? Double) ?? 3,
-                sugar: (nutritionDict["sugar"] as? Double) ?? 8,
-                sodium: (nutritionDict["sodium"] as? Double) ?? 200
+            // Parse the nested nutrition data
+            guard let nutritionData = nutritionDict["nutrition"] as? [String: Any] else {
+                print("❌ Missing 'nutrition' field in response")
+                let fallbackNutrition = NutritionInfo(calories: 200, protein: 8, carbs: 25, fat: 8, fiber: 3, sugar: 8, sodium: 200)
+                return RawNutritionData(nutrition: fallbackNutrition, originalUnit: "100g", originalServingSize: nil, suggestedServingSize: nil, suggestedServingGrams: nil, confidence: 0.3, source: "Fallback estimate (malformed response)")
+            }
+            
+            let nutrition = NutritionInfo(
+                calories: (nutritionData["calories"] as? Double) ?? 200,
+                protein: (nutritionData["protein"] as? Double) ?? 8,
+                carbs: (nutritionData["carbs"] as? Double) ?? 25,
+                fat: (nutritionData["fat"] as? Double) ?? 8,
+                fiber: (nutritionData["fiber"] as? Double) ?? 3,
+                sugar: (nutritionData["sugar"] as? Double) ?? 8,
+                sodium: (nutritionData["sodium"] as? Double) ?? 200
+            )
+            
+            return RawNutritionData(
+                nutrition: nutrition,
+                originalUnit: (nutritionDict["originalUnit"] as? String) ?? "100g",
+                originalServingSize: nutritionDict["originalServingSize"] as? Double,
+                suggestedServingSize: nutritionDict["suggestedServingSize"] as? String,
+                suggestedServingGrams: nutritionDict["suggestedServingGrams"] as? Double,
+                confidence: (nutritionDict["confidence"] as? Double) ?? 0.8,
+                source: (nutritionDict["source"] as? String) ?? "Nutrition label from photo"
             )
         } catch {
             print("❌ JSON parsing error for nutrition label: \(error)")
             print("🔄 Providing fallback nutrition estimate for: \(foodName)")
             
             // Fallback: return reasonable default estimates
-            return NutritionInfo(
+            let fallbackNutrition = NutritionInfo(
                 calories: 200,
                 protein: 8,
                 carbs: 25,
@@ -574,6 +646,15 @@ extension ClaudeAPIClient {
                 fiber: 3,
                 sugar: 8,
                 sodium: 200
+            )
+            return RawNutritionData(
+                nutrition: fallbackNutrition,
+                originalUnit: "100g",
+                originalServingSize: nil,
+                suggestedServingSize: nil,
+                suggestedServingGrams: nil,
+                confidence: 0.3,
+                source: "Fallback estimate (JSON error)"
             )
         }
     }
@@ -603,7 +684,7 @@ extension ClaudeAPIClient {
         
         CRITICAL: You MUST return a JSON response in ALL cases, even if exact data is unavailable.
         
-        Search strategy:
+        Search strategy:®
         - Make ONE focused web search for nutrition data from sources like USDA FoodData Central, official brand websites, or verified nutrition databases
         - If exact match found: use that data (confidence: 0.8-0.95)
         - If no exact match: provide reasonable estimate based on similar foods (confidence: 0.3-0.7)

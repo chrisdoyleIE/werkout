@@ -60,7 +60,7 @@ struct FoodCreatorView: View {
     @State private var brandName = ""
     
     // Serving size system
-    @State private var selectedServingSize: ServingSize = ServingSize.standardServingSizes.first!
+    @State private var selectedServingSize: ServingSize = ServingSize(from: MasterServingSize.grams100)
     @StateObject private var servingSizeManager = ServingSizeManager()
     @State private var showingServingSizePicker = false
     @State private var isLoadingServingSuggestion = false
@@ -70,6 +70,9 @@ struct FoodCreatorView: View {
     @State private var protein: String = ""
     @State private var carbs: String = ""
     @State private var fat: String = ""
+    
+    // Raw nutrition data from label scanning
+    @State private var rawNutritionData: RawNutritionData?
     
     // AI and estimation states
     @State private var useAIEstimation = true
@@ -191,6 +194,7 @@ struct FoodCreatorView: View {
                             protein: $protein,
                             carbs: $carbs,
                             fat: $fat,
+                            rawNutritionData: rawNutritionData,
                             isAIEstimated: isAIEstimated,
                             showingFixPanel: $showingFixPanel,
                             userFeedback: $userFeedback,
@@ -260,7 +264,7 @@ struct FoodCreatorView: View {
             Logger.debug("FoodCreator: View appeared with initialFoodName: '\(initialFoodName ?? "nil")'", category: Logger.food)
             if let initialName = initialFoodName {
                 foodName = initialName
-                selectedServingSize = ServingSize.suggestedDefaultServing(for: initialName, foodCategory: nil)
+                selectedServingSize = ServingSize(from: MasterServingSize.grams100)
                 Logger.debug("FoodCreator: Pre-filled food name, staying on foodDetails step", category: Logger.food)
             }
         }
@@ -367,7 +371,7 @@ struct FoodCreatorView: View {
         } catch {
             await MainActor.run {
                 // Fall back to current logic on error
-                selectedServingSize = ServingSize.suggestedDefaultServing(for: foodName, foodCategory: nil)
+                selectedServingSize = ServingSize(from: MasterServingSize.grams100)
                 isLoadingServingSuggestion = false
             }
             print("Error getting AI serving suggestion: \(error)")
@@ -430,11 +434,15 @@ struct FoodCreatorView: View {
             if selectedNutritionSource == .nutritionLabel, let image = capturedImage {
                 // Process nutrition label image with Claude (no web search)
                 Logger.debug("FoodCreator: Processing nutrition label with Claude", category: Logger.food)
-                nutrition = try await ClaudeAPIClient.shared.estimateNutritionFromLabel(
+                let rawData = try await ClaudeAPIClient.shared.extractRawNutritionFromLabel(
                     image: image,
                     foodName: foodName,
                     brand: brandName.isEmpty ? nil : brandName
                 )
+                await MainActor.run {
+                    rawNutritionData = rawData
+                }
+                nutrition = rawData.nutrition
             } else {
                 // Search databases with Claude (with web search enabled)
                 Logger.debug("FoodCreator: Searching databases with Claude", category: Logger.food)
@@ -488,6 +496,22 @@ struct FoodCreatorView: View {
                 // Calculate per 100g values
                 let multiplier = 100.0 / selectedServingSize.gramsEquivalent
                 
+                // Use Claude's serving suggestions if available from nutrition label, otherwise use selected serving size
+                let finalServingName: String
+                let finalServingGrams: Double
+                
+                if let rawData = rawNutritionData,
+                   let claudeServingName = rawData.suggestedServingSize,
+                   let claudeServingGrams = rawData.suggestedServingGrams {
+                    finalServingName = claudeServingName
+                    finalServingGrams = claudeServingGrams
+                    Logger.debug("FoodCreator: Using Claude's serving suggestion: \(claudeServingName) (\(claudeServingGrams)g)", category: Logger.food)
+                } else {
+                    finalServingName = selectedServingSize.name
+                    finalServingGrams = selectedServingSize.gramsEquivalent
+                    Logger.debug("FoodCreator: Using selected serving size: \(finalServingName) (\(finalServingGrams)g)", category: Logger.food)
+                }
+                
                 let foodItem = FoodItem(
                     name: foodName,
                     brand: brandName.isEmpty ? nil : brandName,
@@ -495,8 +519,8 @@ struct FoodCreatorView: View {
                     proteinPer100g: proteinValue * multiplier,
                     carbsPer100g: carbsValue * multiplier,
                     fatPer100g: fatValue * multiplier,
-                    servingSizeName: selectedServingSize.name,
-                    servingSizeGrams: selectedServingSize.gramsEquivalent
+                    servingSizeName: finalServingName,
+                    servingSizeGrams: finalServingGrams
                 )
                 
                 Logger.debug("FoodCreator: Calling supabaseService.createFoodItem", category: Logger.food)
@@ -1407,6 +1431,7 @@ struct ServingNutritionStep: View {
     @Binding var protein: String
     @Binding var carbs: String
     @Binding var fat: String
+    let rawNutritionData: RawNutritionData?
     let isAIEstimated: Bool
     @Binding var showingFixPanel: Bool
     @Binding var userFeedback: String
@@ -1429,15 +1454,26 @@ struct ServingNutritionStep: View {
                 foodName: foodName
             )
             
-            // Nutrition Card (adapted based on source)
-            NutritionCard(
-                calories: $calories,
-                protein: $protein,
-                carbs: $carbs,
-                fat: $fat,
-                selectedServingSize: selectedServingSize,
-                isAIEstimated: isAIEstimated && selectedNutritionSource == .webLookup
-            )
+            // Nutrition Display (adapted based on source)
+            if selectedNutritionSource == .nutritionLabel, let rawData = rawNutritionData {
+                // Two-column display for nutrition labels
+                TwoColumnNutritionView(
+                    nutritionDisplay: NutritionDisplayData(
+                        rawNutrition: rawData,
+                        servingSize: selectedServingSize
+                    )
+                )
+            } else {
+                // Traditional single nutrition card for other sources
+                NutritionCard(
+                    calories: $calories,
+                    protein: $protein,
+                    carbs: $carbs,
+                    fat: $fat,
+                    selectedServingSize: selectedServingSize,
+                    isAIEstimated: isAIEstimated && selectedNutritionSource == .webLookup
+                )
+            }
             
             // Fix Panel (only show for web lookup)
             if showingFixPanel && selectedNutritionSource == .webLookup {
@@ -1475,9 +1511,9 @@ struct ServingNutritionStep: View {
                                 .font(.system(size: 18, weight: .bold))
                         } else {
                             Text("Save Food")
-                                .font(.system(size: 18, weight: .bold))
+                                .font(.system(size: 16, weight: .semibold))
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 14, weight: .semibold))
                         }
                     }
                     .foregroundColor(.white)
@@ -2261,12 +2297,22 @@ struct ServingSizePickerSheet: View {
     }
     
     private func getSuggestedServings() -> [ServingSize] {
-        let suggested = ServingSize.suggestedDefaultServing(for: foodName, foodCategory: nil)
-        return [suggested]
+        // Return a few basic serving sizes for now
+        return [
+            ServingSize(from: MasterServingSize.grams100),
+            ServingSize(from: MasterServingSize.grams50),
+            ServingSize(from: MasterServingSize.portion)
+        ]
     }
     
     private func getStandardServings() -> [ServingSize] {
-        return ServingSize.standardServingSizes.filter { $0.isStandard }
+        return [
+            ServingSize(from: MasterServingSize.grams100),
+            ServingSize(from: MasterServingSize.grams50),
+            ServingSize(from: MasterServingSize.grams25),
+            ServingSize(from: MasterServingSize.portion),
+            ServingSize(from: MasterServingSize.piece)
+        ]
     }
 }
 
@@ -2299,6 +2345,111 @@ struct ServingSizeRow: View {
         .buttonStyle(PlainButtonStyle())
     }
 }
+
+// MARK: - Two-Column Nutrition Display
+struct TwoColumnNutritionView: View {
+    let nutritionDisplay: NutritionDisplayData
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Header
+            HStack {
+                Text("Nutrition Information")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                Spacer()
+            }
+            
+            // Two-column layout
+            HStack(spacing: 16) {
+                // Left Column - Raw (100g)
+                NutritionColumnView(
+                    title: nutritionDisplay.rawNutrition.originalUnit,
+                    subtitle: nutritionDisplay.rawNutrition.source,
+                    nutrition: nutritionDisplay.rawNutrition.nutrition,
+                    isRaw: true
+                )
+                
+                // Right Column - Serving
+                NutritionColumnView(
+                    title: nutritionDisplay.servingSize.name,
+                    subtitle: "Calculated portion",
+                    nutrition: nutritionDisplay.servingNutrition,
+                    isRaw: false
+                )
+            }
+            
+            // Confidence indicator
+            if nutritionDisplay.rawNutrition.confidence < 0.8 {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                        .font(.system(size: 12))
+                    Text("Low confidence - please verify values")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+}
+
+struct NutritionColumnView: View {
+    let title: String
+    let subtitle: String
+    let nutrition: NutritionInfo
+    let isRaw: Bool
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Column header
+            VStack(spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(isRaw ? .primary : .blue)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(minHeight: 32, alignment: .center)
+            }
+            
+            Divider()
+            
+            // Nutrition values
+            VStack(spacing: 8) {
+                NutritionRowView(title: "Calories", value: "\(Int(nutrition.calories))", unit: "cal", color: .primary)
+                NutritionRowView(title: "Protein", value: String(format: "%.1f", nutrition.protein), unit: "g", color: .primary)
+                NutritionRowView(title: "Carbs", value: String(format: "%.1f", nutrition.carbs), unit: "g", color: .primary)
+                NutritionRowView(title: "Fat", value: String(format: "%.1f", nutrition.fat), unit: "g", color: .primary)
+                
+                if let fiber = nutrition.fiber, fiber > 0 {
+                    NutritionRowView(title: "Fiber", value: String(format: "%.1f", fiber), unit: "g", color: .primary)
+                }
+                if let sugar = nutrition.sugar, sugar > 0 {
+                    NutritionRowView(title: "Sugar", value: String(format: "%.1f", sugar), unit: "g", color: .primary)
+                }
+                if let sodium = nutrition.sodium, sodium > 0 {
+                    NutritionRowView(title: "Sodium", value: String(format: "%.1f", sodium), unit: "mg", color: .primary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 280)
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isRaw ? Color.primary.opacity(0.2) : Color.blue.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
 
 // MARK: - Step Progress Indicator
 struct StepProgressView: View {

@@ -196,7 +196,7 @@ struct CustomTabView: View {
             }
         }
         .sheet(isPresented: $showingManualSearch) {
-            ManualFoodSearchView(selectedMealType: mealTypeForCurrentTime())
+            ManualFoodSearchView()
         }
     }
     

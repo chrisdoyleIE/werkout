@@ -82,6 +82,51 @@ struct NutritionInfo: Codable {
     }
 }
 
+// MARK: - Enhanced Nutrition Label Models
+
+struct RawNutritionData: Codable {
+    let nutrition: NutritionInfo        // Always per 100g/100ml
+    let originalUnit: String           // "100g", "100ml", "per packet", etc.
+    let originalServingSize: Double?   // If label shows specific serving (e.g., 30g per serving)
+    let suggestedServingSize: String?  // Claude's suggested serving size name (e.g., "handful")
+    let suggestedServingGrams: Double? // Claude's suggested serving size in grams
+    let confidence: Double             // AI confidence in extraction
+    let source: String                 // "Nutrition label from photo"
+    
+    init(nutrition: NutritionInfo, originalUnit: String = "100g", originalServingSize: Double? = nil, suggestedServingSize: String? = nil, suggestedServingGrams: Double? = nil, confidence: Double = 0.9, source: String = "Nutrition label from photo") {
+        self.nutrition = nutrition
+        self.originalUnit = originalUnit
+        self.originalServingSize = originalServingSize
+        self.suggestedServingSize = suggestedServingSize
+        self.suggestedServingGrams = suggestedServingGrams
+        self.confidence = confidence
+        self.source = source
+    }
+}
+
+struct NutritionDisplayData: Codable {
+    let rawNutrition: RawNutritionData      // Original label data (per 100g)
+    let servingNutrition: NutritionInfo     // Calculated for selected serving
+    let servingSize: ServingSize            // Selected serving size
+    
+    init(rawNutrition: RawNutritionData, servingSize: ServingSize) {
+        self.rawNutrition = rawNutrition
+        self.servingSize = servingSize
+        
+        // Calculate serving nutrition from raw per-100g data
+        let servingFactor = servingSize.gramsEquivalent / 100.0
+        self.servingNutrition = NutritionInfo(
+            calories: rawNutrition.nutrition.calories * servingFactor,
+            protein: rawNutrition.nutrition.protein * servingFactor,
+            carbs: rawNutrition.nutrition.carbs * servingFactor,
+            fat: rawNutrition.nutrition.fat * servingFactor,
+            fiber: (rawNutrition.nutrition.fiber ?? 0) * servingFactor,
+            sugar: (rawNutrition.nutrition.sugar ?? 0) * servingFactor,
+            sodium: (rawNutrition.nutrition.sodium ?? 0) * servingFactor
+        )
+    }
+}
+
 struct NutritionSummary: Codable {
     let totalCalories: Double
     let totalProtein: Double
